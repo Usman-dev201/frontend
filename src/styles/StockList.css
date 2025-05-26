@@ -1,0 +1,169 @@
+.stock-list-page {
+  padding: 20px;
+  margin-left: 250px; /* Space for sidebar */
+  margin-top: 60px; /* Space for topbar */
+}
+
+.stock-list-content {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.stock-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-title h2 {
+  font-size: 24px;
+  color: #333;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.add-stock-button {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+}
+
+.add-stock-button:hover {
+  background: linear-gradient(135deg, #45a049 0%, #388E3C 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(76, 175, 80, 0.3);
+}
+
+.back-button {
+  background-color: #6c757d;
+  color: white;
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.2);
+}
+
+.back-button:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(108, 117, 125, 0.3);
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background-color: #ffffff;
+  min-width: 1500px; /* Increased to accommodate new columns */
+}
+
+.stock-table th,
+.stock-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+  white-space: nowrap;
+}
+
+.stock-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.stock-table td {
+  font-size: 14px;
+}
+
+/* Value columns styling */
+.stock-table td:nth-child(5),
+.stock-table td:nth-child(6),
+.stock-table td:nth-child(7),
+.stock-table td:nth-child(8),
+.stock-table td:nth-child(9),
+.stock-table td:nth-child(10) {
+  text-align: right;
+  font-family: monospace;
+  font-weight: 500;
+}
+
+/* Unit columns styling */
+.stock-table td:nth-child(11),
+.stock-table td:nth-child(12),
+.stock-table td:nth-child(13) {
+  text-align: center;
+  font-weight: 500;
+}
+
+.stock-table-container {
+  overflow-x: auto;
+  margin-top: 16px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.stock-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.stock-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 110px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.stock-status i {
+  font-size: 14px;
+}
+
+.stock-status.in-stock {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.stock-status.low-stock {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+/* Hover effect for status badges */
+.stock-status:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+/* Make sure table cell with status is centered */
+.stock-table td:last-child {
+  text-align: center;
+} 

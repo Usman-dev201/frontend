@@ -1,0 +1,104 @@
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background-color: #1a237e; /* Deep blue background */
+  position: fixed;
+  left: 0;
+  top: 64px;
+  padding-top: 1rem;
+  color: white;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.nav-item-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  color: #e8eaf6; /* Light blue text */
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 0.2rem 0;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background-color: #283593; /* Slightly lighter blue on hover */
+  transform: translateX(5px);
+}
+
+.nav-item.active {
+  background-color: #3949ab; /* Bright blue for active state */
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-icon {
+  margin-right: 1rem;
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.nav-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  flex-grow: 1;
+}
+
+.nav-arrow {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+/* Add a subtle divider between items */
+.nav-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sub-menu {
+  margin-left: 2.5rem;
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sub-nav-item {
+  padding: 0.6rem 1rem;
+  color: #e8eaf6;
+  text-decoration: none;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.sub-nav-item:hover {
+  background-color: #283593;
+  color: white;
+}
+
+.sub-nav-item.active {
+  background-color: #3949ab;
+  color: white;
+  font-weight: 500;
+} 

@@ -1,0 +1,316 @@
+/* Common Variables */
+:root {
+  /* Colors */
+  --primary-color: #1a237e;
+  --primary-light: #534bae;
+  --primary-dark: #000051;
+  --secondary-color: #4CAF50;
+  --secondary-light: #80e27e;
+  --secondary-dark: #087f23;
+  --danger-color: #e74c3c;
+  --danger-light: #ff6b6b;
+  --danger-dark: #c0392b;
+  --warning-color: #f39c12;
+  --warning-light: #ffc046;
+  --warning-dark: #c66900;
+  --success-color: #2ecc71;
+  --success-light: #60ad5e;
+  --success-dark: #005005;
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --background-light: #f5f6fa;
+  --background-white: #ffffff;
+  --border-color: #e0e0e0;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Layout */
+  --sidebar-width: 250px;
+  --topbar-height: 60px;
+  --content-margin: var(--sidebar-width);
+  --content-padding: var(--spacing-md);
+  
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.4s ease;
+}
+
+/* Common Layout */
+.page-container {
+  min-height: 100vh;
+  background-color: var(--background-light);
+  overflow-x: hidden;
+}
+
+.content-container {
+  margin-left: var(--content-margin);
+  margin-top: var(--topbar-height);
+  padding: var(--content-padding);
+  min-height: calc(100vh - var(--topbar-height));
+  background-color: var(--background-light);
+  overflow-x: hidden;
+}
+
+/* Common Section Styles */
+.section-container {
+  background-color: var(--background-white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-title {
+  color: var(--text-primary);
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* Common Table Styles */
+.table-container {
+  background-color: var(--background-white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.table-responsive {
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+  overflow-x: hidden;
+}
+
+/* Default table style - no horizontal scroll */
+.table-fixed {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Scrollable table style - only for product lists */
+.table-scroll {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+  overflow-x: auto;
+}
+
+.table th,
+.table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table th {
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.table td {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+/* Compact table style for dashboard sections */
+.table-compact th,
+.table-compact td {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.85rem;
+}
+
+/* Table cell content handling */
+.table-cell-wrap {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.table-cell-nowrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.status-badge-success {
+  background-color: var(--success-light);
+  color: var(--success-dark);
+}
+
+.status-badge-warning {
+  background-color: var(--warning-light);
+  color: var(--warning-dark);
+}
+
+.status-badge-danger {
+  background-color: var(--danger-light);
+  color: var(--danger-dark);
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: nowrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-light);
+  transform: translateY(-2px);
+}
+
+/* Common Form Styles */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.form-label {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.form-input {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1024px) {
+  :root {
+    --content-margin: 0;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  :root {
+    --content-padding: var(--spacing-md);
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .table-container {
+    margin: 0 calc(-1 * var(--spacing-sm));
+    width: calc(100% + var(--spacing-sm) * 2);
+    border-radius: 0;
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  :root {
+    --content-padding: var(--spacing-sm);
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+  }
+  
+  .status-badge {
+    min-width: 70px;
+  }
+
+  .table-cell-wrap {
+    max-width: 150px;
+  }
+} 

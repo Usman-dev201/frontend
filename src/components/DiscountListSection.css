@@ -1,0 +1,226 @@
+/* Discount List Section Styles */
+.discount-list-container {
+  padding: var(--spacing-sm);
+  background-color: transparent;
+  min-height: auto;
+  overflow-x: hidden;
+}
+
+.discount-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.discount-list-header h2 {
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.add-discount-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.add-discount-btn:hover {
+  background-color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.add-discount-form-container {
+  background-color: var(--background-white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.add-discount-form {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.discount-code-input {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  width: 200px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.submit-btn,
+.cancel-btn,
+.save-btn,
+.edit-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.submit-btn,
+.save-btn {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.submit-btn:hover,
+.save-btn:hover {
+  background-color: var(--success-dark);
+}
+
+.cancel-btn {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: var(--danger-dark);
+}
+
+.edit-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: var(--primary-light);
+}
+
+.discount-list-content {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.discount-table-container {
+  background-color: var(--background-white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-xs);
+  overflow-x: hidden;
+}
+
+.discount-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.discount-table th,
+.discount-table td {
+  padding: var(--spacing-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.discount-table th {
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.discount-table td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.discount-table tbody tr:hover {
+  background-color: var(--background-light);
+}
+
+/* Column widths - more compact */
+.discount-table th:nth-child(1),
+.discount-table td:nth-child(1) {
+  width: 35%;
+}
+
+.discount-table th:nth-child(2),
+.discount-table td:nth-child(2) {
+  width: 15%;
+}
+
+.discount-table th:nth-child(3),
+.discount-table td:nth-child(3) {
+  width: 100px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .discount-list-container {
+    padding: var(--spacing-xs);
+  }
+
+  .discount-list-header {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .discount-list-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .add-discount-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .discount-code-input {
+    width: 100%;
+  }
+
+  .form-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .discount-table th,
+  .discount-table td {
+    padding: var(--spacing-xs);
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .discount-list-container {
+    padding: var(--spacing-xs);
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-buttons button {
+    width: 100%;
+  }
+} 

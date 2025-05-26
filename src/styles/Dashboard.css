@@ -1,0 +1,277 @@
+@import './common.css';
+
+/* Dashboard Specific Styles */
+.dashboard {
+  min-height: 100vh;
+  background-color: var(--background-light);
+  overflow-x: hidden;
+}
+
+.dashboard-content {
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  padding: var(--spacing-md);
+  background-color: var(--background-light);
+  min-height: calc(100vh - var(--topbar-height));
+  overflow-x: hidden;
+}
+
+.dashboard-content h2 {
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.dashboard-content h3 {
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.stat-card {
+  background: var(--background-white);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  transition: transform var(--transition-fast);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-right: var(--spacing-md);
+  background: #e8eaf6;
+  padding: 0.8rem;
+  border-radius: var(--border-radius-md);
+}
+
+.stat-info h3 {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 0.3rem;
+}
+
+.stat-change {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.stat-change.positive {
+  color: var(--success-color);
+}
+
+/* Dashboard Sections */
+.dashboard-section {
+  background: var(--background-white);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
+  overflow-x: hidden;
+}
+
+/* Tax and Discount List Sections */
+.dashboard-section .tax-list-container,
+.dashboard-section .discount-list-container {
+  padding: var(--spacing-sm);
+  background-color: transparent;
+  min-height: auto;
+  overflow-x: hidden;
+}
+
+.dashboard-section .tax-list-header,
+.dashboard-section .discount-list-header {
+  margin-bottom: var(--spacing-sm);
+}
+
+.dashboard-section .tax-list-content,
+.dashboard-section .discount-list-content {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.dashboard-section .tax-table-container,
+.dashboard-section .discount-table-container {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Orders Table */
+.orders-table {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.orders-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.orders-table th,
+.orders-table td {
+  padding: var(--spacing-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+.orders-table th {
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--background-light);
+}
+
+/* Column widths for orders table */
+.orders-table th:nth-child(1),
+.orders-table td:nth-child(1) {
+  width: 100px;
+}
+
+.orders-table th:nth-child(2),
+.orders-table td:nth-child(2) {
+  width: 30%;
+}
+
+.orders-table th:nth-child(3),
+.orders-table td:nth-child(3) {
+  width: 20%;
+}
+
+.orders-table th:nth-child(4),
+.orders-table td:nth-child(4) {
+  width: 100px;
+}
+
+.status-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.status-badge.completed {
+  background: var(--success-light);
+  color: var(--success-dark);
+}
+
+.status-badge.processing {
+  background: var(--primary-light);
+  color: white;
+}
+
+.status-badge.pending {
+  background: var(--warning-light);
+  color: var(--warning-dark);
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.action-button:hover {
+  background: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  margin-right: var(--spacing-sm);
+  font-size: 1.1rem;
+}
+
+.dashboard-content p {
+  color: var(--primary-light);
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .dashboard-content {
+    margin-left: 70px;
+    padding: var(--spacing-md);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .action-button {
+    width: 100%;
+  }
+
+  .dashboard-section {
+    padding: var(--spacing-sm);
+  }
+
+  .orders-table th,
+  .orders-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: var(--spacing-md);
+  }
+
+  .dashboard-content {
+    padding: var(--spacing-sm);
+  }
+} 

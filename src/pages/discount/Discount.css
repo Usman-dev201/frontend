@@ -1,0 +1,441 @@
+.discount-list-container {
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin: 24px;
+}
+
+.discount-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.discount-list-header h2 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.add-discount-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.add-discount-btn:hover {
+  background: #43a047;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error-message {
+  background-color: #ff6b6b;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #666;
+}
+
+.discount-table-container {
+  margin-top: 16px;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.discount-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 800px;
+}
+
+.discount-table th,
+.discount-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+}
+
+.discount-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.discount-table th:first-child,
+.discount-table td:first-child {
+  padding-left: 24px;
+}
+
+.discount-table th:last-child,
+.discount-table td:last-child {
+  padding-right: 24px;
+}
+
+.discount-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.discount-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Column widths */
+.discount-table th:nth-child(1),
+.discount-table td:nth-child(1) {
+  width: 15%;
+}
+
+.discount-table th:nth-child(2),
+.discount-table td:nth-child(2) {
+  width: 35%;
+}
+
+.discount-table th:nth-child(3),
+.discount-table td:nth-child(3) {
+  width: 20%;
+}
+
+.discount-table th:nth-child(4),
+.discount-table td:nth-child(4) {
+  width: 30%;
+}
+
+/* Status badge styles */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  display: inline-block;
+}
+
+.status-active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-expired {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.status-scheduled {
+  background-color: #e3f2fd;
+  color: #3498db;
+}
+
+/* Action buttons */
+.action-buttons-container {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 90px;
+  justify-content: center;
+}
+
+.action-btn i {
+  font-size: 14px;
+}
+
+.edit-btn {
+  background-color: #2196F3;
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: #1976D2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.save-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #43a047;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+}
+
+.cancel-btn {
+  background-color: #757575;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #616161;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(117, 117, 117, 0.2);
+}
+
+.edit-input {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.edit-input:focus {
+  border-color: #2196F3;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+/* Form styles */
+.add-discount-form-container {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e0e0e0;
+  max-width: 800px;
+}
+
+.add-discount-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-fields {
+  display: flex;
+  gap: 20px;
+  max-width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  max-width: calc(50% - 10px); /* Subtracting half of the gap */
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.discount-code-input,
+.discount-select {
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: white;
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.discount-code-input:focus,
+.discount-select:focus {
+  border-color: #4CAF50;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Delete Confirmation Modal */
+.delete-confirmation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.modal-content h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+}
+
+.modal-content p {
+  margin: 0 0 20px 0;
+  color: #666;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirm-delete-btn,
+.cancel-delete-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.confirm-delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.confirm-delete-btn:hover {
+  background-color: #c0392b;
+}
+
+.cancel-delete-btn {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.cancel-delete-btn:hover {
+  background-color: #7f8c8d;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .discount-list-container {
+    padding: 16px;
+    margin: 16px;
+  }
+
+  .add-discount-form-container {
+    padding: 16px;
+  }
+
+  .form-fields {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-group {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .discount-code-input,
+  .discount-select {
+    width: 100%;
+  }
+
+  .form-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .action-btn {
+    padding: 6px 12px;
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .discount-list-container {
+    padding: 12px;
+    margin: 12px;
+  }
+
+  .discount-list-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .add-discount-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .action-buttons-container {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: unset;
+  }
+
+  .discount-table th,
+  .discount-table td {
+    padding: 12px;
+  }
+} 

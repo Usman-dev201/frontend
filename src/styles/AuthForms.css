@@ -1,0 +1,114 @@
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #1e3a8a;
+  padding: 20px;
+}
+
+.auth-form {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.auth-form h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 24px;
+  color: #333;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* Style for select dropdown */
+.auth-input[type="select"],
+select.auth-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 1em;
+  padding-right: 30px;
+}
+
+/* Ensure dropdown appears above other elements */
+select.auth-input {
+  position: relative;
+  z-index: 1;
+}
+
+/* Style for the dropdown options */
+select.auth-input option {
+  padding: 10px;
+  background-color: white;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.auth-button:hover {
+  background-color: #1d4ed8;
+}
+
+.auth-links {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.auth-links a {
+  color: #2563eb;
+  text-decoration: none;
+  margin: 0 5px;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+/* Add space between form elements */
+.auth-form > * {
+  margin-bottom: 15px;
+}
+
+/* Ensure the last element doesn't have bottom margin */
+.auth-form > *:last-child {
+  margin-bottom: 0;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #fecaca;
+}

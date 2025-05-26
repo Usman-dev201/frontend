@@ -1,0 +1,21 @@
+.page-container {
+  min-height: 100vh;
+  background-color: var(--background-light);
+  overflow-x: hidden;
+}
+
+.content-container {
+  margin-left: var(--content-margin);
+  margin-top: var(--topbar-height);
+  padding: var(--content-padding);
+  min-height: calc(100vh - var(--topbar-height));
+  background-color: var(--background-light);
+  overflow-x: hidden;
+}
+
+.list-location-page {
+  padding: var(--spacing-md);
+  background-color: var(--background-light);
+  min-height: 100vh;
+  overflow-x: hidden;
+} 
