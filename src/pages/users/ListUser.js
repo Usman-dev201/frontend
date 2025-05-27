@@ -1,33 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
+import api from '../../api/axios';
 import './ListUser.css';
 
 export default function ListUser() {
-  const [users] = useState([
-    {
-      userId: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      password: '********',
-      confirmPassword: '********',
-      contactNo: '123-456-7890',
-      address: '123 Main St',
-      role: 'Admin'
-    },
-    {
-      userId: 2,
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane@example.com',
-      password: '********',
-      confirmPassword: '********',
-      contactNo: '987-654-3210',
-      address: '456 Oak St',
-      role: 'Inventory Manager'
-    }
-  ]);
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get("/User");
+        setUsers(response.data);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Failed to load users.");
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   return (
     <div className="dashboard">
@@ -38,6 +31,8 @@ export default function ListUser() {
           <div className="page-header">
             <h1>User Management</h1>
           </div>
+
+          {error && <div className="error-message">{error}</div>}
 
           <div className="table-container">
             <table className="data-table">
@@ -53,17 +48,23 @@ export default function ListUser() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
-                  <tr key={user.userId}>
-                    <td>{user.userId}</td>
-                    <td>{user.firstName}</td>
-                    <td>{user.lastName}</td>
-                    <td>{user.email}</td>
-                    <td>{user.contactNo}</td>
-                    <td>{user.address}</td>
-                    <td>{user.role}</td>
+                {users.length > 0 ? (
+                  users.map(user => (
+                    <tr key={user.userID}>
+                      <td>{user.userId}</td>
+                      <td>{user.firstName}</td>
+                      <td>{user.lastName}</td>
+                      <td>{user.userEmail}</td>
+                      <td>{user.userPhone}</td>
+                      <td>{user.address || "N/A"}</td>
+                      <td>{user.role?.roleName || "N/A"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7">No users found.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -71,4 +72,4 @@ export default function ListUser() {
       </div>
     </div>
   );
-} 
+}
