@@ -9,10 +9,12 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     
     try {
       const success = await login(email, password);
@@ -22,7 +24,9 @@ export default function Login() {
         setError("Invalid email or password");
       }
     } catch (err) {
-      setError("Login failed. Please try again.");
+      setError(err.response?.data?.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,6 +42,7 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={loading}
         />
         <input
           type="password"
@@ -46,8 +51,15 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={loading}
         />
-        <button type="submit" className="auth-button">Login</button>
+        <button 
+          type="submit" 
+          className="auth-button"
+          disabled={loading}
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
         <div className="auth-links">
           <Link to="/register">Register</Link> | 
           <Link to="/forgot-password">Forgot Password?</Link>

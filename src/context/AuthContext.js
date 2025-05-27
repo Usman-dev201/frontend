@@ -1,49 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 const AuthContext = createContext(null);
-
-// Create axios instance with base URL
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Update this with your backend URL
-});
-
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle token refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const response = await api.post('/auth/refresh-token', { refreshToken });
-        const { accessToken } = response.data;
-        
-        localStorage.setItem('accessToken', accessToken);
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        
-        return api(originalRequest);
-      } catch (error) {
-        // If refresh token fails, logout user
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-    }
-    return Promise.reject(error);
-  }
-);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -51,40 +9,43 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      // For now, just set authenticated if token exists
-      setIsAuthenticated(true);
-      setUser({ role: 'admin' }); // Temporary user data
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          // Verify token and get user data
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          setIsAuthenticated(true);
+        } catch (error) {
+          // If token is invalid, clear storage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      }
       setLoading(false);
-    } else {
-      setLoading(false);
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      // Temporary login logic until backend is ready
-      if (email === "admin@123" && password === "1234") {
-        const mockUser = {
-          id: 1,
-          email: email,
-          role: 'admin',
-          firstName: 'Admin',
-          lastName: 'User'
-        };
-        
-        // Create mock tokens
-        const mockAccessToken = 'mock-access-token';
-        const mockRefreshToken = 'mock-refresh-token';
-        
-        localStorage.setItem('accessToken', mockAccessToken);
-        localStorage.setItem('refreshToken', mockRefreshToken);
-        setUser(mockUser);
-        setIsAuthenticated(true);
-        return true;
-      }
-      return false;
+      const response = await api.post('/auth/login', {
+        userEmail: email,
+        password: password
+      });
+
+      const { accessToken, refreshToken, user: userData } = response.data;
+      
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      
+      setUser(userData);
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -93,19 +54,13 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      // Temporary registration logic until backend is ready
-      const mockUser = {
-        id: Date.now(),
-        ...userData,
-        role: userData.role || 'user'
-      };
+      const response = await api.post('/auth/addUser', userData);
+      const { accessToken, refreshToken, user: newUser } = response.data;
       
-      const mockAccessToken = 'mock-access-token';
-      const mockRefreshToken = 'mock-refresh-token';
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       
-      localStorage.setItem('accessToken', mockAccessToken);
-      localStorage.setItem('refreshToken', mockRefreshToken);
-      setUser(mockUser);
+      setUser(newUser);
       setIsAuthenticated(true);
       return true;
     } catch (error) {
@@ -114,11 +69,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      // Call logout endpoint to invalidate tokens on server
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   };
 
   if (loading) {
@@ -132,7 +94,7 @@ export const AuthProvider = ({ children }) => {
       login, 
       logout,
       register,
-      api // Expose api instance for making authenticated requests
+      api
     }}>
       {children}
     </AuthContext.Provider>

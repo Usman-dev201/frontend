@@ -21,7 +21,7 @@ export default function ListProduct() {
     if (!price) return '₹0.00';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: 'PKR',
     }).format(price);
   };
 

@@ -266,7 +266,7 @@ function App() {
                     path="/"
                     element={
                       <ProtectedRoute>
-                        <Navigate to="/dashboard" replace />
+                        <Navigate to="/Login" replace />
                       </ProtectedRoute>
                     }
                   />
