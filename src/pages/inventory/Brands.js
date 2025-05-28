@@ -5,17 +5,18 @@ import { useBrands } from '../../context/BrandContext';
 import '../../styles/Brands.css';
 
 export default function Brands() {
-  const { brands, addBrand, deleteBrand, updateBrand } = useBrands();
+  const { brands, addBrand, deleteBrand, updateBrand, loading } = useBrands();
+
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newBrand, setNewBrand] = useState({ name: '' });
+  const [newBrand, setNewBrand] = useState({ brandName: '' });
   const [editingId, setEditingId] = useState(null);
   const [editedBrand, setEditedBrand] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (newBrand.name.trim()) {
+    if (newBrand.brandName.trim()) {
       addBrand(newBrand);
-      setNewBrand({ name: '' });
+      setNewBrand({ brandName: '' });
       setShowAddForm(false);
     }
   };
@@ -27,12 +28,12 @@ export default function Brands() {
   };
 
   const handleEdit = (brand) => {
-    setEditingId(brand.id);
-    setEditedBrand({ ...brand });
+    setEditingId(brand.brandId);
+    setEditedBrand({ brandName: brand.brandName });
   };
 
   const handleSave = () => {
-    if (editedBrand) {
+    if (editedBrand && editedBrand.brandName.trim()) {
       updateBrand(editingId, editedBrand);
       setEditingId(null);
       setEditedBrand(null);
@@ -52,6 +53,10 @@ export default function Brands() {
     }));
   };
 
+  if (loading) {
+    return <div>Loading brands...</div>;
+  }
+
   return (
     <div className="list-product-page">
       <Topbar />
@@ -62,7 +67,7 @@ export default function Brands() {
             <h2>Brands</h2>
           </div>
           <div className="header-actions">
-            <button 
+            <button
               className="action-button add-button"
               onClick={() => setShowAddForm(!showAddForm)}
             >
@@ -81,8 +86,9 @@ export default function Brands() {
                 <input
                   type="text"
                   id="brandName"
-                  value={newBrand.name}
-                  onChange={(e) => setNewBrand({ name: e.target.value })}
+                  name="brandName"
+                  value={newBrand.brandName}
+                  onChange={(e) => setNewBrand({ brandName: e.target.value })}
                   placeholder="Enter brand name"
                   required
                 />
@@ -108,32 +114,34 @@ export default function Brands() {
             </thead>
             <tbody>
               {brands.map((brand) => (
-                <tr key={brand.id}>
-                  <td>{brand.id}</td>
+                <tr key={brand.brandId}>
+                  <td>{brand.brandId}</td>
                   <td>
-                    {editingId === brand.id ? (
+                    {editingId === brand.brandId ? (
                       <input
                         type="text"
-                        name="name"
-                        value={editedBrand.name}
+                        name="brandName"
+                        value={editedBrand.brandName}
                         onChange={handleChange}
                         className="edit-input"
                       />
                     ) : (
-                      brand.name
+                      brand.brandName
                     )}
                   </td>
                   <td>
                     <div className="action-buttons-container">
-                      <button 
+                      <button
                         className="action-btn edit-btn"
-                        onClick={() => editingId === brand.id ? handleSave() : handleEdit(brand)}
+                        onClick={() =>
+                          editingId === brand.brandId ? handleSave() : handleEdit(brand)
+                        }
                       >
-                        <i className={`fas fa-${editingId === brand.id ? 'save' : 'edit'}`}></i>
-                        {editingId === brand.id ? 'Save' : 'Edit'}
+                        <i className={`fas fa-${editingId === brand.brandId ? 'save' : 'edit'}`}></i>
+                        {editingId === brand.brandId ? 'Save' : 'Edit'}
                       </button>
-                      {editingId === brand.id ? (
-                        <button 
+                      {editingId === brand.brandId ? (
+                        <button
                           className="action-btn cancel-btn"
                           onClick={handleCancel}
                         >
@@ -141,9 +149,9 @@ export default function Brands() {
                           Cancel
                         </button>
                       ) : (
-                        <button 
+                        <button
                           className="action-btn delete-btn"
-                          onClick={() => handleDelete(brand.id)}
+                          onClick={() => handleDelete(brand.brandId)}
                         >
                           <i className="fas fa-trash-alt"></i>
                           Delete
@@ -159,4 +167,4 @@ export default function Brands() {
       </div>
     </div>
   );
-} 
+}

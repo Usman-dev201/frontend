@@ -5,17 +5,24 @@ import { useCategories } from '../../context/CategoryContext';
 import '../../styles/Categories.css';
 
 export default function Categories() {
-  const { categories, addCategory, deleteCategory, updateCategory } = useCategories();
+  const {
+    categories,
+    addCategory,
+    deleteCategory,
+    updateCategory,
+    loading
+  } = useCategories();
+
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: '' });
+  const [newCategory, setNewCategory] = useState({ categoryName: '' });
   const [editingId, setEditingId] = useState(null);
   const [editedCategory, setEditedCategory] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (newCategory.name.trim()) {
+    if (newCategory.categoryName.trim()) {
       addCategory(newCategory);
-      setNewCategory({ name: '' });
+      setNewCategory({ categoryName: '' });
       setShowAddForm(false);
     }
   };
@@ -27,12 +34,12 @@ export default function Categories() {
   };
 
   const handleEdit = (category) => {
-    setEditingId(category.id);
-    setEditedCategory({ ...category });
+   setEditingId(category.categoryId);
+    setEditedCategory({ categoryName: category.categoryName });
   };
 
   const handleSave = () => {
-    if (editedCategory) {
+    if (editedCategory && editedCategory.categoryName.trim()) {
       updateCategory(editingId, editedCategory);
       setEditingId(null);
       setEditedCategory(null);
@@ -46,11 +53,15 @@ export default function Categories() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditedCategory(prev => ({
+    setEditedCategory((prev) => ({
       ...prev,
       [name]: value
     }));
   };
+
+  if (loading) {
+    return <div>Loading categories...</div>;
+  }
 
   return (
     <div className="list-product-page">
@@ -62,7 +73,7 @@ export default function Categories() {
             <h2>Categories</h2>
           </div>
           <div className="header-actions">
-            <button 
+            <button
               className="action-button add-button"
               onClick={() => setShowAddForm(!showAddForm)}
             >
@@ -81,8 +92,8 @@ export default function Categories() {
                 <input
                   type="text"
                   id="categoryName"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ name: e.target.value })}
+                  value={newCategory.categoryName}
+                  onChange={(e) => setNewCategory({ categoryName: e.target.value })}
                   placeholder="Enter category name"
                   required
                 />
@@ -108,32 +119,34 @@ export default function Categories() {
             </thead>
             <tbody>
               {categories.map((category) => (
-                <tr key={category.id}>
-                  <td>{category.id}</td>
+                <tr key={category.categoryId}>
+  <td>{category.categoryId}</td>
                   <td>
-                    {editingId === category.id ? (
+                    {editingId === category.categoryId ? (
                       <input
                         type="text"
-                        name="name"
-                        value={editedCategory.name}
+                        name="categoryName"
+                        value={editedCategory.categoryName}
                         onChange={handleChange}
                         className="edit-input"
                       />
                     ) : (
-                      category.name
+                      category.categoryName
                     )}
                   </td>
                   <td>
                     <div className="action-buttons-container">
-                      <button 
+                      <button
                         className="action-btn edit-btn"
-                        onClick={() => editingId === category.id ? handleSave() : handleEdit(category)}
+                       onClick={() =>
+  editingId === category.categoryId ? handleSave() : handleEdit(category)
+}
                       >
                         <i className={`fas fa-${editingId === category.id ? 'save' : 'edit'}`}></i>
-                        {editingId === category.id ? 'Save' : 'Edit'}
+                        {editingId === category.categoryId ? 'Save' : 'Edit'}
                       </button>
-                      {editingId === category.id ? (
-                        <button 
+                      {editingId === category.categoryId ? (
+                        <button
                           className="action-btn cancel-btn"
                           onClick={handleCancel}
                         >
@@ -141,10 +154,10 @@ export default function Categories() {
                           Cancel
                         </button>
                       ) : (
-                        <button 
-                          className="action-btn delete-btn"
-                          onClick={() => handleDelete(category.id)}
-                        >
+                       <button
+  className="action-btn delete-btn"
+  onClick={() => handleDelete(category.categoryId)}
+>
                           <i className="fas fa-trash-alt"></i>
                           Delete
                         </button>
@@ -159,4 +172,4 @@ export default function Categories() {
       </div>
     </div>
   );
-} 
+}

@@ -6,30 +6,20 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading,setLoading] = useState(true);
 
+  // Load user info from localStorage on mount
   useEffect(() => {
-    const initializeAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          // Verify token and get user data
-          const response = await api.get('/auth/me');
-          setUser(response.data);
-          setIsAuthenticated(true);
-        } catch (error) {
-          // If token is invalid, clear storage
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      }
-      setLoading(false);
-    };
+  const token = localStorage.getItem('accessToken');
+  const userData = localStorage.getItem('User');
 
-    initializeAuth();
-  }, []);
+  if (token && userData) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUser(JSON.parse(userData));
+    setIsAuthenticated(true);
+  }
+  setLoading(false);
+}, []);
 
   const login = async (email, password) => {
     try {
@@ -38,13 +28,13 @@ export const AuthProvider = ({ children }) => {
         password: password
       });
 
-      const { accessToken, refreshToken, user: userData } = response.data;
-      
+      const { accessToken, refreshToken } = response.data;
+
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      
-      setUser(userData);
+
       setIsAuthenticated(true);
+      setUser({}); // Store placeholder or parsed token if needed
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -55,13 +45,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await api.post('/auth/addUser', userData);
-      const { accessToken, refreshToken, user: newUser } = response.data;
-      
+      const { accessToken, refreshToken } = response.data;
+
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      
-      setUser(newUser);
+
       setIsAuthenticated(true);
+      setUser({}); // Store placeholder or parsed token if needed
       return true;
     } catch (error) {
       console.error('Registration error:', error);
@@ -71,15 +61,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Call logout endpoint to invalidate tokens on server
       await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      setUser(null);
       setIsAuthenticated(false);
+      setUser(null);
     }
   };
 
@@ -107,4 +96,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};

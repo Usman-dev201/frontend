@@ -1,43 +1,56 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import api from '../api/axios'; // make sure this is set up
 
 const BrandContext = createContext();
 
 export function BrandProvider({ children }) {
-  const [brands, setBrands] = useState([
-    { id: 1, name: 'Apple' },
-    { id: 2, name: 'Samsung' },
-    { id: 3, name: 'Nike' },
-    { id: 4, name: 'Adidas' },
-    { id: 5, name: 'Sony' }
-  ]);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const addBrand = (newBrand) => {
-    const brand = {
-      ...newBrand,
-      id: brands.length + 1
-    };
-    setBrands([...brands, brand]);
+  useEffect(() => {
+    fetchBrands();
+  }, []);
+
+  const fetchBrands = async () => {
+    try {
+      const response = await api.get('/Brand');
+      setBrands(response.data);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteBrand = (id) => {
-    setBrands(brands.filter(brand => brand.id !== id));
+  const addBrand = async (newBrand) => {
+    try {
+      const response = await api.post('/Brand', [newBrand]); // expects a list
+      setBrands([...brands, ...response.data]);
+    } catch (error) {
+      console.error('Error adding brand:', error);
+    }
   };
 
-  const updateBrand = (id, updatedBrand) => {
-    setBrands(brands.map(brand => 
-      brand.id === id ? { ...brand, ...updatedBrand } : brand
-    ));
+  const deleteBrand = async (id) => {
+    try {
+      await api.delete(`/Brand/${id}`);
+      setBrands(brands.filter(b => b.brandId !== id));
+    } catch (error) {
+      console.error('Error deleting brand:', error);
+    }
   };
 
-  const value = {
-    brands,
-    addBrand,
-    deleteBrand,
-    updateBrand
+  const updateBrand = async (id, updatedBrand) => {
+    try {
+      const response = await api.put(`/Brand/${id}`, updatedBrand);
+      setBrands(brands.map(b => b.brandId === id ? response.data : b));
+    } catch (error) {
+      console.error('Error updating brand:', error);
+    }
   };
 
   return (
-    <BrandContext.Provider value={value}>
+    <BrandContext.Provider value={{ brands, addBrand, deleteBrand, updateBrand, loading }}>
       {children}
     </BrandContext.Provider>
   );
@@ -45,8 +58,6 @@ export function BrandProvider({ children }) {
 
 export function useBrands() {
   const context = useContext(BrandContext);
-  if (context === undefined) {
-    throw new Error('useBrands must be used within a BrandProvider');
-  }
+  if (!context) throw new Error('useBrands must be used within BrandProvider');
   return context;
-} 
+}

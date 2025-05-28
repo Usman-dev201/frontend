@@ -1,69 +1,75 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
+import api from '../../api/axios'; // Axios instance
 import './BarcodeList.css';
 
 export default function BarcodeList() {
-  const [barcodes, setBarcodes] = useState([
-    {
-      barcodeId: 'BC001',
-      barcodeType: 'Code128'
-    },
-    {
-      barcodeId: 'BC002',
-      barcodeType: 'QR Code'
-    },
-    {
-      barcodeId: 'BC003',
-      barcodeType: 'EAN-13'
-    }
-  ]);
-
+  const [barcodes, setBarcodes] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newBarcodeType, setNewBarcodeType] = useState('');
   const [editingBarcode, setEditingBarcode] = useState(null);
   const [editForm, setEditForm] = useState({
-    barcodeId: '',
     barcodeType: ''
   });
 
-  const handleAddBarcode = (e) => {
+  // Fetch barcodes from API
+  const fetchBarcodes = async () => {
+    try {
+      const res = await api.get('/Barcode');
+      setBarcodes(res.data);
+    } catch (err) {
+      console.error('Error fetching barcodes:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBarcodes();
+  }, []);
+
+  const handleAddBarcode = async (e) => {
     e.preventDefault();
-    if (newBarcodeType.trim()) {
-      const newBarcode = {
-        barcodeId: `BC${String(barcodes.length + 1).padStart(3, '0')}`,
-        barcodeType: newBarcodeType.trim()
-      };
-      setBarcodes([...barcodes, newBarcode]);
+    if (!newBarcodeType.trim()) return;
+
+    try {
+       await api.post('/Barcode', [
+        { barcodeType: newBarcodeType.trim() }
+      ]);
       setNewBarcodeType('');
       setShowAddForm(false);
+      fetchBarcodes();
+    } catch (err) {
+      console.error('Error adding barcode:', err);
     }
   };
 
   const handleEdit = (barcode) => {
     setEditingBarcode(barcode.barcodeId);
-    setEditForm({
-      barcodeId: barcode.barcodeId,
-      barcodeType: barcode.barcodeType
-    });
+    setEditForm({ barcodeType: barcode.barcodeType });
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    if (editForm.barcodeType.trim()) {
-      setBarcodes(barcodes.map(barcode => 
-        barcode.barcodeId === editingBarcode ? {
-          ...barcode,
-          barcodeType: editForm.barcodeType.trim()
-        } : barcode
-      ));
+    if (!editForm.barcodeType.trim()) return;
+
+    try {
+      await api.put(`/Barcode/${editingBarcode}`, {
+        barcodeType: editForm.barcodeType.trim()
+      });
       setEditingBarcode(null);
+      fetchBarcodes();
+    } catch (err) {
+      console.error('Error updating barcode:', err);
     }
   };
 
-  const handleDelete = (barcodeId) => {
-    if (window.confirm('Are you sure you want to delete this barcode?')) {
-      setBarcodes(barcodes.filter(barcode => barcode.barcodeId !== barcodeId));
+  const handleDelete = async (barcodeId) => {
+    if (!window.confirm('Are you sure you want to delete this barcode?')) return;
+    try {
+      await api.delete(`/Barcode/${barcodeId}`);
+      fetchBarcodes();
+    } catch (err) {
+      console.error('Error deleting barcode:', err);
     }
   };
 
@@ -129,7 +135,7 @@ export default function BarcodeList() {
                         <input
                           type="text"
                           value={editForm.barcodeType}
-                          onChange={(e) => setEditForm({...editForm, barcodeType: e.target.value})}
+                          onChange={(e) => setEditForm({ barcodeType: e.target.value })}
                           className="edit-input"
                           autoFocus
                         />
@@ -140,31 +146,19 @@ export default function BarcodeList() {
                     <td className="actions-cell">
                       {editingBarcode === barcode.barcodeId ? (
                         <div className="action-buttons">
-                          <button 
-                            className="action-btn edit-btn"
-                            onClick={handleSaveEdit}
-                          >
+                          <button className="action-btn edit-btn" onClick={handleSaveEdit}>
                             <i className="fas fa-check"></i> Save
                           </button>
-                          <button 
-                            className="action-btn delete-btn"
-                            onClick={() => setEditingBarcode(null)}
-                          >
+                          <button className="action-btn delete-btn" onClick={() => setEditingBarcode(null)}>
                             <i className="fas fa-times"></i> Cancel
                           </button>
                         </div>
                       ) : (
                         <div className="action-buttons">
-                          <button 
-                            className="action-btn edit-btn"
-                            onClick={() => handleEdit(barcode)}
-                          >
+                          <button className="action-btn edit-btn" onClick={() => handleEdit(barcode)}>
                             <i className="fas fa-edit"></i> Edit
                           </button>
-                          <button 
-                            className="action-btn delete-btn"
-                            onClick={() => handleDelete(barcode.barcodeId)}
-                          >
+                          <button className="action-btn delete-btn" onClick={() => handleDelete(barcode.barcodeId)}>
                             <i className="fas fa-trash-alt"></i> Delete
                           </button>
                         </div>
@@ -179,4 +173,4 @@ export default function BarcodeList() {
       </div>
     </div>
   );
-} 
+}
