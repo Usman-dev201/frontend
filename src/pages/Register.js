@@ -75,8 +75,11 @@ if (!formData.lastName.trim()) {
 
 if (!formData.contactNumber.trim()) {
   validationErrors.contactNumber = "Enter Contact Number";
-}
 
+}
+if (!/^\d{10,15}$/.test(formData.contactNumber)) {
+  validationErrors.contactNumber = "Enter a valid contact number.";
+}
 if (/[A-Z]/.test(email)) {
   validationErrors.email = "Email must be in lowercase letters only.";
 } else if (!/^[a-z0-9._%+-]+@gmail\.com$/.test(email)) {

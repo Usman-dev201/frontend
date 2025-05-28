@@ -51,7 +51,7 @@ export default function ListUser() {
                 {users.length > 0 ? (
                   users.map(user => (
                     <tr key={user.userID}>
-                      <td>{user.userId}</td>
+        <td>{user.userID}</td>
                       <td>{user.firstName}</td>
                       <td>{user.lastName}</td>
                       <td>{user.userEmail}</td>

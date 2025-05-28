@@ -127,3 +127,10 @@ select.auth-input option {
   border-radius: 5px;
   margin-bottom: 15px;
 }
+.error-text {
+  color: red;
+  font-size: 13px;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  display: block;
+}
