@@ -7,13 +7,13 @@ import '../../styles/AddProduct.css';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const { addProduct } = useProducts();
+  const { addProduct, categories, brands, barcodes, loading } = useProducts();
   const [imagePreview, setImagePreview] = useState(null);
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
   const [selectedDiscountType, setSelectedDiscountType] = useState('');
 
-  // Sample discount codes and types
+  // Sample discount codes and types (keep as is)
   const discountCodes = ['SUMMER2024', 'SPECIAL50'];
   const discountTypes = ['percentage', 'fixed'];
 
@@ -74,37 +74,48 @@ export default function AddProduct() {
     ));
   };
 
-  const handleSubmit = (e) => {
+   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     
-    // Create new product with corrected field names
+    // Get selected category, brand, and barcode objects
+    const selectedCategory = categories.find(c => c.categoryId === parseInt(formData.get('categoryId')));
+    const selectedBrand = brands.find(b => b.brandId === parseInt(formData.get('brandId')));
+    const selectedBarcode = barcodes.find(b => b.barcodeId === parseInt(formData.get('barcodeId')));
+
     const newProduct = {
-      id: Date.now(),
-      name: formData.get('productName'),
-      shortName: formData.get('shortName'),
-      sku: formData.get('sku'),
-      description: formData.get('description'),
-      category: formData.get('category'),
-      brand: formData.get('brand'),
-      quantityThreshold: Number(formData.get('quantityThreshold')),
-      image: imagePreview || 'https://via.placeholder.com/150',
-      location: 'Main Warehouse',
-      purchasePrice: 0,
-      markedPrice: 0,
-      sellingPrice: 0,
-      discounts: discounts,
       date: formData.get('date') || new Date().toISOString().split('T')[0],
+      imageData: imagePreview || '',
+      productName: formData.get('productName'),
+      productDescription: formData.get('description'),
+      sku: formData.get('sku'),
+      shortName: formData.get('shortName'),
+      categoryId: parseInt(formData.get('categoryId')),
+      category: selectedCategory,
+      brandId: parseInt(formData.get('brandId')),
+      brand: selectedBrand,
+      barcodeId: parseInt(formData.get('barcodeId')),
+      barcode: selectedBarcode,
+      quantityAlert: parseInt(formData.get('quantityThreshold')),
+      // Add other fields as needed by your API
+      discounts: discounts,
       status: 'active',
-      categoryId: formData.get('category'),
-      brandId: formData.get('brand'),
       quantity: 0
     };
 
-    // Add to context
-    addProduct(newProduct);
-    navigate('/product/list');
+    try {
+      await addProduct(newProduct);
+      navigate('/product/list');
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      // Handle error (show toast/message)
+    }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
 
   return (
     <div className="add-product-page">
@@ -175,37 +186,38 @@ export default function AddProduct() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="category">Category</label>
-                  <select id="category" name="category" required>
+                  <label htmlFor="categoryId">Category</label>
+                  <select id="categoryId" name="categoryId" required>
                     <option value="">Select Category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Food">Food</option>
-                    <option value="Books">Books</option>
-                    <option value="Other">Other</option>
+                    {categories.map(category => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.categoryName}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="brand">Brand</label>
-                  <select id="brand" name="brand" required>
+                  <label htmlFor="brandId">Brand</label>
+                  <select id="brandId" name="brandId" required>
                     <option value="">Select Brand</option>
-                    <option value="Apple">Apple</option>
-                    <option value="Samsung">Samsung</option>
-                    <option value="Nike">Nike</option>
-                    <option value="Adidas">Adidas</option>
-                    <option value="Other">Other</option>
+                    {brands.map(brand => (
+                      <option key={brand.brandId} value={brand.brandId}>
+                        {brand.brandName}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="barcodeType">Barcode Type</label>
-                  <select id="barcodeType" name="barcodeType" required>
+                  <label htmlFor="barcodeId">Barcode Type</label>
+                  <select id="barcodeId" name="barcodeId" required>
                     <option value="">Select Barcode Type</option>
-                    <option value="UPC">UPC</option>
-                    <option value="EAN">EAN</option>
-                    <option value="Code 128">Code 128</option>
-                    <option value="QR Code">QR Code</option>
+                    {barcodes.map(barcode => (
+                      <option key={barcode.barcodeId} value={barcode.barcodeId}>
+                        {barcode.barcodeType}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

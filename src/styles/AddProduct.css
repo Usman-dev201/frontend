@@ -3,7 +3,7 @@
 
 /* Simple and Clean Theme for Add Product */
 .add-product-page {
-  padding: 24px;
+  padding: 20px;
   margin-left: 250px;
   margin-top: 60px;
   background-color: #ffffff;
@@ -11,22 +11,22 @@
 }
 
 .add-product-content {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: none;
 }
 
 .add-product-header {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
   border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 16px;
+  padding-bottom: 24px;
 }
 
 .add-product-header h2 {
-  font-size: 22px;
+  font-size: 24px;
   color: #333;
   margin: 0;
   font-weight: 500;
@@ -35,58 +35,51 @@
 .form-sections-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 10px;
 }
 
 .product-info-section {
   grid-column: span 3;
-  margin-bottom: 32px;
-  padding: 24px;
+  margin-bottom: 20px;
+  padding: 20px;
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .product-fields {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  padding: 16px;
+  gap: 10px;
+  padding: 0;
 }
 
 .form-group {
-  margin-bottom: 24px;
-  background-color: #fff;
-  border-radius: 6px;
-  padding: 16px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group.image-group {
-  height: auto;
-  justify-content: flex-start;
-  position: relative;
+  margin-bottom: 8px;
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: block;
 }
 
 .form-group label {
   display: block;
   font-size: 13px;
-  color: #555;
-  margin-bottom: 10px;
-  font-weight: 500;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: normal;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 4px 8px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 3px;
   font-size: 13px;
   color: #333;
-  height: 38px;
+  height: 30px;
   background-color: #fff;
   transition: all 0.2s ease;
 }
@@ -182,48 +175,36 @@
 
 .description-section {
   grid-column: span 3;
-  margin: 32px 0;
-  padding: 24px;
+  margin: 20px 0;
+  padding: 20px;
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .form-group textarea {
   width: 100%;
-  padding: 12px;
+  padding: 4px 8px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 3px;
   font-size: 13px;
   color: #333;
   min-height: 100px;
   resize: vertical;
-  transition: all 0.2s ease;
 }
 
-.form-group textarea:hover {
-  border-color: #b3b3b3;
-}
-
-.form-group textarea:focus {
-  outline: none;
-  border-color: #2196F3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-}
-
-/* Discount Section Styling */
 .discount-section {
   grid-column: span 3;
-  margin-top: 32px;
+  margin-top: 20px;
   background-color: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 0;
+  padding: 20px;
+  box-shadow: none;
 }
 
 .discount-header {
-  padding-bottom: 16px;
-  margin-bottom: 24px;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
   border-bottom: 2px solid #e0e0e0;
 }
 
@@ -404,8 +385,8 @@
 @media (max-width: 992px) {
   .product-fields {
     grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-    padding: 12px;
+    gap: 32px;
+    padding: 20px;
   }
   
   .discount-dropdowns {
@@ -415,12 +396,13 @@
 
 @media (max-width: 768px) {
   .add-product-page {
+    padding: 24px;
     margin-left: 0;
-    padding: 16px;
+    margin-top: 60px;
   }
   
   .add-product-content {
-    padding: 16px;
+    padding: 24px;
   }
 
   .product-fields {
