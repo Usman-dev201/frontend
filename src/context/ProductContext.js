@@ -6,25 +6,18 @@ const ProductContext = createContext();
 
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [barcodes, setBarcodes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, categoriesRes, brandsRes, barcodesRes] = await Promise.all([
+        const [productsRes, barcodesRes] = await Promise.all([
           api.get('/Product'),
-          api.get('/Category'),
-          api.get('/Brand'),
           api.get('/Barcode')
         ]);
         
         setProducts(productsRes.data);
-        setCategories(categoriesRes.data);
-        setBrands(brandsRes.data);
         setBarcodes(barcodesRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -35,6 +28,8 @@ export function ProductProvider({ children }) {
 
     fetchData();
   }, []);
+
+  
 
   const addProduct = async (newProduct) => {
     try {
@@ -69,8 +64,6 @@ export function ProductProvider({ children }) {
 
   const value = {
     products,
-    categories,
-    brands,
     barcodes,
     loading,
     addProduct,

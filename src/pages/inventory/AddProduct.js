@@ -3,11 +3,15 @@ import { useState } from 'react';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { useProducts } from '../../context/ProductContext';
+import { useCategories } from '../../context/CategoryContext';
+import { useBrands } from '../../context/BrandContext'; 
 import '../../styles/AddProduct.css';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const { addProduct, categories, brands, barcodes, loading } = useProducts();
+  const { addProduct,  barcodes, loading } = useProducts();
+    const { categories } = useCategories()
+    const { brands} = useBrands();
   const [imagePreview, setImagePreview] = useState(null);
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
@@ -78,31 +82,32 @@ export default function AddProduct() {
     e.preventDefault();
     const formData = new FormData(e.target);
     
-    // Get selected category, brand, and barcode objects
-    const selectedCategory = categories.find(c => c.categoryId === parseInt(formData.get('categoryId')));
-    const selectedBrand = brands.find(b => b.brandId === parseInt(formData.get('brandId')));
-    const selectedBarcode = barcodes.find(b => b.barcodeId === parseInt(formData.get('barcodeId')));
+  const selectedCategoryId = parseInt(formData.get('categoryId'));
+  const selectedBrandId = parseInt(formData.get('brandId'));
+  const selectedBarcodeId = parseInt(formData.get('barcodeId'));
 
-    const newProduct = {
-      date: formData.get('date') || new Date().toISOString().split('T')[0],
-      imageData: imagePreview || '',
-      productName: formData.get('productName'),
-      productDescription: formData.get('description'),
-      sku: formData.get('sku'),
-      shortName: formData.get('shortName'),
-      categoryId: parseInt(formData.get('categoryId')),
-      category: selectedCategory,
-      brandId: parseInt(formData.get('brandId')),
-      brand: selectedBrand,
-      barcodeId: parseInt(formData.get('barcodeId')),
-      barcode: selectedBarcode,
-      quantityAlert: parseInt(formData.get('quantityThreshold')),
-      // Add other fields as needed by your API
-      discounts: discounts,
-      status: 'active',
-      quantity: 0
-    };
+  const selectedCategory = categories.find(c => c.categoryId === selectedCategoryId);
+  const selectedBrand = brands.find(b => b.brandId === selectedBrandId);
+  const selectedBarcode = barcodes.find(b => b.barcodeId === selectedBarcodeId);
 
+  const newProduct = {
+    date: formData.get('date') || new Date().toISOString().split('T')[0],
+    imageData: imagePreview || '',
+    productName: formData.get('productName'),
+    productDescription: formData.get('description'),
+    sku: formData.get('sku'),
+    shortName: formData.get('shortName'),
+    categoryId: selectedCategoryId,
+    category: { categoryName: selectedCategory?.categoryName || '' },
+    brandId: selectedBrandId,
+    brand: { brandName: selectedBrand?.brandName || '' },
+    barcodeId: selectedBarcodeId,
+    barcode: { barcodeType: selectedBarcode?.barcodeType || '' },
+    quantityAlert: parseInt(formData.get('quantityThreshold')),
+    discounts: discounts,
+    status: 'active',
+    quantity: 0
+  };
     try {
       await addProduct(newProduct);
       navigate('/product/list');
@@ -185,17 +190,17 @@ export default function AddProduct() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="categoryId">Category</label>
-                  <select id="categoryId" name="categoryId" required>
-                    <option value="">Select Category</option>
-                    {categories.map(category => (
-                      <option key={category.categoryId} value={category.categoryId}>
-                        {category.categoryName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+             <div className="form-group">
+  <label htmlFor="categoryId">Category</label>
+  <select id="categoryId" name="categoryId" required>
+    <option value="">Select Category</option>
+    {categories.map(category => (
+      <option key={category.categoryId} value={category.categoryId}>
+        {category.categoryName}
+      </option>
+    ))}
+  </select>
+</div>
 
                 <div className="form-group">
                   <label htmlFor="brandId">Brand</label>
@@ -209,7 +214,7 @@ export default function AddProduct() {
                   </select>
                 </div>
 
-                <div className="form-group">
+               <div className="form-group">
                   <label htmlFor="barcodeId">Barcode Type</label>
                   <select id="barcodeId" name="barcodeId" required>
                     <option value="">Select Barcode Type</option>
