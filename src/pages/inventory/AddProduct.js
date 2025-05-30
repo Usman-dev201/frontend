@@ -7,6 +7,7 @@ import { useCategories } from '../../context/CategoryContext';
 import { useBrands } from '../../context/BrandContext'; 
 import '../../styles/AddProduct.css';
 
+
 export default function AddProduct() {
   const navigate = useNavigate();
   const { addProduct,  barcodes, loading } = useProducts();
@@ -226,30 +227,28 @@ export default function AddProduct() {
                   </select>
                 </div>
 
-                <div className="form-group image-group">
-                  <label htmlFor="image">Product Image</label>
-                  <div className="image-upload-container">
-                    <input
-                      type="file"
-                      id="image"
-                      name="image"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="image-input"
-                    />
-                    <span className="image-upload-placeholder">
-                      Click or drag image here
-                      <small>Supports JPG, PNG up to 5MB</small>
-                    </span>
-                    {imagePreview && (
-                      <div className="image-preview">
-                        <img src={imagePreview} alt="Product preview" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+           
+<div className="form-group">
+  <label htmlFor="image" className="form-label">Product image:</label>
+  <input
+    type="file"
+    id="image"
+    name="image"
+    accept="image/*"
+    onChange={handleImageChange}
+    className="simple-image-input"
+  />
+  <small className="form-text text-muted">
+    Max File size: 5MB<br />
+    Aspect ratio should be 1:1
+  </small>
+
+  {imagePreview && (
+    <div className="image-preview">
+      <img src={imagePreview} alt="Product preview" />
+    </div>
+  )}
+</div>
 
             <div className="description-section">
               <div className="form-group">
@@ -372,9 +371,14 @@ export default function AddProduct() {
                 Cancel
               </button>
             </div>
-          </div>
+           </div>
+            </div>
+            </div> 
         </form>
+        
+        </div>
       </div>
-    </div>
+  
+    
   );
 } 

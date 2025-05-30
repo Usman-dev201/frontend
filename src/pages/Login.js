@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <div className="auth-container">
-      <form onSubmit={handleLogin} className="auth-form">
+      <form onSubmit={handleLogin} className="auth-form" >
         <h2>Login</h2>
         
         <input

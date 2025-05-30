@@ -150,12 +150,12 @@
 .action-button {
   border: none;
   cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 24px 24px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 16px;
   color: white;
   transition: opacity 0.2s;
 }

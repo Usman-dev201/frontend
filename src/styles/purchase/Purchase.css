@@ -165,9 +165,9 @@
 
 /* Button Styles */
 .btn {
-  padding: 12px 24px;
+  padding: 17px 24px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
