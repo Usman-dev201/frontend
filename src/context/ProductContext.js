@@ -6,19 +6,19 @@ const ProductContext = createContext();
 
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
-  const [barcodes, setBarcodes] = useState([]);
+ 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, barcodesRes] = await Promise.all([
+        const [productsRes, ] = await Promise.all([
           api.get('/Product'),
-          api.get('/Barcode')
+          
         ]);
         
         setProducts(productsRes.data);
-        setBarcodes(barcodesRes.data);
+      
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -33,7 +33,7 @@ export function ProductProvider({ children }) {
 
   const addProduct = async (newProduct) => {
     try {
-      const response = await api.post('/Product', newProduct);
+      const response = await api.post('/Product', [newProduct]);
       setProducts([...products, response.data]);
       return response.data;
     } catch (error) {
@@ -64,7 +64,6 @@ export function ProductProvider({ children }) {
 
   const value = {
     products,
-    barcodes,
     loading,
     addProduct,
     deleteProduct,

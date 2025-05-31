@@ -1,46 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useBarcode } from '../../context/BarcodeContext';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
-import api from '../../api/axios'; // Axios instance
 import './BarcodeList.css';
 
 export default function BarcodeList() {
-  const [barcodes, setBarcodes] = useState([]);
+  const {
+    barcodes,
+    addBarcode,
+    updateBarcode,
+    deleteBarcode
+  } = useBarcode();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newBarcodeType, setNewBarcodeType] = useState('');
   const [editingBarcode, setEditingBarcode] = useState(null);
-  const [editForm, setEditForm] = useState({
-    barcodeType: ''
-  });
-
-  // Fetch barcodes from API
-  const fetchBarcodes = async () => {
-    try {
-      const res = await api.get('/Barcode');
-      setBarcodes(res.data);
-    } catch (err) {
-      console.error('Error fetching barcodes:', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchBarcodes();
-  }, []);
+  const [editForm, setEditForm] = useState({ barcodeType: '' });
 
   const handleAddBarcode = async (e) => {
     e.preventDefault();
     if (!newBarcodeType.trim()) return;
-
-    try {
-       await api.post('/Barcode', [
-        { barcodeType: newBarcodeType.trim() }
-      ]);
-      setNewBarcodeType('');
-      setShowAddForm(false);
-      fetchBarcodes();
-    } catch (err) {
-      console.error('Error adding barcode:', err);
-    }
+    await addBarcode(newBarcodeType);
+    setNewBarcodeType('');
+    setShowAddForm(false);
   };
 
   const handleEdit = (barcode) => {
@@ -51,27 +33,16 @@ export default function BarcodeList() {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editForm.barcodeType.trim()) return;
-
-    try {
-      await api.put(`/Barcode/${editingBarcode}`, {
-        barcodeType: editForm.barcodeType.trim()
-      });
-      setEditingBarcode(null);
-      fetchBarcodes();
-    } catch (err) {
-      console.error('Error updating barcode:', err);
-    }
+    await updateBarcode(editingBarcode, editForm.barcodeType);
+    setEditingBarcode(null);
   };
 
   const handleDelete = async (barcodeId) => {
-    if (!window.confirm('Are you sure you want to delete this barcode?')) return;
-    try {
-      await api.delete(`/Barcode/${barcodeId}`);
-      fetchBarcodes();
-    } catch (err) {
-      console.error('Error deleting barcode:', err);
+    if (window.confirm('Are you sure you want to delete this barcode?')) {
+      await deleteBarcode(barcodeId);
     }
   };
+
 
   return (
     <div className="dashboard">

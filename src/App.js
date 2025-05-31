@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
 import { CategoryProvider } from "./context/CategoryContext";
 import { BrandProvider } from "./context/BrandContext";
+import { BarcodeProvider } from './context/BarcodeContext';
 import { PurchaseProvider } from "./context/PurchaseContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -42,6 +43,7 @@ function App() {
           <ProductProvider>
             <CategoryProvider>
               <BrandProvider>
+                <BarcodeProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
@@ -272,6 +274,7 @@ function App() {
                   />
                   <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
+                </BarcodeProvider>
               </BrandProvider>
             </CategoryProvider>
           </ProductProvider>

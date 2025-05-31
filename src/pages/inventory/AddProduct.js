@@ -4,15 +4,17 @@ import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
+import { useBarcode } from '../../context/BarcodeContext';
 import { useBrands } from '../../context/BrandContext'; 
 import '../../styles/AddProduct.css';
 
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const { addProduct,  barcodes, loading } = useProducts();
+  const { addProduct,  loading } = useProducts();
     const { categories } = useCategories()
     const { brands} = useBrands();
+     const { barcodes } = useBarcode(); 
   const [imagePreview, setImagePreview] = useState(null);
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
@@ -105,9 +107,7 @@ export default function AddProduct() {
     barcodeId: selectedBarcodeId,
     barcode: { barcodeType: selectedBarcode?.barcodeType || '' },
     quantityAlert: parseInt(formData.get('quantityThreshold')),
-    discounts: discounts,
-    status: 'active',
-    quantity: 0
+  
   };
     try {
       await addProduct(newProduct);
@@ -215,18 +215,17 @@ export default function AddProduct() {
                   </select>
                 </div>
 
-               <div className="form-group">
-                  <label htmlFor="barcodeId">Barcode Type</label>
-                  <select id="barcodeId" name="barcodeId" required>
-                    <option value="">Select Barcode Type</option>
-                    {barcodes.map(barcode => (
-                      <option key={barcode.barcodeId} value={barcode.barcodeId}>
-                        {barcode.barcodeType}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+           <div className="form-group">
+  <label htmlFor="barcodeId">Barcode Type</label>
+  <select id="barcodeId" name="barcodeId" required>
+    <option value="">Select Barcode Type</option>
+    {barcodes.map(barcode => (
+      <option key={barcode.barcodeId} value={barcode.barcodeId}>
+        {barcode.barcodeType}
+      </option>
+    ))}
+  </select>
+</div>
            
 <div className="form-group">
   <label htmlFor="image" className="form-label">Product image:</label>
