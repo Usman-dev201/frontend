@@ -11,7 +11,7 @@ import '../../styles/AddProduct.css';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const { addProduct,  loading } = useProducts();
+  const { addProduct,  loading , setLoading} = useProducts();
     const { categories } = useCategories()
     const { brands} = useBrands();
      const { barcodes } = useBarcode(); 
@@ -109,14 +109,35 @@ export default function AddProduct() {
     quantityAlert: parseInt(formData.get('quantityThreshold')),
   
   };
-    try {
-      await addProduct(newProduct);
-      navigate('/product/list');
+     try {
+        // Show loading state if you have one
+        setLoading(true);
+        
+        await addProduct(newProduct);
+        
+        // Optional: Show success notification
+        alert('Product added successfully!');
+        
+        // Navigate to product list
+        navigate('/product/list');
     } catch (error) {
-      console.error('Failed to add product:', error);
-      // Handle error (show toast/message)
+        console.error('Failed to add product:', error);
+        
+        // Show error message
+        alert('Failed to add product. Please try again.');
+        
+        // Optionally: Handle specific error cases
+        if (error.response) {
+            if (error.response.status === 400) {
+                alert('Validation error: ' + error.response.data);
+            } else if (error.response.status === 500) {
+                alert('Server error. Please try again later.');
+            }
+        }
+    } finally {
+        setLoading(false);
     }
-  };
+};
 
   if (loading) {
     return <div>Loading...</div>;

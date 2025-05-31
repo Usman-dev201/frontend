@@ -9,65 +9,90 @@ export function ProductProvider({ children }) {
  
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [productsRes, ] = await Promise.all([
-          api.get('/Product'),
-          
-        ]);
-        
-        setProducts(productsRes.data);
-      
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProducts = async () => {
+  setLoading(true);
+  try {
+    const [productsRes] = await Promise.all([
+      api.get('/Product'),
+    ]);
+    setProducts(productsRes.data);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
-    fetchData();
-  }, []);
+useEffect(() => {
+  fetchProducts();
+}, []);
 
   
 
-  const addProduct = async (newProduct) => {
+ const addProduct = async (newProduct) => {
     try {
-      const response = await api.post('/Product', [newProduct]);
-      setProducts([...products, response.data]);
-      return response.data;
+        const response = await api.post('/Product', [newProduct]);
+        const addedProduct = response.data[0]; // Get the first product from the array
+        
+        // Include the category, brand, and barcode information from the original submission
+        const completeProduct = {
+            ...addedProduct,
+            category: newProduct.category,
+            brand: newProduct.brand,
+            barcode: newProduct.barcode
+        };
+        
+        setProducts(prev => [...prev, completeProduct]);
+        return completeProduct;
     } catch (error) {
-      console.error('Error adding product:', error);
-      throw error;
+        console.error('Error adding product:', error);
+        throw error;
     }
-  };
+};
 
   const deleteProduct = async (id) => {
     try {
       await api.delete(`/Product/${id}`);
-      setProducts(products.filter(product => product.id !== id));
+      setProducts(products.filter(product => product.productId !== id));
     } catch (error) {
       console.error('Error deleting product:', error);
     }
   };
-
-  const updateProduct = async (id, updatedProduct) => {
-    try {
-      const response = await api.put(`/Product/${id}`, updatedProduct);
-      setProducts(products.map(product => 
-        product.id === id ? response.data : product
-      ));
-    } catch (error) {
-      console.error('Error updating product:', error);
-    }
-  };
-
+const updateProduct = async (id, updatedProduct) => {
+  try {
+    setLoading(true);
+    const response = await api.put(`/Product/${id}`, updatedProduct);
+    const updated = response.data;
+await fetchProducts();
+    // Ensure all fields are properly updated including relationships
+    setProducts(prev =>
+      prev.map(product =>
+        product.productId === parseInt(id)
+          ? {
+              ...updated,
+              category: updatedProduct.category || product.category,
+              brand: updatedProduct.brand || product.brand,
+              barcode: updatedProduct.barcode || product.barcode,
+            }
+          : product
+      )
+    );
+    return updated;
+  } catch (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  } finally {
+    setLoading(false);
+  }
+};
   const value = {
     products,
     loading,
+     setLoading,
     addProduct,
     deleteProduct,
-    updateProduct
+    updateProduct,
+     fetchProducts,
   };
 
   return (

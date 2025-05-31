@@ -1,79 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { useProducts } from '../../context/ProductContext';
+import { useCategories } from '../../context/CategoryContext';
+import { useBarcode } from '../../context/BarcodeContext';
+import { useBrands } from '../../context/BrandContext';
 import '../../styles/AddProduct.css';
 
 export default function EditProduct() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { products, updateProduct } = useProducts();
-  const [formData, setFormData] = useState({
-    name: '',
-    shortName: '',
-    sku: '',
-    category: '',
-    brand: '',
-    barcodeType: '',
-    quantityThreshold: '',
-    description: '',
-    date: '',
-    image: null,
-    discounts: []
-  });
+  const { state } = useLocation();
+  const { updateProduct, loading, setLoading } = useProducts();
+  const { categories } = useCategories();
+  const { brands } = useBrands();
+  const { barcodes } = useBarcode();
 
-  const [imagePreview, setImagePreview] = useState(null);
+const [formData, setFormData] = useState({
+  productName: '',
+  shortName: '',
+  sku: '',
+  categoryId: '',
+  brandId: '',
+  barcodeId: '',
+  quantityAlert: '', 
+  productDescription: '',
+  date: new Date().toISOString().split('T')[0], // Default to today
+  imageData: null,
+ 
+});
+   const [imagePreview, setImagePreview] = useState(null);
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
   const [selectedDiscountType, setSelectedDiscountType] = useState('');
+
 
   // Sample discount codes and types
   const discountCodes = ['SUMMER2024', 'SPECIAL50'];
   const discountTypes = ['percentage', 'fixed'];
 
-  useEffect(() => {
-    const product = products.find(p => p.id === parseInt(id));
-    if (product) {
-      setFormData({
-        name: product.name || '',
-        shortName: product.shortName || '',
-        sku: product.sku || '',
-        category: product.category || '',
-        brand: product.brand || '',
-        barcodeType: product.barcodeType || '',
-        quantityThreshold: product.quantityThreshold || '',
-        description: product.description || '',
-        date: product.date || '',
-        image: product.image || null,
-        discounts: product.discounts || []
-      });
-      setImagePreview(product.image);
-      setDiscounts(product.discounts || []);
-    } else {
-      navigate('/product/list');
-    }
-  }, [id, navigate, products]);
+useEffect(() => {
+  if (state?.product) {
+    const { product } = state;
+    setFormData({
+      productName: product.productName || '',
+      shortName: product.shortName || '',
+      sku: product.sku || '',
+      categoryId: product.categoryId || '',
+      brandId: product.brandId || '',
+      barcodeId: product.barcodeId || '',
+      quantityAlert: product.quantityAlert || '', // Handle both cases
+      productDescription: product.productDescription || '',
+      date: product.date || new Date().toISOString().split('T')[0],
+      imageData: product.imageData || null,
+   
+    });
+    setImagePreview(product.imageData);
+    
+  }
+}, [state]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'image' && files[0]) {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
         setFormData(prev => ({
           ...prev,
-          image: reader.result
+          imageData: reader.result
         }));
       };
-      reader.readAsDataURL(files[0]);
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      reader.readAsDataURL(file);
     }
   };
+
 
   const handleDiscountCodeChange = (e) => {
     const code = e.target.value;
@@ -120,20 +130,64 @@ export default function EditProduct() {
       discount.discountType !== discountToRemove.discountType
     ));
   };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    setLoading(true);
+    
+    const selectedCategory = categories.find(c => c.categoryId === parseInt(formData.categoryId));
+    const selectedBrand = brands.find(b => b.brandId === parseInt(formData.brandId));
+    const selectedBarcode = barcodes.find(b => b.barcodeId === parseInt(formData.barcodeId));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+    const updatedProduct = {
+      productName: formData.productName,
+      shortName: formData.shortName,
+      sku: formData.sku,
+      productDescription: formData.productDescription,
+      date: formData.date,
+      quantityAlert: Number(formData.quantityAlert),
+      imageData: imagePreview,
+      categoryId: parseInt(formData.categoryId),
+      brandId: parseInt(formData.brandId),
+      barcodeId: parseInt(formData.barcodeId),
+      category: selectedCategory ? { 
+        categoryId: selectedCategory.categoryId,
+        categoryName: selectedCategory.categoryName 
+      } : null,
+      brand: selectedBrand ? { 
+        brandId: selectedBrand.brandId,
+        brandName: selectedBrand.brandName 
+      } : null,
+      barcode: selectedBarcode ? { 
+        barcodeId: selectedBarcode.barcodeId,
+        barcodeType: selectedBarcode.barcodeType 
+      } : null,
+      discounts: discounts.map(d => ({
+        ...d,
+        discountAmount: d.discountAmount ? Number(d.discountAmount) : 0,
+        discountPercentage: d.discountPercentage ? Number(d.discountPercentage) : 0
+      }))
+    };
+
+    console.log('Submitting:', updatedProduct);
     
-    // Update the product
-    updateProduct(parseInt(id), {
-      ...formData,
-      image: imagePreview,
-      discounts: discounts
-    });
+    await updateProduct(id, updatedProduct);
     
-    // Navigate back to product list
+    // Wait briefly to ensure state updates propagate
+    await new Promise(resolve => setTimeout(resolve, 50));
     navigate('/product/list');
-  };
+  } catch (error) {
+    console.error('Update error:', error);
+    console.error('Error response:', error.response?.data);
+    alert(`Update failed: ${error.response?.data?.message || error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
 
   return (
     <div className="add-product-page">
@@ -151,12 +205,11 @@ export default function EditProduct() {
                 <div className="form-group">
                   <label htmlFor="name">Product Name</label>
                   <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
+                  type="text"
+        name="productName"
+        value={formData.productName}
+        onChange={handleChange}
+        required
                     placeholder="Enter product name"
                   />
                 </div>
@@ -198,94 +251,95 @@ export default function EditProduct() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="quantityThreshold">Quantity Alert</label>
-                  <input
-                    type="number"
-                    id="quantityThreshold"
-                    name="quantityThreshold"
-                    value={formData.quantityThreshold}
-                    onChange={handleChange}
-                    min="0"
-                    required
-                    placeholder="Enter alert quantity"
-                  />
-                </div>
+              <div className="form-group">
+  <label htmlFor="quantityAlert">Quantity Alert</label>
+  <input
+    type="number"
+    id="quantityAlert"  
+    name="quantityAlert"  
+    value={formData.quantityAlert}  
+    onChange={handleChange}
+    min="0"
+    required
+    placeholder="Enter alert quantity"
+  />
+</div>
+
+              <div className="form-group">
+  <label htmlFor="categoryId">Category</label>
+  <select
+    id="categoryId"
+    name="categoryId"
+    value={formData.categoryId}
+    onChange={handleChange}
+    required
+  >
+    <option value="">Select Category</option>
+    {categories.map(category => (
+      <option key={category.categoryId} value={category.categoryId}>
+        {category.categoryName}
+      </option>
+    ))}
+  </select>
+</div>
+
+               <div className="form-group">
+  <label htmlFor="brandId">Brand</label>
+  <select
+    id="brandId"
+    name="brandId"
+    value={formData.brandId}
+    onChange={handleChange}
+    required
+  >
+    <option value="">Select Brand</option>
+    {brands.map(brand => (
+      <option key={brand.brandId} value={brand.brandId}>
+        {brand.brandName}
+      </option>
+    ))}
+  </select>
+</div>
 
                 <div className="form-group">
-                  <label htmlFor="category">Category</label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Food">Food</option>
-                    <option value="Books">Books</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
+  <label htmlFor="barcodeId">Barcode Type</label>
+  <select
+    id="barcodeId"
+    name="barcodeId"
+    value={formData.barcodeId}
+    onChange={handleChange}
+    required
+  >
+    <option value="">Select Barcode Type</option>
+    {barcodes.map(barcode => (
+      <option key={barcode.barcodeId} value={barcode.barcodeId}>
+        {barcode.barcodeType}
+      </option>
+    ))}
+  </select>
+</div>
 
-                <div className="form-group">
-                  <label htmlFor="brand">Brand</label>
-                  <select
-                    id="brand"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Brand</option>
-                    <option value="Apple">Apple</option>
-                    <option value="Samsung">Samsung</option>
-                    <option value="Nike">Nike</option>
-                    <option value="Adidas">Adidas</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
+               <div className="form-group">
+  <label htmlFor="image" className="form-label">Product image:</label>
+  <input
+    type="file"
+    id="image"
+    name="image"
+    accept="image/*"
+    onChange={handleImageChange}
+    className="simple-image-input"
+  />
+  <small className="form-text text-muted">
+    Max File size: 5MB<br />
+    Aspect ratio should be 1:1
+  </small>
 
-                <div className="form-group">
-                  <label htmlFor="barcodeType">Barcode Type</label>
-                  <select
-                    id="barcodeType"
-                    name="barcodeType"
-                    value={formData.barcodeType}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Barcode Type</option>
-                    <option value="UPC">UPC</option>
-                    <option value="EAN">EAN</option>
-                    <option value="Code 128">Code 128</option>
-                    <option value="QR Code">QR Code</option>
-                  </select>
-                </div>
-
-                <div className="form-group image-group">
-                  <label htmlFor="image">Product Image</label>
-                  <div className="image-upload-container">
-                    <input
-                      type="file"
-                      id="image"
-                      name="image"
-                      onChange={handleChange}
-                      accept="image/*"
-                      className="image-input"
-                    />
-                    <span className="image-upload-placeholder">
-                      Click or drag image here
-                      <small>Supports JPG, PNG up to 5MB</small>
-                    </span>
-                    {imagePreview && (
-                      <div className="image-preview">
-                        <img src={imagePreview} alt="Product preview" />
-                      </div>
-                    )}
-                  </div>
+  {imagePreview && (
+    <div className="image-preview">
+      <img src={imagePreview} alt="Product preview" />
+    </div>
+  )}
+</div>
                 </div>
               </div>
             </div>
@@ -294,13 +348,13 @@ export default function EditProduct() {
               <div className="form-group">
                 <label htmlFor="description">Description</label>
                 <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Enter product description"
-                  rows="4"
-                />
+  id="productDescription"
+  name="productDescription"
+  value={formData.productDescription}
+  onChange={handleChange}
+  placeholder="Enter product description"
+  rows="4"
+/>
               </div>
             </div>
 
@@ -412,7 +466,7 @@ export default function EditProduct() {
                 Cancel
               </button>
             </div>
-          </div>
+          
         </form>
       </div>
     </div>

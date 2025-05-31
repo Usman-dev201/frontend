@@ -6,12 +6,35 @@ import { useProducts } from '../../context/ProductContext';
 import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
- const navigate = useNavigate();
-  const { products, deleteProduct
+    const navigate = useNavigate();
+    const { products, deleteProduct, fetchProducts,loading } = useProducts();
+    const [showDropdown, setShowDropdown] = useState(null);
+   
+  useEffect(() => {
+  
 
-    
-  } = useProducts();
-  const [showDropdown, setShowDropdown] = useState(null);
+  const handleClickOutside = (event) => {
+    if (!event.target.closest('.action-dropdown')) {
+      setShowDropdown(null);
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, [fetchProducts]);
+    if (loading) {
+        return (
+            <div className="list-product-page">
+                <Topbar />
+                <Sidebar />
+                <div className="list-product-content">
+                    <div className="loading-spinner">
+                        Loading products...
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
  
 
@@ -26,13 +49,18 @@ export default function ListProduct() {
 
   // Handle edit function
   const handleEdit = (product) => {
-    navigate(`/product/edit/${product.productId}`, { state: { product } });
+    navigate(`/product/Edit/${product.productId}`, { state: { product } });
   };
 
- const handleDelete = (productId) => {
+ const handleDelete = async (productId) => {
   if (window.confirm('Are you sure you want to delete this product?')) {
-    deleteProduct(productId);
-    setShowDropdown(null);
+    try {
+      await deleteProduct(productId); // Wait for deletion to complete
+      setShowDropdown(null); // Close dropdown after successful deletion
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
   }
 };
 
@@ -41,16 +69,7 @@ export default function ListProduct() {
   };
 
   // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.action-dropdown')) {
-        setShowDropdown(null);
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
     <div className="list-product-page">
@@ -73,7 +92,7 @@ export default function ListProduct() {
               className="action-button add-button"
               onClick={() => navigate('/product/add')}
             >
-              <i className="fas fa-plus"></i>
+              <i className="fas fa-ellipsis-v"></i>
               Add Product
             </button>
           </div>
@@ -111,7 +130,7 @@ export default function ListProduct() {
                     {product.imageData ? (
                       <img 
                         src={product.imageData} 
-                        alt={product.name} 
+                        alt={product.productName} 
                         className="product-image"
                       />
                     ) : (
@@ -155,11 +174,11 @@ export default function ListProduct() {
                     <div className="action-dropdown">
                       <button 
                         className="action-button dropdown-toggle"
-                        onClick={() => toggleDropdown(product.id)}
+                        onClick={() => toggleDropdown(product.productId)}
                       >
                         Actions <i className="fas fa-chevron-down"></i>
                       </button>
-                      {showDropdown === product.id && (
+                      {showDropdown === product.productId && (
                         <div className="dropdown-menu">
                           <button 
                             className="edit-button"
@@ -170,7 +189,7 @@ export default function ListProduct() {
                           </button>
                           <button 
                             className="delete-button"
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleDelete(product.productId)}
                           >
                             <i className="fas fa-trash"></i>
                             Delete
