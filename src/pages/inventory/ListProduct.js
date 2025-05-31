@@ -2,19 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
-// import { useProducts } from '../../context/ProductContext';
+import { useProducts } from '../../context/ProductContext';
 import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
-  const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
+ const navigate = useNavigate();
+  const { products, deleteProduct
+
+    
+  } = useProducts();
   const [showDropdown, setShowDropdown] = useState(null);
 
-  useEffect(() => {
-    // Load products from localStorage when component mounts
-    const savedProducts = JSON.parse(localStorage.getItem('products') || '[]');
-    setProducts(savedProducts);
-  }, []);
+ 
 
   // Format price function to handle currency formatting
   const formatPrice = (price) => {
@@ -27,17 +26,15 @@ export default function ListProduct() {
 
   // Handle edit function
   const handleEdit = (product) => {
-    navigate(`/product/edit/${product.id}`, { state: { product } });
+    navigate(`/product/edit/${product.productId}`, { state: { product } });
   };
 
-  const handleDelete = (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      const updatedProducts = products.filter(product => product.id !== productId);
-      setProducts(updatedProducts);
-      localStorage.setItem('products', JSON.stringify(updatedProducts));
-    }
+ const handleDelete = (productId) => {
+  if (window.confirm('Are you sure you want to delete this product?')) {
+    deleteProduct(productId);
     setShowDropdown(null);
-  };
+  }
+};
 
   const toggleDropdown = (productId) => {
     setShowDropdown(showDropdown === productId ? null : productId);
@@ -107,13 +104,13 @@ export default function ListProduct() {
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product.id}>
-                  <td>{product.id}</td>
+                <tr key={product.productId}>
+                  <td>{product.productId}</td>
                   <td>{product.date || new Date().toLocaleDateString()}</td>
                   <td>
-                    {product.image ? (
+                    {product.imageData ? (
                       <img 
-                        src={product.image} 
+                        src={product.imageData} 
                         alt={product.name} 
                         className="product-image"
                       />
@@ -121,7 +118,7 @@ export default function ListProduct() {
                       <div className="no-image">No Image</div>
                     )}
                   </td>
-                  <td>{product.name}</td>
+                  <td>{product.productName}</td>
                   <td>{product.shortName || '-'}</td>
                   <td>{product.location}</td>
                   <td>{product.sku}</td>
@@ -142,16 +139,16 @@ export default function ListProduct() {
                       '-'
                     )}
                   </td>
-                  <td>{product.category}</td>
-                  <td>{product.brand}</td>
+                  <td>{product.category?.categoryName}</td>
+<td>{product.brand?.brandName}</td>
                   <td>
-                    <span className="barcode-type-badge">
-                      {product.barcodeType || 'N/A'}
-                    </span>
-                  </td>
+  <span className="barcode-type-badge">
+    {product.barcode?.barcodeType || 'N/A'}
+  </span>
+</td>
                   <td>
-                    <span className={`alert-badge ${product.quantity <= product.quantityThreshold ? 'alert' : ''}`}>
-                      {product.quantityThreshold}
+                    <span className={`alert-badge ${product.quantity <= product.quantityAlert  ? 'alert' : ''}`}>
+                      {product.quantityAlert }
                     </span>
                   </td>
                   <td>
