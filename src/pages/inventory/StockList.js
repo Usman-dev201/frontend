@@ -57,6 +57,7 @@ export default function StockList() {
                 <th>Purchase Price</th>
                 <th>Marked Price</th>
                 <th>Selling Price</th>
+                 <th>Current Stock</th>
                 <th>Current Stock Value (Purchase)</th>
                 <th>Current Stock Value (Selling)</th>
                 <th>Potential Profit</th>
@@ -76,6 +77,7 @@ export default function StockList() {
                   <td>{formatPrice(product.purchasePrice)}</td>
                   <td>{formatPrice(product.markedPrice)}</td>
                   <td>{formatPrice(product.sellingPrice)}</td>
+                  <td>{product.quantity}</td> 
                   <td>{formatPrice(calculateStockValue(product.purchasePrice, product.quantity))}</td>
                   <td>{formatPrice(calculateStockValue(product.sellingPrice, product.quantity))}</td>
                   <td>{formatPrice(calculatePotentialProfit(product.sellingPrice, product.purchasePrice, product.quantity))}</td>

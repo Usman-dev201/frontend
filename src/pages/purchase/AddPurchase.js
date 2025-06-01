@@ -7,11 +7,9 @@ import '../../styles/purchase/Purchase.css';
 
 export default function AddPurchase() {
   const navigate = useNavigate();
-  const { addPurchase, suppliers } = usePurchase();
-
-  // Add mock locations - replace with your actual locations
-  const locations = ['Warehouse A', 'Warehouse B', 'Store 1', 'Store 2', 'Distribution Center'];
-
+ const { addPurchase, suppliers, locations, purchaseStatuses, paymentStatuses } = usePurchase();
+ 
+  
   const [formData, setFormData] = useState({
     supplier: '',
     location: '',
@@ -240,22 +238,35 @@ export default function AddPurchase() {
     ));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
     const productsToSubmit = selectedProducts.map(product => ({
-      ...product,
-      totalAmount: calculateTotalAmount(product)
+      productId: product.id,
+      quantity: product.quantityPurchase,
+      unitCost: product.priceAfterDiscount,
+      
     }));
 
-    const newPurchase = {
-      ...formData,
+    const purchaseData = {
+      supplierId: formData.supplier,
+      locationId: formData.location,
+      purchaseDate: formData.date,
+      amountPaid: parseFloat(formData.amountPaid),
+      status: formData.purchaseStatus,
+      paymentStatus: formData.paymentStatus,
       products: productsToSubmit,
-      grandTotal: productsToSubmit.reduce((sum, p) => sum + p.totalAmount, 0)
+      // Include discounts and taxes if needed
     };
 
-    addPurchase(newPurchase);
+    await addPurchase(purchaseData);
     navigate('/purchase/list');
-  };
+  } catch (error) {
+    console.error('Error submitting purchase:', error);
+    // Add error handling (show toast/notification)
+  }
+};
 
   // Add delete product handler
   const handleDeleteProduct = (productId) => {
@@ -278,38 +289,44 @@ export default function AddPurchase() {
             <div style={formRowStyle}>
               <div style={formGroupStyle}>
                 <label htmlFor="supplier" style={labelStyle}>Supplier</label>
-                <select
-                  id="supplier"
-                  name="supplier"
-                  value={formData.supplier}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="">Select Supplier</option>
-                  {suppliers.map(supplier => (
-                    <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
-                  ))}
-                </select>
+              <select
+  id="supplier"
+  name="supplier"
+  value={formData.supplier}
+  onChange={handleChange}
+  className="form-select"
+  required
+  style={selectStyle}
+>
+  <option value="">Select Supplier</option>
+ {suppliers.map(supplier => (
+  <option key={supplier.supplierId} value={supplier.supplierId}>
+    {supplier.supplierName}
+  </option>
+))}
+  
+
+</select>
               </div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="location" style={labelStyle}>Location</label>
-                <select
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="">Select Location</option>
-                  {locations.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
+              <select
+  id="location"
+  name="location"
+  value={formData.location}
+  onChange={handleChange}
+  className="form-select"
+  required
+  style={selectStyle}
+>
+  <option value="">Select Location</option>
+ {locations.map(location => (
+  <option key={location.locationId} value={location.locationId}>
+    {location.locationName}
+  </option>
+))}
+</select>
               </div>
 
               <div style={formGroupStyle}>
@@ -347,36 +364,36 @@ export default function AddPurchase() {
 
               <div style={formGroupStyle}>
                 <label htmlFor="purchaseStatus" style={labelStyle}>Purchase Status</label>
-                <select
-                  id="purchaseStatus"
-                  name="purchaseStatus"
-                  value={formData.purchaseStatus}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
+               <select
+  id="purchaseStatus"
+  name="purchaseStatus"
+  value={formData.purchaseStatus}
+  onChange={handleChange}
+  required
+  style={selectStyle}
+>
+  <option value="">Select Purchase Status</option>
+  {purchaseStatuses.map(status => (
+    <option key={status} value={status}>{status}</option>
+  ))}
+</select>
               </div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="paymentStatus" style={labelStyle}>Payment Status</label>
-                <select
-                  id="paymentStatus"
-                  name="paymentStatus"
-                  value={formData.paymentStatus}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="Unpaid">Unpaid</option>
-                  <option value="Partial">Partial</option>
-                  <option value="Paid">Paid</option>
-                </select>
+               <select
+  id="paymentStatus"
+  name="paymentStatus"
+  value={formData.paymentStatus}
+  onChange={handleChange}
+  required
+  style={selectStyle}
+>
+  <option value="">Select Payment Status</option>
+  {paymentStatuses.map(status => (
+    <option key={status} value={status}>{status}</option>
+  ))}
+</select>
               </div>
             </div>
 
@@ -485,7 +502,7 @@ export default function AddPurchase() {
                       <th style={tableHeaderStyle}>Product Name</th>
                       <th style={tableHeaderStyle}>Mfg Date</th>
                       <th style={tableHeaderStyle}>Exp Date</th>
-                      <th style={tableHeaderStyle}>Discount Code</th>
+                    
                       <th style={tableHeaderStyle}>Quantity Purchase</th>
                       <th style={tableHeaderStyle}>Price Before Discount</th>
                       <th style={tableHeaderStyle}>Price After Discount</th>
@@ -552,14 +569,7 @@ export default function AddPurchase() {
                             style={inputStyle}
                           />
                         </td>
-                        <td style={tableCellStyle}>
-                          <input
-                            type="text"
-                            value={product.discountCode || ''}
-                            onChange={(e) => handleDiscountChange(product.id, e.target.value)}
-                            style={inputStyle}
-                          />
-                        </td>
+                     
                         <td style={tableCellStyle}>
                           <input
                             type="number"

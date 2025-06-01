@@ -7,7 +7,7 @@ import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
     const navigate = useNavigate();
-    const { products, deleteProduct, fetchProducts,loading } = useProducts();
+    const { products, deleteProduct,loading } = useProducts();
     const [showDropdown, setShowDropdown] = useState(null);
    
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function ListProduct() {
 
   document.addEventListener('mousedown', handleClickOutside);
   return () => document.removeEventListener('mousedown', handleClickOutside);
-}, [fetchProducts]);
+}, []);
     if (loading) {
         return (
             <div className="list-product-page">

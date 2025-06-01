@@ -1,65 +1,38 @@
 import React, { useState } from 'react';
+import { useLocation } from '../context/LocationContext'; // Adjust path as needed
 import './LocationListSection.css';
 
 export default function LocationListSection() {
-  // Mock data for demonstration
-  const [locationList, setLocationList] = useState([
-    { 
-      id: 'LOC001',
-      name: 'Warehouse A'
-    },
-    { 
-      id: 'LOC002',
-      name: 'Store 1'
-    },
-    { 
-      id: 'LOC003',
-      name: 'Distribution Center'
-    }
-  ]);
+  const { locationList, addLocation, updateLocation, deleteLocation } = useLocation();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
   const [editingLocation, setEditingLocation] = useState(null);
-  const [editForm, setEditForm] = useState({
-    id: '',
-    name: ''
-  });
+  const [editForm, setEditForm] = useState({ locationId: '', locationName: '' });
 
   const handleAddLocation = (e) => {
     e.preventDefault();
     if (newLocationName.trim()) {
-      setLocationList([...locationList, { 
-        id: `LOC${String(locationList.length + 1).padStart(3, '0')}`,
-        name: newLocationName
-      }]);
+      addLocation(newLocationName); // Expects one location name
       setNewLocationName('');
       setShowAddForm(false);
     }
   };
 
   const handleEdit = (location) => {
-    setEditingLocation(location.id);
-    setEditForm({
-      id: location.id,
-      name: location.name
-    });
+   setEditingLocation(location.locationId);
+     setEditForm({ locationId: location.locationId, locationName: location.locationName });
   };
 
   const handleSaveEdit = (e) => {
     e.preventDefault();
-    setLocationList(locationList.map(item => 
-      item.id === editingLocation ? {
-        ...item,
-        name: editForm.name
-      } : item
-    ));
+updateLocation(editForm.locationId, editForm.locationName);
     setEditingLocation(null);
   };
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this location?')) {
-      setLocationList(locationList.filter(item => item.id !== id));
+      deleteLocation(id);
     }
   };
 
@@ -117,23 +90,23 @@ export default function LocationListSection() {
           </thead>
           <tbody>
             {locationList.map((item) => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
+              <tr key={item.locationId}>
+                <td>{item.locationId}</td>
                 <td>
-                  {editingLocation === item.id ? (
+                 {editingLocation === item.locationId ? (
                     <input
                       type="text"
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                      value={editForm.locationName}
+                      onChange={(e) => setEditForm({...editForm, locationName: e.target.value})}
                       className="edit-input"
                     />
                   ) : (
-                    item.name
+                    item.locationName
                   )}
                 </td>
                 <td>
                   <div className="action-buttons">
-                    {editingLocation === item.id ? (
+                    {editingLocation === item.locationId ? (
                       <>
                         <button 
                           className="save-btn"
@@ -158,7 +131,7 @@ export default function LocationListSection() {
                         </button>
                         <button 
                           className="delete-btn"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(item.locationId)}
                         >
                           <i className="fas fa-trash"></i> Delete
                         </button>
@@ -173,4 +146,4 @@ export default function LocationListSection() {
       </div>
     </div>
   );
-} 
+}

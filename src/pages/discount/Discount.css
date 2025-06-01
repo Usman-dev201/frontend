@@ -26,7 +26,7 @@
   background: #4299e1;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 15px 20px;
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -72,7 +72,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 800px;
+  min-width: 1000px; /* increased to fit more columns */
 }
 
 .discount-table th,
@@ -110,26 +110,42 @@
   border-bottom: none;
 }
 
-/* Column widths */
+/* Column widths (rebalance for 6 data columns + Actions) */
 .discount-table th:nth-child(1),
 .discount-table td:nth-child(1) {
-  width: 15%;
+  width: 8%;
 }
 
 .discount-table th:nth-child(2),
 .discount-table td:nth-child(2) {
-  width: 35%;
+  width: 18%;
 }
 
 .discount-table th:nth-child(3),
 .discount-table td:nth-child(3) {
-  width: 20%;
+  width: 12%;
 }
 
 .discount-table th:nth-child(4),
 .discount-table td:nth-child(4) {
-  width: 30%;
+  width: 14%;
 }
+
+.discount-table th:nth-child(5),
+.discount-table td:nth-child(5) {
+  width: 14%;
+}
+
+.discount-table th:nth-child(6),
+.discount-table td:nth-child(6) {
+  width: 14%;
+}
+
+.discount-table th:nth-child(7),
+.discount-table td:nth-child(7) {
+  width: 20%;
+}
+
 
 /* Status badge styles */
 .status-badge {

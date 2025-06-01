@@ -1,161 +1,210 @@
-import React, { createContext, useContext, useState } from 'react';
+// src/context/PurchaseContext.js
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../api/axios';
 
-const PurchaseContext = createContext();
 
+
+  const PurchaseContext = createContext();  
+  
 export function PurchaseProvider({ children }) {
-  const [purchases, setPurchases] = useState([
-    {
-      id: 'PUR001',
-      location: 'Warehouse A',
-      supplier: 'ABC Suppliers',
-      amountPaid: 5000,
-      paymentDue: 2000,
-      grandTotal: 7000,
-      purchaseStatus: 'Completed',
-      paymentStatus: 'Partial',
-      date: '2024-03-15',
-      products: [
-        { name: 'Product 1', quantity: 10, price: 500 },
-        { name: 'Product 2', quantity: 5, price: 400 }
-      ]
-    },
-    {
-      id: 'PUR002',
-      location: 'Store 1',
-      supplier: 'XYZ Trading',
-      amountPaid: 3000,
-      paymentDue: 0,
-      grandTotal: 3000,
-      purchaseStatus: 'Completed',
-      paymentStatus: 'Paid',
-      date: '2024-03-14',
-      products: [
-        { name: 'Product 3', quantity: 3, price: 1000 }
-      ]
-    },
-    {
-      id: 'PUR003',
-      location: 'Warehouse B',
-      supplier: 'Global Imports',
-      amountPaid: 0,
-      paymentDue: 10000,
-      grandTotal: 10000,
-      purchaseStatus: 'Pending',
-      paymentStatus: 'Unpaid',
-      date: '2024-03-13',
-      products: [
-        { name: 'Product 4', quantity: 20, price: 500 }
-      ]
-    }
-  ]);
 
-  const [suppliers, setSuppliers] = useState([
-    {
-      id: 'SUP001',
-      name: 'ABC Suppliers',
-      contact: 'John Smith',
-      email: 'john@abcsuppliers.com',
-      phone: '+1 234-567-8901',
-      address: '123 Business St, City, Country',
-      status: 'Active'
-    },
-    {
-      id: 'SUP002',
-      name: 'XYZ Trading',
-      contact: 'Sarah Johnson',
-      email: 'sarah@xyztrading.com',
-      phone: '+1 234-567-8902',
-      address: '456 Trade Ave, City, Country',
-      status: 'Active'
-    }
-  ]);
+ const [purchases, setPurchases] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [purchaseStatuses, setPurchaseStatuses] = useState([]);
+  const [paymentStatuses, setPaymentStatuses] = useState([]);
 
-  const [returns, setReturns] = useState([
-    {
-      id: 'RET001',
-      purchaseId: 'PUR001',
-      supplier: 'ABC Suppliers',
-      returnDate: '2024-03-15',
-      reason: 'Damaged Goods',
-      amount: 1500,
-      status: 'Pending'
+  
+  const fetchPurchaseStatuses = async () => {
+    try {
+      const res = await api.get('/PurchaseRecord/purchaseStatuses');
+      setPurchaseStatuses(res.data);
+    } catch (error) {
+      console.error('Error fetching purchase statuses:', error);
     }
-  ]);
-
-  const addPurchase = (newPurchase) => {
-    const id = `PUR${String(purchases.length + 1).padStart(3, '0')}`;
-    const purchase = {
-      ...newPurchase,
-      id,
-      paymentDue: newPurchase.grandTotal - newPurchase.amountPaid
-    };
-    setPurchases(prev => [...prev, purchase]);
-    return id;
   };
 
-  const updatePurchase = (id, updatedPurchase) => {
-    setPurchases(prev => prev.map(purchase => 
-      purchase.id === id ? { ...purchase, ...updatedPurchase } : purchase
-    ));
+  const fetchPaymentStatuses = async () => {
+    try {
+      const res = await api.get('/PurchaseRecord/paymentStatuses');
+      setPaymentStatuses(res.data);
+    } catch (error) {
+      console.error('Error fetching payment statuses:', error);
+    }
+  };
+  const fetchSuppliers = async () => {
+  try {
+    const res = await api.get('/Supplier');
+    setSuppliers(res.data);
+  } catch (error) {
+    console.error('Error fetching suppliers:', error);
+  }
+};
+
+// Fetch locations
+const fetchLocations = async () => {
+  
+  try {
+    const res = await api.get('/Location');
+    setLocations(res.data);
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+  }
+};
+
+
+
+
+  // Fetch all purchases from backend
+  const fetchPurchases = async () => {
+    try {
+      const res = await api.get('/PurchaseRecord');
+      setPurchases(res.data);
+    } catch (error) {
+      console.error('Error fetching purchases:', error);
+    }
   };
 
-  const deletePurchase = (id) => {
-    setPurchases(prev => prev.filter(purchase => purchase.id !== id));
+  // Add new purchase
+  const addPurchase = async (purchaseData) => {
+    try {
+      const res = await api.post('/PurchaseRecord', purchaseData);
+      await fetchPurchases();
+      return res.data;
+    } catch (error) {
+      console.error('Error adding purchase:', error);
+    }
   };
 
+  // Edit purchase
+  const updatePurchase = async (id, updatedData) => {
+    try {
+      await api.put(`/PurchaseRecord/${id}`, updatedData);
+      await fetchPurchases();
+    } catch (error) {
+      console.error('Error updating purchase:', error);
+    }
+  };
+
+  // Delete purchase
+  const deletePurchase = async (id) => {
+    try {
+      await api.delete(`/PurchaseRecord/${id}`);
+      await fetchPurchases();
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+    }
+  };
+
+  // Add product purchase record
+  const addProductPurchaseRecord = async (data) => {
+    try {
+      const res = await api.post('/ProductPurchaseRecord', data);
+      return res.data;
+    } catch (error) {
+      console.error('Error adding product purchase record:', error);
+    }
+  };
+
+  // Delete product purchase record
+  const deleteProductPurchaseRecord = async (id) => {
+    try {
+      await api.delete(`/ProductPurchaseRecord/${id}`);
+    } catch (error) {
+      console.error('Error deleting product purchase record:', error);
+    }
+  };
+
+  // Add product purchase discount
+  const addProductPurchaseDiscount = async (data) => {
+    try {
+      const res = await api.post('/ProductPurchaseDiscount', data);
+      return res.data;
+    } catch (error) {
+      console.error('Error adding product purchase discount:', error);
+    }
+  };
+
+  // Delete product purchase discount
+  const deleteProductPurchaseDiscount = async (id) => {
+    try {
+      await api.delete(`/ProductPurchaseDiscount/${id}`);
+    } catch (error) {
+      console.error('Error deleting product purchase discount:', error);
+    }
+  };
+
+  // Add purchase discount
+  const addPurchaseDiscount = async (data) => {
+    try {
+      const res = await api.post('/PurchaseDiscount', data);
+      return res.data;
+    } catch (error) {
+      console.error('Error adding purchase discount:', error);
+    }
+  };
+
+  // Delete purchase discount
+  const deletePurchaseDiscount = async (id) => {
+    try {
+      await api.delete(`/PurchaseDiscount/${id}`);
+    } catch (error) {
+      console.error('Error deleting purchase discount:', error);
+    }
+  };
+
+  // Add purchase tax
+  const addPurchaseTax = async (data) => {
+    try {
+      const res = await api.post('/PurchaseTax', data);
+      return res.data;
+    } catch (error) {
+      console.error('Error adding purchase tax:', error);
+    }
+  };
+
+  // Delete purchase tax
+  const deletePurchaseTax = async (id) => {
+    try {
+      await api.delete(`/PurchaseTax/${id}`);
+    } catch (error) {
+      console.error('Error deleting purchase tax:', error);
+    }
+  };
+
+  // Optional: Get purchase by ID (from local state)
   const getPurchaseById = (id) => {
-    return purchases.find(purchase => purchase.id === id);
+    return purchases.find(p => p.id === id);
   };
 
-  const addSupplier = (newSupplier) => {
-    const id = `SUP${String(suppliers.length + 1).padStart(3, '0')}`;
-    const supplier = { ...newSupplier, id };
-    setSuppliers(prev => [...prev, supplier]);
-    return id;
-  };
-
-  const updateSupplier = (id, updatedSupplier) => {
-    setSuppliers(prev => prev.map(supplier => 
-      supplier.id === id ? { ...supplier, ...updatedSupplier } : supplier
-    ));
-  };
-
-  const deleteSupplier = (id) => {
-    setSuppliers(prev => prev.filter(supplier => supplier.id !== id));
-  };
-
-  const addReturn = (newReturn) => {
-    const id = `RET${String(returns.length + 1).padStart(3, '0')}`;
-    const returnItem = { ...newReturn, id };
-    setReturns([...returns, returnItem]);
-    return id;
-  };
-
-  const updateReturn = (id, updatedReturn) => {
-    setReturns(returns.map(returnItem => 
-      returnItem.id === id ? { ...returnItem, ...updatedReturn } : returnItem
-    ));
-  };
-
-  const deleteReturn = (id) => {
-    setReturns(returns.filter(returnItem => returnItem.id !== id));
-  };
+  useEffect(() => {
+    fetchPurchases();
+     fetchSuppliers();
+  fetchLocations();
+   fetchPurchaseStatuses();
+    fetchPaymentStatuses();
+  }, []);
 
   return (
     <PurchaseContext.Provider value={{
       purchases,
-      suppliers,
-      returns,
+       suppliers,
+    locations,
+     purchaseStatuses,
+        paymentStatuses,
+      fetchPurchases,
       addPurchase,
       updatePurchase,
       deletePurchase,
       getPurchaseById,
-      addSupplier,
-      updateSupplier,
-      deleteSupplier,
-      addReturn,
-      updateReturn,
-      deleteReturn
+      addProductPurchaseRecord,
+      deleteProductPurchaseRecord,
+      addProductPurchaseDiscount,
+      deleteProductPurchaseDiscount,
+      addPurchaseDiscount,
+      deletePurchaseDiscount,
+      addPurchaseTax,
+      deletePurchaseTax
     }}>
       {children}
     </PurchaseContext.Provider>
@@ -168,4 +217,4 @@ export function usePurchase() {
     throw new Error('usePurchase must be used within a PurchaseProvider');
   }
   return context;
-} 
+}

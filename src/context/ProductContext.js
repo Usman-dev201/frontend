@@ -61,15 +61,21 @@ useEffect(() => {
 const updateProduct = async (id, updatedProduct) => {
   try {
     setLoading(true);
+
     const response = await api.put(`/Product/${id}`, updatedProduct);
     const updated = response.data;
-await fetchProducts();
-    // Ensure all fields are properly updated including relationships
+const productId = parseInt(id);
+    // Directly update the product in local state
     setProducts(prev =>
       prev.map(product =>
-        product.productId === parseInt(id)
+        product.productId === productId
           ? {
-              ...updated,
+              ...product,
+              ...updated, 
+             productName: updatedProduct.productName || product.productName,
+              shortName: updatedProduct.shortName || product.shortName,
+              sku: updatedProduct.sku || product.sku,
+              quantityAlert: updatedProduct.quantityAlert || product.quantityAlert,
               category: updatedProduct.category || product.category,
               brand: updatedProduct.brand || product.brand,
               barcode: updatedProduct.barcode || product.barcode,
