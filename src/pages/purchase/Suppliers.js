@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
+import { useSupplier } from '../../context/SupplierContext';
 import '../../styles/purchase/Purchase.css';
 
 export default function Suppliers() {
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier } = useSupplier();
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -13,31 +15,6 @@ export default function Suppliers() {
     phone: '',
     address: ''
   });
-
-  // Mock data for demonstration
-  const [suppliers, setSuppliers] = useState([
-    {
-      id: 1,
-      name: 'ABC Electronics',
-      email: 'john@abcelectronics.com',
-      phone: '+1 234-567-8901',
-      address: '123 Tech Street, Silicon Valley, CA'
-    },
-    {
-      id: 2,
-      name: 'Global Supplies',
-      email: 'sarah@globalsupplies.com',
-      phone: '+1 234-567-8902',
-      address: '456 Business Ave, New York, NY'
-    },
-    {
-      id: 3,
-      name: 'Tech Solutions',
-      email: 'mike@techsolutions.com',
-      phone: '+1 234-567-8903',
-      address: '789 Innovation Road, Boston, MA'
-    }
-  ]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -50,13 +27,9 @@ export default function Suppliers() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isEditing) {
-      // Update existing supplier
-      setSuppliers(prev => prev.map(supplier => 
-        supplier.id === formData.id ? formData : supplier
-      ));
+      updateSupplier(formData);
     } else {
-      // Add new supplier
-      setSuppliers(prev => [...prev, { ...formData, id: Date.now() }]);
+      addSupplier(formData);
     }
     handleCloseForm();
   };
@@ -69,7 +42,7 @@ export default function Suppliers() {
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this supplier?')) {
-      setSuppliers(prev => prev.filter(supplier => supplier.id !== id));
+      deleteSupplier(id);
     }
   };
 
@@ -84,6 +57,7 @@ export default function Suppliers() {
       address: ''
     });
   };
+
 
   return (
     <div className="purchase-page">

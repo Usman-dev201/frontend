@@ -9,7 +9,7 @@ import { PurchaseProvider } from "./context/PurchaseContext";
 import { DiscountProvider } from './context/DiscountContext';
 import { TaxProvider } from "./context/TaxContext"; 
 import { LocationProvider } from "./context/LocationContext";
-
+import { SupplierProvider } from "./context/SupplierContext"; 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
@@ -51,6 +51,7 @@ function App() {
               <BrandProvider>
                 <BarcodeProvider>
                     <LocationProvider>
+                       <SupplierProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
@@ -281,6 +282,7 @@ function App() {
                   />
                   <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
+                </SupplierProvider>
                 </LocationProvider>
                 </BarcodeProvider>
               </BrandProvider>
