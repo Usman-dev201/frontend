@@ -6,6 +6,8 @@ import { useProducts } from '../../context/ProductContext';
 import { useCategories } from '../../context/CategoryContext';
 import { useBarcode } from '../../context/BarcodeContext';
 import { useBrands } from '../../context/BrandContext'; 
+import { uploadImage } from '../../context/ProductContext';
+
 import '../../styles/AddProduct.css';
 
 
@@ -81,9 +83,16 @@ export default function AddProduct() {
     ));
   };
 
+
+
    const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
+    
+     const formData = new FormData(e.target);
+
+  const imageFile = formData.get('image'); // Moved inside
+  let uploadedImageUrl = '';
+ 
     
   const selectedCategoryId = parseInt(formData.get('categoryId'));
   const selectedBrandId = parseInt(formData.get('brandId'));
@@ -92,10 +101,20 @@ export default function AddProduct() {
   const selectedCategory = categories.find(c => c.categoryId === selectedCategoryId);
   const selectedBrand = brands.find(b => b.brandId === selectedBrandId);
   const selectedBarcode = barcodes.find(b => b.barcodeId === selectedBarcodeId);
+  if (imageFile && imageFile.size > 0) {
+    try {
+      uploadedImageUrl = await uploadImage(imageFile);
+    } catch (uploadError) {
+      console.error('Image upload failed:', uploadError);
+      alert('Image upload failed. Please try again.');
+      setLoading(false);
+      return;
+    }
+  }
 
   const newProduct = {
     date: formData.get('date') || new Date().toISOString().split('T')[0],
-    imageData: imagePreview || '',
+    imageData: uploadedImageUrl,
     productName: formData.get('productName'),
     productDescription: formData.get('description'),
     sku: formData.get('sku'),

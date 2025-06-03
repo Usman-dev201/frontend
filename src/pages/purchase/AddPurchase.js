@@ -7,12 +7,21 @@ import '../../styles/purchase/Purchase.css';
 
 export default function AddPurchase() {
   const navigate = useNavigate();
- const { addPurchase, suppliers, locations, purchaseStatuses, paymentStatuses } = usePurchase();
+ const { 
+  addPurchase,
+  suppliers,
+  locations,
+  purchaseStatuses,
+  paymentStatuses,
+  fetchProducts,
+  products 
+} = usePurchase();
+  
  
   
-  const [formData, setFormData] = useState({
-    supplier: '',
-    location: '',
+ const [formData, setFormData] = useState({
+    supplierId: '',
+    locationId: '',
     date: new Date().toISOString().split('T')[0],
     amountPaid: '',
     purchaseStatus: 'Pending',
@@ -20,7 +29,8 @@ export default function AddPurchase() {
     products: []
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
+ const [searchTerm, setSearchTerm] = useState('');
+  const [availableProducts, setAvailableProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [discountList, setDiscountList] = useState([]);
   const [purchaseDiscountList, setPurchaseDiscountList] = useState([]);
@@ -48,33 +58,6 @@ export default function AddPurchase() {
     effectiveDate: new Date().toISOString().split('T')[0]
   });
 
-  // Mock product data - replace with your actual product data
-  const [availableProducts, setAvailableProducts] = useState([
-    { 
-      id: 'PRD001',
-      name: 'Product 1',
-      lotId: 'LOT001',
-      mfgDate: '2024-01-01',
-      expDate: '2024-12-31',
-      quantityPurchase: 0,
-      priceBeforeDiscount: 120.00,
-      priceAfterDiscount: 100.00,
-      profitMargin: 20,
-      unitSellingPrice: 150.00
-    },
-    { 
-      id: 'PRD002',
-      name: 'Product 2',
-      lotId: 'LOT002',
-      mfgDate: '2024-02-01',
-      expDate: '2024-11-30',
-      quantityPurchase: 0,
-      priceBeforeDiscount: 180.00,
-      priceAfterDiscount: 150.00,
-      profitMargin: 25,
-      unitSellingPrice: 200.00
-    }
-  ]);
 
   // Mock discount codes - replace with your actual discount codes
   const discountCodes = ['DISC10', 'DISC20', 'DISC30', 'BULK15'];
@@ -83,6 +66,12 @@ export default function AddPurchase() {
   // Mock tax names - replace with your actual tax data
   const taxNames = ['GST', 'VAT', 'Sales Tax', 'Service Tax'];
 
+  
+useEffect(() => {
+    if (searchTerm.trim() !== '') {
+      fetchProducts(searchTerm);
+    }
+  }, [searchTerm, fetchProducts]); 
   useEffect(() => {
     // Add discount when both dropdowns are selected
     if (currentDiscount.discountCode && currentDiscount.discountType) {
@@ -161,15 +150,43 @@ export default function AddPurchase() {
     }
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
+ const handleSearch = async (e) => {
+  const searchTerm = e.target.value;
+  setSearchTerm(searchTerm);
+  
+  // Only search if term is at least 2 characters long
+  if (searchTerm.length >= 2) {
+    try {
+      await fetchProducts(searchTerm);
+    } catch (error) {
+      console.error('Error searching products:', error);
+    }
+  }
+};
 
-  const filteredProducts = availableProducts.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.lotId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+ 
+const handleProductSelect = (product) => {
+  // Check if product already exists in availableProducts
+  const exists = availableProducts.some(p => p.id === product.productId);
+  
+  if (!exists) {
+    const newProduct = {
+      id: product.productId,
+      name: product.productName,
+      lotId: '', // You can generate this or leave empty
+      mfgDate: '',
+      expDate: '',
+      quantityPurchase: 1, // Default quantity
+      priceBeforeDiscount: 0,
+      priceAfterDiscount: 0,
+      profitMargin: 0,
+      unitSellingPrice: 0
+    };
+    
+    setAvailableProducts(prev => [...prev, newProduct]);
+    setSelectedProducts(prev => [...prev, newProduct]);
+  }
+};
   const calculateTotalAmount = (product) => {
     return product.quantityPurchase * product.priceAfterDiscount;
   };
@@ -238,33 +255,37 @@ export default function AddPurchase() {
     ));
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
-  
   try {
     const productsToSubmit = selectedProducts.map(product => ({
-      productId: product.id,
-      quantity: product.quantityPurchase,
-      unitCost: product.priceAfterDiscount,
-      
+      productId: product.productId,
+      quantity: parseFloat(product.quantityPurchase),
+      priceBeforeDiscount: parseFloat(product.priceBeforeDiscount),
+      priceAfterDiscount: parseFloat(product.priceAfterDiscount),
+      profitMargin: parseFloat(product.profitMargin),
+      unitSellingPrice: parseFloat(product.unitSellingPrice),
+      mfgDate: product.mfgDate,
+      expDate: product.expDate,
+      discounts: [] // Include if needed
     }));
 
     const purchaseData = {
-      supplierId: formData.supplier,
-      locationId: formData.location,
-      purchaseDate: formData.date,
+      supplierId: formData.supplierId,
+      locationId: formData.locationId,
+      date: formData.date,
       amountPaid: parseFloat(formData.amountPaid),
-      status: formData.purchaseStatus,
+      purchaseStatus: formData.purchaseStatus,
       paymentStatus: formData.paymentStatus,
       products: productsToSubmit,
-      // Include discounts and taxes if needed
+      purchaseDiscounts: [], 
+      purchaseTaxes: [] 
     };
 
     await addPurchase(purchaseData);
     navigate('/purchase/list');
   } catch (error) {
     console.error('Error submitting purchase:', error);
-    // Add error handling (show toast/notification)
   }
 };
 
@@ -477,17 +498,55 @@ export default function AddPurchase() {
               </button>
             </div>
 
-            <div className="section-content">
-              <div className="search-bar" style={{ marginBottom: '20px' }}>
-                <input
-                  type="text"
-                  placeholder="Search products by name or lot ID..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  style={inputStyle}
-                />
-              </div>
-
+           <div className="search-bar" style={{ marginBottom: '20px', position: 'relative' }}>
+  <input
+    type="text"
+    placeholder="Search products by name or ID..."
+    value={searchTerm}
+    onChange={handleSearch}
+    style={inputStyle}
+  />
+  
+  {/* Search results dropdown */}
+  {searchTerm.length >= 2 && (
+    <div style={{
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      right: 0,
+      backgroundColor: '#fff',
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      zIndex: 1000,
+      maxHeight: '300px',
+      overflowY: 'auto',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }}>
+      {products.length > 0 ? (
+        products.map(product => (
+          <div 
+            key={product.productId}
+            onClick={() => handleProductSelect(product)}
+            style={{
+              padding: '10px',
+              cursor: 'pointer',
+              borderBottom: '1px solid #eee',
+              ':hover': {
+                backgroundColor: '#f5f5f5'
+              }
+            }}
+          >
+            {product.productName} (ID: {product.productId})
+          </div>
+        ))
+      ) : (
+        <div style={{ padding: '10px', color: '#666' }}>
+          No products found
+        </div>
+      )}
+    </div>
+  )}
+</div>
               {/* Products Table */}
               <div className="table-responsive" style={{ overflowX: 'auto', marginBottom: '30px' }}>
                 <table className="data-table" style={{
@@ -512,37 +571,30 @@ export default function AddPurchase() {
                       <th style={tableHeaderStyle}>Action</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={tableCellStyle}>
-                          <input
-                            type="text"
-                            value={product.lotId}
-                            onChange={(e) => {
-                              const updatedProducts = availableProducts.map(p => 
-                                p.id === product.id ? { ...p, lotId: e.target.value } : p
-                              );
-                              setAvailableProducts(updatedProducts);
-                            }}
-                            style={inputStyle}
-                            placeholder="Enter Lot ID"
-                          />
-                        </td>
-                        <td style={tableCellStyle}>
-                          <input
-                            type="text"
-                            value={product.name}
-                            onChange={(e) => {
-                              const updatedProducts = availableProducts.map(p => 
-                                p.id === product.id ? { ...p, name: e.target.value } : p
-                              );
-                              setAvailableProducts(updatedProducts);
-                            }}
-                            style={inputStyle}
-                            placeholder="Enter Product Name"
-                          />
-                        </td>
+                <tbody>
+  {availableProducts.map((product) => {
+    // Find the full product details from the fetched products
+    const fullProduct = products.find(p => p.productId === product.id) || {};
+    
+    return (
+      <tr key={product.id} style={{ borderBottom: '1px solid #eee' }}>
+        <td style={tableCellStyle}>
+          <input
+            type="text"
+            value={product.lotId}
+            onChange={(e) => {
+              const updatedProducts = availableProducts.map(p => 
+                p.id === product.id ? { ...p, lotId: e.target.value } : p
+              );
+              setAvailableProducts(updatedProducts);
+            }}
+            style={inputStyle}
+            placeholder="Enter Lot ID"
+          />
+        </td>
+        <td style={tableCellStyle}>
+          {fullProduct.productName || product.name}
+        </td>
                         <td style={tableCellStyle}>
                           <input
                             type="date"
@@ -651,8 +703,9 @@ export default function AddPurchase() {
                           </button>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
+                     );
+  })}
+</tbody>
                 </table>
               </div>
 
@@ -822,7 +875,8 @@ export default function AddPurchase() {
                 </div>
               </div>
             </div>
-          </div>
+            
+         
 
           {/* Purchase Discounts Section */}
           <div className="section-container" style={sectionStyle}>
@@ -1178,7 +1232,28 @@ export default function AddPurchase() {
     </div>
   );
 }
+// const searchResultsStyle = {
+//   position: 'absolute',
+//   top: '100%',
+//   left: 0,
+//   right: 0,
+//   backgroundColor: '#fff',
+//   border: '1px solid #ddd',
+//   borderRadius: '4px',
+//   zIndex: 1000,
+//   maxHeight: '300px',
+//   overflowY: 'auto',
+//   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+// };
 
+// const searchResultItemStyle = {
+//   padding: '10px',
+//   cursor: 'pointer',
+//   borderBottom: '1px solid #eee',
+//   ':hover': {
+//     backgroundColor: '#f5f5f5'
+//   }
+// };
 // Shared styles at the bottom of the file
 const tableHeaderStyle = {
   padding: '12px 15px',

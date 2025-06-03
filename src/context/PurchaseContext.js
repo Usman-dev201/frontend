@@ -8,11 +8,15 @@ import api from '../api/axios';
   
 export function PurchaseProvider({ children }) {
 
- const [purchases, setPurchases] = useState([]);
+  const [purchases, setPurchases] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
   const [purchaseStatuses, setPurchaseStatuses] = useState([]);
   const [paymentStatuses, setPaymentStatuses] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [discountCodes, setDiscountCodes] = useState([]);
+  const [discountTypes, setDiscountTypes] = useState([]);
+  const [taxNames, setTaxNames] = useState([]);
 
   
   const fetchPurchaseStatuses = async () => {
@@ -51,11 +55,15 @@ const fetchLocations = async () => {
     console.error('Error fetching locations:', error);
   }
 };
+ const fetchProducts = async (searchTerm = '') => {
+    try {
+      const res = await api.get(`/Product/search?term=${searchTerm}&t=${Date.now()}`);
+      setProducts(res.data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
 
-
-
-
-  // Fetch all purchases from backend
   const fetchPurchases = async () => {
     try {
       const res = await api.get('/PurchaseRecord');
@@ -64,15 +72,30 @@ const fetchLocations = async () => {
       console.error('Error fetching purchases:', error);
     }
   };
-
-  // Add new purchase
-  const addPurchase = async (purchaseData) => {
+ const fetchDiscountCodes = async () => {
     try {
-      const res = await api.post('/PurchaseRecord', purchaseData);
-      await fetchPurchases();
-      return res.data;
+      const res = await api.get('/Discount');
+      setDiscountCodes(res.data);
     } catch (error) {
-      console.error('Error adding purchase:', error);
+      console.error('Error fetching discount codes:', error);
+    }
+  };
+
+  const fetchDiscountTypes = async () => {
+    try {
+      const res = await api.get('/PurchaseRecord/discountType');
+      setDiscountTypes(res.data);
+    } catch (error) {
+      console.error('Error fetching discount types:', error);
+    }
+  };
+
+  const fetchTaxNames = async () => {
+    try {
+      const res = await api.get('/Tax');
+      setTaxNames(res.data);
+    } catch (error) {
+      console.error('Error fetching tax names:', error);
     }
   };
 
@@ -115,13 +138,13 @@ const fetchLocations = async () => {
     }
   };
 
-  // Add product purchase discount
   const addProductPurchaseDiscount = async (data) => {
     try {
       const res = await api.post('/ProductPurchaseDiscount', data);
       return res.data;
     } catch (error) {
       console.error('Error adding product purchase discount:', error);
+      throw error;
     }
   };
 
@@ -134,16 +157,15 @@ const fetchLocations = async () => {
     }
   };
 
-  // Add purchase discount
-  const addPurchaseDiscount = async (data) => {
+   const addPurchaseDiscount = async (data) => {
     try {
       const res = await api.post('/PurchaseDiscount', data);
       return res.data;
     } catch (error) {
       console.error('Error adding purchase discount:', error);
+      throw error;
     }
   };
-
   // Delete purchase discount
   const deletePurchaseDiscount = async (id) => {
     try {
@@ -153,13 +175,13 @@ const fetchLocations = async () => {
     }
   };
 
-  // Add purchase tax
-  const addPurchaseTax = async (data) => {
+ const addPurchaseTax = async (data) => {
     try {
       const res = await api.post('/PurchaseTax', data);
       return res.data;
     } catch (error) {
       console.error('Error adding purchase tax:', error);
+      throw error;
     }
   };
 
@@ -176,24 +198,115 @@ const fetchLocations = async () => {
   const getPurchaseById = (id) => {
     return purchases.find(p => p.id === id);
   };
+ const addPurchase = async (purchaseData) => {
+    try {
+      // Create the purchase record
+      const purchaseRes = await api.post('/PurchaseRecord', {
+        supplierId: purchaseData.supplierId,
+        locationId: purchaseData.locationId,
+        date: purchaseData.date,
+        amountPaid: purchaseData.amountPaid,
+        purchaseStatus: purchaseData.purchaseStatus,
+        paymentStatus: purchaseData.paymentStatus
+      });
 
-  useEffect(() => {
+      const purchaseId = purchaseRes.data.purchaseId;
+
+      // Add product purchase records
+      const productPromises = purchaseData.products.map(async (product) => {
+        const productRes = await api.post('/ProductPurchaseRecord', {
+          purchaseId,
+          productId: product.productId,
+          quantityPurchased: product.quantity,
+          purchasePriceBeforeDiscount: product.priceBeforeDiscount,
+          purchasePriceAfterDiscount: product.priceAfterDiscount,
+          profitMargin: product.profitMargin,
+          unitSellingPrice: product.unitSellingPrice,
+          mgfDate: product.mfgDate,
+          expiryDate: product.expDate
+        });
+
+        // Add product purchase discounts if any
+        if (product.discounts && product.discounts.length > 0) {
+          const discountPromises = product.discounts.map(discount => 
+            api.post('/ProductPurchaseDiscount', {
+              lotId: product.lotId,
+              discountId: discount.discountId,
+              discountType: discount.discountType,
+              discountAmount: discount.discountAmount,
+              discountPercentage: discount.discountPercentage
+            })
+          );
+          await Promise.all(discountPromises);
+        }
+
+        return productRes.data;
+      });
+
+      await Promise.all(productPromises);
+
+      // Add purchase discounts if any
+      if (purchaseData.purchaseDiscounts && purchaseData.purchaseDiscounts.length > 0) {
+        const purchaseDiscountPromises = purchaseData.purchaseDiscounts.map(discount =>
+          api.post('/PurchaseDiscount', {
+            purchaseId,
+            discountId: discount.discountId,
+            discountType: discount.discountType,
+            discountAmount: discount.discountAmount,
+            discountPercentage: discount.discountPercentage
+          })
+        );
+        await Promise.all(purchaseDiscountPromises);
+      }
+
+      // Add purchase taxes if any
+      if (purchaseData.purchaseTaxes && purchaseData.purchaseTaxes.length > 0) {
+        const purchaseTaxPromises = purchaseData.purchaseTaxes.map(tax =>
+          api.post('/PurchaseTax', {
+            purchaseId,
+            taxId: tax.taxId,
+            locationId: purchaseData.locationId,
+            taxPercentage: tax.taxPercentage,
+            effectiveDate: tax.effectiveDate
+          })
+        );
+        await Promise.all(purchaseTaxPromises);
+      }
+
+      await fetchPurchases();
+      return purchaseRes.data;
+    } catch (error) {
+      console.error('Error adding purchase:', error);
+      throw error;
+    }
+  };
+ useEffect(() => {
     fetchPurchases();
-     fetchSuppliers();
-  fetchLocations();
-   fetchPurchaseStatuses();
+    fetchSuppliers();
+    fetchLocations();
+    fetchPurchaseStatuses();
     fetchPaymentStatuses();
+    fetchProducts();
+    fetchDiscountCodes();
+    fetchDiscountTypes();
+    fetchTaxNames();
   }, []);
-
   return (
     <PurchaseContext.Provider value={{
       purchases,
-       suppliers,
-    locations,
-     purchaseStatuses,
-        paymentStatuses,
+      suppliers,
+      locations,
+      purchaseStatuses,
+      paymentStatuses,
+      products,
+      discountCodes,
+      discountTypes,
+      taxNames,
+      fetchProducts,
       fetchPurchases,
       addPurchase,
+
+
       updatePurchase,
       deletePurchase,
       getPurchaseById,

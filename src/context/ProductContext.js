@@ -2,8 +2,20 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import api from '../api/axios';
 
-const ProductContext = createContext();
 
+export const uploadImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post('/Product/upload-image', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  return response.data.imageUrl; // e.g., /images/abc123.jpg
+};
+const ProductContext = createContext();
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
  

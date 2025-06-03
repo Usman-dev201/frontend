@@ -9,10 +9,10 @@ export default function Suppliers() {
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    id: null,
-    name: '',
+    supplierId: '',
+    supplierName: '',
     email: '',
-    phone: '',
+    contactNo: '',
     address: ''
   });
 
@@ -50,14 +50,13 @@ export default function Suppliers() {
     setShowForm(false);
     setIsEditing(false);
     setFormData({
-      id: null,
-      name: '',
+      supplierId: '',
+      supplierName: '',
       email: '',
-      phone: '',
+      contactNo: '',
       address: ''
     });
   };
-
 
   return (
     <div className="purchase-page">
@@ -68,7 +67,17 @@ export default function Suppliers() {
           <h2>Suppliers</h2>
           <button 
             className="btn btn-primary"
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setShowForm(true);
+              setIsEditing(false);
+              setFormData({
+                supplierId: '',
+                supplierName: '',
+                email: '',
+                contactNo: '',
+                address: ''
+              });
+            }}
             style={{
               padding: '8px 16px',
               fontSize: '14px',
@@ -107,36 +116,21 @@ export default function Suppliers() {
                 gap: '20px',
                 marginBottom: '20px'
               }}>
+                {/* Supplier Name */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="name" style={{
-                    fontWeight: '500',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}>Supplier Name</label>
+                  <label htmlFor="supplierName">Supplier Name</label>
                   <input
                     type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
+                    id="supplierName"
+                    name="supplierName"
+                    value={formData.supplierName}
                     onChange={handleChange}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontSize: '14px',
-                      height: '40px',
-                      boxSizing: 'border-box'
-                    }}
                   />
                 </div>
+                {/* Email */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="email" style={{
-                    fontWeight: '500',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}>Email</label>
+                  <label htmlFor="email">Email</label>
                   <input
                     type="email"
                     id="email"
@@ -144,47 +138,23 @@ export default function Suppliers() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontSize: '14px',
-                      height: '40px',
-                      boxSizing: 'border-box'
-                    }}
                   />
                 </div>
+                {/* Phone */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="phone" style={{
-                    fontWeight: '500',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}>Phone</label>
+                  <label htmlFor="contactNo">Phone</label>
                   <input
                     type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="contactNo"
+                    name="contactNo"
+                    value={formData.contactNo}
                     onChange={handleChange}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontSize: '14px',
-                      height: '40px',
-                      boxSizing: 'border-box'
-                    }}
                   />
                 </div>
+                {/* Address */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="address" style={{
-                    fontWeight: '500',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}>Address</label>
+                  <label htmlFor="address">Address</label>
                   <input
                     type="text"
                     id="address"
@@ -192,62 +162,17 @@ export default function Suppliers() {
                     value={formData.address}
                     onChange={handleChange}
                     required
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontSize: '14px',
-                      height: '40px',
-                      boxSizing: 'border-box'
-                    }}
                   />
                 </div>
               </div>
 
-              <div style={{ 
-                display: 'flex', 
-                gap: '15px',
-                justifyContent: 'flex-end'
-              }}>
-                <button type="submit" className="btn btn-success" style={{
-                  padding: '10px 20px',
-                  borderRadius: '4px',
-                  border: 'none',
-                  backgroundColor: '#28a745',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  height: '40px',
-                  minWidth: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '14px'
-                }}>
+              {/* Submit and Cancel Buttons */}
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end' }}>
+                <button type="submit" className="btn btn-success">
                   <i className="fas fa-save"></i>
                   {isEditing ? 'Update Supplier' : 'Save Supplier'}
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={handleCloseForm}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: '4px',
-                    border: 'none',
-                    backgroundColor: '#6c757d',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    height: '40px',
-                    minWidth: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontSize: '14px'
-                  }}
-                >
+                <button type="button" className="btn btn-secondary" onClick={handleCloseForm}>
                   <i className="fas fa-times"></i>
                   Cancel
                 </button>
@@ -256,107 +181,34 @@ export default function Suppliers() {
           </div>
         )}
 
-        <div className="table-container" style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <table className="data-table" style={{
-            width: '100%',
-            borderCollapse: 'collapse'
-          }}>
+        {/* Supplier List Table */}
+        <div className="table-container">
+          <table className="data-table">
             <thead>
               <tr>
-                <th style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #dee2e6',
-                  fontWeight: '600',
-                  color: '#495057'
-                }}>ID</th>
-                <th style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #dee2e6',
-                  fontWeight: '600',
-                  color: '#495057'
-                }}>Supplier Name</th>
-                <th style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #dee2e6',
-                  fontWeight: '600',
-                  color: '#495057'
-                }}>Email</th>
-                <th style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #dee2e6',
-                  fontWeight: '600',
-                  color: '#495057'
-                }}>Phone</th>
-                <th style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #dee2e6',
-                  fontWeight: '600',
-                  color: '#495057'
-                }}>Address</th>
-                <th style={{
-                  padding: '12px 15px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #dee2e6',
-                  fontWeight: '600',
-                  color: '#495057'
-                }}>Actions</th>
+                <th>ID</th>
+                <th>Supplier Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {suppliers.map((supplier) => (
-                <tr key={supplier.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '12px 15px' }}>{supplier.id}</td>
-                  <td style={{ padding: '12px 15px' }}>{supplier.name}</td>
-                  <td style={{ padding: '12px 15px' }}>{supplier.email}</td>
-                  <td style={{ padding: '12px 15px' }}>{supplier.phone}</td>
-                  <td style={{ padding: '12px 15px' }}>{supplier.address}</td>
-                  <td style={{ padding: '12px 15px' }}>
+                <tr key={supplier.supplierId}>
+                  <td>{supplier.supplierId}</td>
+                  <td>{supplier.supplierName}</td>
+                  <td>{supplier.email}</td>
+                  <td>{supplier.contactNo}</td>
+                  <td>{supplier.address}</td>
+                  <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => handleEdit(supplier)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          border: 'none',
-                          backgroundColor: '#007bff',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
+                      <button className="btn btn-primary" onClick={() => handleEdit(supplier)}>
                         <i className="fas fa-edit"></i>
                         Edit
                       </button>
-                      <button 
-                        className="btn btn-danger"
-                        onClick={() => handleDelete(supplier.id)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          border: 'none',
-                          backgroundColor: '#dc3545',
-                          color: '#fff',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
+                      <button className="btn btn-danger" onClick={() => handleDelete(supplier.supplierId)}>
                         <i className="fas fa-trash"></i>
                         Delete
                       </button>
@@ -370,4 +222,4 @@ export default function Suppliers() {
       </div>
     </div>
   );
-} 
+}
