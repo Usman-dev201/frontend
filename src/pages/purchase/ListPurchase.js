@@ -7,8 +7,16 @@ import '../../styles/purchase/Purchase.css';
 
 export default function ListPurchase() {
   const navigate = useNavigate();
-  const { purchases, deletePurchase } = usePurchase();
+  const { purchases, deletePurchase, suppliers, locations } = usePurchase();
+const getSupplierName = (id) => {
+    const supplier = suppliers.find(s => s.supplierId === id);
+    return supplier ? supplier.supplierName : 'N/A';
+  };
 
+  const getLocationName = (id) => {
+    const location = locations.find(l => l.locationId === id);
+    return location ? location.locationName : 'N/A';
+  };
   const handleAddPurchase = () => {
     navigate('/purchase/add');
   };
@@ -57,11 +65,11 @@ export default function ListPurchase() {
             </thead>
             <tbody>
               {purchases.map((purchase) => (
-                <tr key={purchase.id}>
-                  <td>{purchase.id}</td>
+                <tr key={purchase.purchaseId}>
+                  <td>{purchase.purchaseId}</td>
                   <td className="purchase-date">{purchase.date}</td>
-                  <td>{purchase.supplier || '-'}</td>
-                  <td>{purchase.location || '-'}</td>
+                 <td>{getSupplierName(purchase.supplierId)}</td>
+    <td>{getLocationName(purchase.locationId)}</td>
                   <td className="purchase-amount">
                     ${purchase.totalAmount?.toFixed(2) || '0.00'}
                   </td>

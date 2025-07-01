@@ -4,7 +4,7 @@ import api from '../api/axios';
 
 
 
-  const PurchaseContext = createContext();  
+ export const PurchaseContext = createContext();  
   
 export function PurchaseProvider({ children }) {
 
@@ -15,10 +15,18 @@ export function PurchaseProvider({ children }) {
   const [paymentStatuses, setPaymentStatuses] = useState([]);
   const [products, setProducts] = useState([]);
   const [discountCodes, setDiscountCodes] = useState([]);
-  const [discountTypes, setDiscountTypes] = useState([]);
   const [taxNames, setTaxNames] = useState([]);
+const [discountTypes, setDiscountTypes] = useState([]); 
+  const [productDiscounts, setProductDiscounts] = useState([]);
 
-  
+const fetchProductDiscountsWithProductName = async () => {
+  try {
+    const res = await api.get('/ProductPurchaseDiscount/WithProductInfo');
+    setProductDiscounts(res.data);
+  } catch (error) {
+    console.error('Error fetching product discounts with names:', error);
+  }
+};
   const fetchPurchaseStatuses = async () => {
     try {
       const res = await api.get('/PurchaseRecord/purchaseStatuses');
@@ -55,14 +63,18 @@ const fetchLocations = async () => {
     console.error('Error fetching locations:', error);
   }
 };
- const fetchProducts = async (searchTerm = '') => {
-    try {
-      const res = await api.get(`/Product/search?term=${searchTerm}&t=${Date.now()}`);
-      setProducts(res.data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+const fetchProducts = async (searchTerm = '') => {
+  try {
+    if (searchTerm.trim() === '') {
+      setProducts([]); // or set to some default list if desired
+      return;
     }
-  };
+    const res = await api.get(`/Product/search?term=${searchTerm}&t=${Date.now()}`);
+    setProducts(res.data);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
+};
 
   const fetchPurchases = async () => {
     try {
@@ -83,7 +95,7 @@ const fetchLocations = async () => {
 
   const fetchDiscountTypes = async () => {
     try {
-      const res = await api.get('/PurchaseRecord/discountType');
+      const res = await api.get('/ProductPurchaseDiscount/discountType');
       setDiscountTypes(res.data);
     } catch (error) {
       console.error('Error fetching discount types:', error);
@@ -120,14 +132,29 @@ const fetchLocations = async () => {
   };
 
   // Add product purchase record
-  const addProductPurchaseRecord = async (data) => {
-    try {
-      const res = await api.post('/ProductPurchaseRecord', data);
-      return res.data;
-    } catch (error) {
-      console.error('Error adding product purchase record:', error);
-    }
-  };
+ const addProductPurchaseRecord = async (data) => {
+  try {
+    // Ensure we're sending an array even for single products
+    const payload = data.map(item => ({
+      purchaseId: item.purchaseId,
+      productId: item.productId,
+      mgfDate: item.mgfDate || null,
+      expiryDate: item.expiryDate || null,
+      quantityPurchased: item.quantityPurchased,
+      purchasePriceBeforeDiscount: item.purchasePriceBeforeDiscount,
+      purchasePriceAfterDiscount: item.purchasePriceAfterDiscount,
+      totalAmount: item.totalAmount,
+      profitMargin: item.profitMargin,
+      unitSellingPrice: item.unitSellingPrice
+    }));
+    const res = await api.post('/ProductPurchaseRecord', payload);
+    return res.data;
+  } catch (error) {
+    console.error('Error adding product purchase record:', error);
+     console.error('Validation errors:', error.response?.data?.errors); 
+    throw error;
+  }
+};
 
   // Delete product purchase record
   const deleteProductPurchaseRecord = async (id) => {
@@ -198,88 +225,33 @@ const fetchLocations = async () => {
   const getPurchaseById = (id) => {
     return purchases.find(p => p.id === id);
   };
- const addPurchase = async (purchaseData) => {
-    try {
-      // Create the purchase record
-      const purchaseRes = await api.post('/PurchaseRecord', {
-        supplierId: purchaseData.supplierId,
-        locationId: purchaseData.locationId,
-        date: purchaseData.date,
-        amountPaid: purchaseData.amountPaid,
-        purchaseStatus: purchaseData.purchaseStatus,
-        paymentStatus: purchaseData.paymentStatus
-      });
+const addPurchase = async (purchaseData) => {
+  try {
+     const locationObj = locations.find(l => l.locationId === purchaseData.locationId);
+    const supplierObj = suppliers.find(s => s.supplierId === purchaseData.supplierId);
 
-      const purchaseId = purchaseRes.data.purchaseId;
-
-      // Add product purchase records
-      const productPromises = purchaseData.products.map(async (product) => {
-        const productRes = await api.post('/ProductPurchaseRecord', {
-          purchaseId,
-          productId: product.productId,
-          quantityPurchased: product.quantity,
-          purchasePriceBeforeDiscount: product.priceBeforeDiscount,
-          purchasePriceAfterDiscount: product.priceAfterDiscount,
-          profitMargin: product.profitMargin,
-          unitSellingPrice: product.unitSellingPrice,
-          mgfDate: product.mfgDate,
-          expiryDate: product.expDate
-        });
-
-        // Add product purchase discounts if any
-        if (product.discounts && product.discounts.length > 0) {
-          const discountPromises = product.discounts.map(discount => 
-            api.post('/ProductPurchaseDiscount', {
-              lotId: product.lotId,
-              discountId: discount.discountId,
-              discountType: discount.discountType,
-              discountAmount: discount.discountAmount,
-              discountPercentage: discount.discountPercentage
-            })
-          );
-          await Promise.all(discountPromises);
-        }
-
-        return productRes.data;
-      });
-
-      await Promise.all(productPromises);
-
-      // Add purchase discounts if any
-      if (purchaseData.purchaseDiscounts && purchaseData.purchaseDiscounts.length > 0) {
-        const purchaseDiscountPromises = purchaseData.purchaseDiscounts.map(discount =>
-          api.post('/PurchaseDiscount', {
-            purchaseId,
-            discountId: discount.discountId,
-            discountType: discount.discountType,
-            discountAmount: discount.discountAmount,
-            discountPercentage: discount.discountPercentage
-          })
-        );
-        await Promise.all(purchaseDiscountPromises);
-      }
-
-      // Add purchase taxes if any
-      if (purchaseData.purchaseTaxes && purchaseData.purchaseTaxes.length > 0) {
-        const purchaseTaxPromises = purchaseData.purchaseTaxes.map(tax =>
-          api.post('/PurchaseTax', {
-            purchaseId,
-            taxId: tax.taxId,
-            locationId: purchaseData.locationId,
-            taxPercentage: tax.taxPercentage,
-            effectiveDate: tax.effectiveDate
-          })
-        );
-        await Promise.all(purchaseTaxPromises);
-      }
-
-      await fetchPurchases();
-      return purchaseRes.data;
-    } catch (error) {
-      console.error('Error adding purchase:', error);
-      throw error;
-    }
-  };
+    const payload = [{
+      supplierId: purchaseData.supplierId,
+      locationId: purchaseData.locationId,
+      Location: locationObj || null,      
+      Supplier: supplierObj || null,   
+     date: new Date(purchaseData.date).toISOString().split('T')[0],
+      amountPaid: purchaseData.amountPaid,
+      purchaseStatus: purchaseData.purchaseStatus,
+      paymentStatus: purchaseData.paymentStatus,
+    }];
+  console.log("Payload being sent to API:", payload);
+    const res = await api.post('/PurchaseRecord', payload);
+     return res.data[0]; 
+  }catch (error) {
+  if (error.response) {
+    console.error("Backend error response:", error.response.data);
+    console.error("Validation errors:", error.response.data.errors);
+  } else {
+    console.error("Unknown error:", error);
+  }
+}
+};
  useEffect(() => {
     fetchPurchases();
     fetchSuppliers();
@@ -302,6 +274,8 @@ const fetchLocations = async () => {
       discountCodes,
       discountTypes,
       taxNames,
+        fetchProductDiscountsWithProductName,
+    productDiscounts,
       fetchProducts,
       fetchPurchases,
       addPurchase,

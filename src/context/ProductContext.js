@@ -18,16 +18,18 @@ export const uploadImage = async (file) => {
 const ProductContext = createContext();
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
- 
+ const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProducts = async () => {
   setLoading(true);
   try {
-    const [productsRes] = await Promise.all([
+    const [productsRes, stocksRes] = await Promise.all([
       api.get('/Product'),
+       api.get('/Stock') 
     ]);
     setProducts(productsRes.data);
+    setStocks(stocksRes.data);
   } catch (error) {
     console.error('Error fetching products:', error);
   } finally {
@@ -105,6 +107,7 @@ const productId = parseInt(id);
 };
   const value = {
     products,
+     stocks,
     loading,
      setLoading,
     addProduct,

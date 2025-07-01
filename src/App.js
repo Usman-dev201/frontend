@@ -129,7 +129,7 @@ function App() {
                     }
                   />
                   <Route
-                    path="/tax"
+                    path="/taxes" 
                     element={
                       <ProtectedRoute>
                         <TaxList />
