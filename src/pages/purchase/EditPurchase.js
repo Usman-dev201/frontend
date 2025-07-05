@@ -13,15 +13,15 @@ export default function EditPurchase() {
   // Add mock locations - replace with your actual locations
   const locations = ['Warehouse A', 'Warehouse B', 'Store 1', 'Store 2', 'Distribution Center'];
 
-  const [formData, setFormData] = useState({
-    supplier: '',
-    location: '',
-    date: '',
-    amountPaid: '',
-    purchaseStatus: 'Pending',
-    paymentStatus: 'Unpaid',
-    products: []
-  });
+ const [formData, setFormData] = useState({
+  supplierId: '',
+  locationId: '',
+  date: '',
+  amountPaid: '',
+  purchaseStatus: 'Pending',
+  paymentStatus: 'Unpaid'
+});
+
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -78,44 +78,26 @@ export default function EditPurchase() {
     minWidth: 'fit-content'
   };
 
-  const addButtonStyle = {
-    padding: '0 12px',
-    borderRadius: '4px',
-    border: 'none',
-    backgroundColor: '#28a745',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: '11px',
-    fontWeight: '500',
-    height: '30px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 1px 3px rgba(40, 167, 69, 0.2)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.2px',
-    whiteSpace: 'nowrap',
-    minWidth: 'fit-content'
+ useEffect(() => {
+  const fetchAndSetPurchase = async () => {
+    try {
+      const purchase = await getPurchaseById(id);
+      setFormData({
+        supplierId: purchase.supplierId,
+        locationId: purchase.locationId,
+        date: purchase.date,
+        amountPaid: purchase.amountPaid,
+        purchaseStatus: purchase.purchaseStatus,
+        paymentStatus: purchase.paymentStatus
+      });
+    } catch (error) {
+      console.error('Error loading purchase for edit:', error);
+      navigate('/purchase/list'); // fallback
+    }
   };
 
-  useEffect(() => {
-    const purchase = getPurchaseById(id);
-    if (purchase) {
-      setFormData({
-        ...purchase,
-        amountPaid: purchase.amountPaid?.toString() || '',
-        products: purchase.products || []
-      });
-      setSelectedProducts(purchase.products || []);
-      setDiscountList(purchase.discounts || []);
-      setPurchaseDiscountList(purchase.purchaseDiscounts || []);
-      setTaxList(purchase.taxes || []);
-    } else {
-      navigate('/purchase/list');
-    }
-  }, [id, getPurchaseById, navigate]);
+  fetchAndSetPurchase();
+}, [id, getPurchaseById, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -205,19 +187,23 @@ export default function EditPurchase() {
     setTaxList(prev => prev.filter(tax => tax.id !== id));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const updatedPurchase = {
-      ...formData,
-      products: selectedProducts,
-      discounts: discountList,
-      purchaseDiscounts: purchaseDiscountList,
-      taxes: taxList,
-      amountPaid: Number(formData.amountPaid)
-    };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const updatedPurchase = {
+    supplierId: parseInt(formData.supplierId),
+    locationId: parseInt(formData.locationId),
+    date: formData.date,
+    amountPaid: parseFloat(formData.amountPaid),
+    purchaseStatus: formData.purchaseStatus,
+    paymentStatus: formData.paymentStatus
+  };
 
-    updatePurchase(id, updatedPurchase);
+  try {
+    await updatePurchase(id, updatedPurchase);
     navigate('/purchase/list');
+  } catch (error) {
+    console.error("Failed to update purchase:", error);
+    }
   };
 
   return (
@@ -235,38 +221,41 @@ export default function EditPurchase() {
             <div style={formRowStyle}>
               <div style={formGroupStyle}>
                 <label htmlFor="supplier" style={labelStyle}>Supplier</label>
-                <select
-                  id="supplier"
-                  name="supplier"
-                  value={formData.supplier}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="">Select Supplier</option>
-                  {suppliers.map(supplier => (
-                    <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
-                  ))}
-                </select>
+           <select
+  id="supplierId"
+  name="supplierId"
+  value={formData.supplierId}
+  onChange={handleChange}
+  required
+  style={selectStyle}
+>
+  <option value="">Select Supplier</option>
+  {suppliers.map(supplier => (
+    <option key={supplier.supplierId} value={supplier.supplierId}>
+      {supplier.name}
+    </option>
+  ))}
+</select>
               </div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="location" style={labelStyle}>Location</label>
                 <select
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="">Select Location</option>
-                  {locations.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
+  id="locationId"
+  name="locationId"
+  value={formData.locationId}
+  onChange={handleChange}
+  required
+  style={selectStyle}
+>
+  <option value="">Select Location</option>
+  {locations.map(loc => (
+    <option key={loc.locationId} value={loc.locationId}>
+      {loc.locationName}
+    </option>
+  ))}
+</select>
+
               </div>
 
               <div style={formGroupStyle}>
@@ -1196,3 +1185,25 @@ const sectionHeaderStyle = {
   borderBottom: '1px solid #eee',
   marginBottom: '20px'
 }; 
+
+  const addButtonStyle = {
+    padding: '0 12px',
+    borderRadius: '4px',
+    border: 'none',
+    backgroundColor: '#28a745',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '11px',
+    fontWeight: '500',
+    height: '30px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(40, 167, 69, 0.2)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.2px',
+    whiteSpace: 'nowrap',
+    minWidth: 'fit-content'
+  };

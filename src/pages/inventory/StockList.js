@@ -10,10 +10,10 @@ export default function StockList() {
  const { stocks = [], loading, error } = useProducts();
   // Format price function to handle currency formatting
   const formatPrice = (price) => {
-    if (!price) return '₹0.00';
-    return new Intl.NumberFormat('en-IN', {
+    if (!price) return 'Rs0.00';
+    return new Intl.NumberFormat('en-PK', {
       style: 'currency',
-      currency: 'INR'
+      currency: 'PKR'
     }).format(price);
   };
  if (loading) return <div>Loading stock data...</div>;

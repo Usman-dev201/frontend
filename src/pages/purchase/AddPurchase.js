@@ -1,4 +1,4 @@
-import React, { useState, useEffect ,useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
@@ -8,21 +8,48 @@ import '../../styles/purchase/Purchase.css';
 export default function AddPurchase() {
   const navigate = useNavigate();
   const { 
-    addPurchase, 
     suppliers, 
     locations, 
     purchaseStatuses, 
     paymentStatuses,
     fetchProducts,
-    products ,
-    addProductPurchaseRecord ,
+    products,
+    addPurchase,
+    addProductPurchaseRecord,
     addProductPurchaseDiscount,
+    addPurchaseDiscount,
+    addPurchaseTax,
+    taxNames,
+    taxLocations,
+    discountCodes,
+    discountTypes,
+    deleteProductPurchaseRecord,
+    deleteProductPurchaseDiscount,
+    deletePurchaseDiscount,
+      deletePurchaseTax,
   } = usePurchase();
   
- 
+  const calculateDiscountedPrice = (product, discount) => {
+    if (!discount || !discount.discountType) return product.purchasePriceBeforeDiscount;
+
+    const priceBefore = parseFloat(product.purchasePriceBeforeDiscount) || 0;
+    
+    if (discount.discountType === 'Fixed') {
+      const discountAmount = parseFloat(discount.discountAmount) || 0;
+      return Math.max(0, priceBefore - discountAmount).toFixed(2);
+    } 
+    else if (discount.discountType === 'Percentage') {
+      const discountPercentage = parseFloat(discount.discountPercentage) || 0;
+      const discountAmount = priceBefore * (discountPercentage / 100);
+      return Math.max(0, priceBefore - discountAmount).toFixed(2);
+    }
+    
+    return priceBefore;
+  };
 
   const searchInputRef = useRef(null);
-  const [purchaseRecord, setPurchaseRecord] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     supplierId: '',
     locationId: '',
@@ -30,77 +57,54 @@ export default function AddPurchase() {
     amountPaid: '',
     purchaseStatus: 'Pending',
     paymentStatus: 'Unpaid',
-    products: []
   });
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [setAvailableProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [discountList, setDiscountList] = useState([]);
-  const { discountCodes, discountTypes } = usePurchase();
   const [purchaseDiscountList, setPurchaseDiscountList] = useState([]);
-  
-  const [currentDiscount, setCurrentDiscount] = useState({
-  productSearch: '',
-  productId: '',
-  productName: '',
-  discountCode: '',
-  discountType: '',
-  discountAmount: '',
-  discountPercentage: ''
-
-});
-const [currentPurchaseDiscount, setCurrentPurchaseDiscount] = useState({
-  id: '',
-  discountCode: '',
-  discountType: '',
-  discountAmount: '',
-  discountPercentage: ''
-});
   const [taxList, setTaxList] = useState([]);
 
-  const [currentTax, setCurrentTax] = useState({
+  const [currentDiscount, setCurrentDiscount] = useState({
+    productSearch: '',
+    productId: '',
+    productName: '',
+    loTId: '',
+    discountCode: '',
+    discountType: '',
+    discountAmount: '',
+    discountPercentage: ''
+  });
 
+  const [currentPurchaseDiscount, setCurrentPurchaseDiscount] = useState({
     id: '',
+    discountCode: '',
+    discountType: '',
+    discountAmount: '',
+    discountPercentage: ''
+  });
+
+  const [currentTax, setCurrentTax] = useState({
+    id: '',
+    taxId: '',
     taxName: '',
-    location: '',
+    taxLocationId: '',
     taxPercentage: '',
     effectiveDate: new Date().toISOString().split('T')[0]
   });
 
-  // Mock tax names - replace with your actual tax data
-  const taxNames = ['GST', 'VAT', 'Sales Tax', 'Service Tax'];
-
-
-useEffect(() => {
-  if (searchTerm?.trim()) {
-    fetchProducts(searchTerm);
-  }
-}, [searchTerm, fetchProducts]);
+  
+  const getTaxNameById = (taxId) => {
+    return taxNames.find(t => t.taxId === taxId)?.taxName || '';
+  };
 
   useEffect(() => {
-    // Add discount when both dropdowns are selected
-    if (currentDiscount.discountCode && currentDiscount.discountType) {
-      const newDiscount = {
-        id: Date.now().toString(),
-        lotId: '',
-        discountCode: currentDiscount.discountCode,
-        discountType: currentDiscount.discountType,
-        discountAmount: '',
-        discountPercentage: ''
-      };
-      setDiscountList(prev => [...prev, newDiscount]);
-      setCurrentDiscount({
-        lotId: '',
-        discountCode: '',
-        discountType: '',
-        discountAmount: '',
-        discountPercentage: ''
-      });
+    if (searchTerm?.trim()) {
+      fetchProducts(searchTerm);
     }
-  }, [currentDiscount.discountCode, currentDiscount.discountType]);
+  }, [searchTerm, fetchProducts]);
 
   useEffect(() => {
-    // Add purchase discount when both dropdowns are selected
     if (currentPurchaseDiscount.discountCode && currentPurchaseDiscount.discountType) {
       const newDiscount = {
         id: Date.now().toString(),
@@ -120,24 +124,6 @@ useEffect(() => {
     }
   }, [currentPurchaseDiscount.discountCode, currentPurchaseDiscount.discountType]);
 
-  useEffect(() => {
-    // Add tax when tax name is selected (location is already set from main form)
-    if (currentTax.taxName && formData.location) {
-      const newTax = {
-        id: Date.now().toString(),
-        taxName: currentTax.taxName,
-        location: formData.location,
-        taxPercentage: '',
-        effectiveDate: ''
-      };
-      setTaxList(prev => [...prev, newTax]);
-      setCurrentTax(prev => ({
-        ...prev,
-        taxName: '', // Only reset tax name, keep the location from main form
-      }));
-    }
-  }, [currentTax.taxName, formData.location]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -145,82 +131,128 @@ useEffect(() => {
       [name]: value
     }));
 
-    // Reset tax list if location changes
-    if (name === 'location') {
+    if (name === 'locationId') {
       setTaxList([]);
       setCurrentTax(prev => ({
         ...prev,
-        location: value
+        location: value,
+        locationName: locations.find(l => l.locationId.toString() === value)?.locationName || ''
       }));
     }
   };
 
- const handleSearch = async (e) => {
-  const searchTerm = e.target.value;
-  setSearchTerm(searchTerm);
-  
-  // Only search if term is at least 2 characters long
-  if (searchTerm.length >= 2) {
-    try {
-      await fetchProducts(searchTerm);
-    } catch (error) {
-      console.error('Error searching products:', error);
+  const handleSearch = async (e) => {
+    const searchTerm = e.target.value;
+    setSearchTerm(searchTerm);
+    
+    if (searchTerm.length >= 2) {
+      try {
+        await fetchProducts(searchTerm);
+      } catch (error) {
+        console.error('Error searching products:', error);
+      }
     }
-  }
-};
+  };
 
- 
-const handleProductSelect = (product) => {
-  const exists = selectedProducts.some(p => p.productId === product.productId);
+  const handleProductSelect = (product) => {
+    const exists = selectedProducts.some(p => p.productId === product.productId);
 
-  if (!exists) {
-    const newProduct = {
-       ...product,
-      productId: product.productId,
-      productName: product.productName,
-      quantityPurchased: product.purchaseQuantity || 1,
-      priceBeforeDiscount: product.purchasePriceBeforeDiscount || 0,
-      profitMargin: product.profitMargin || 0,
-      unitSellingPrice: product.sellingPrice || 0,
-      mfgDate: product.mfgDate || '',
-      expDate: product.expDate || '',
-      purchasePriceAfterDiscount: product.purchasePriceAfterDiscount || 0,
-      totalAmount: (product.purchaseQuantity || 1) * (product.purchasePriceBeforeDiscount || 0)
-    };
+    if (!exists) {
+      const newProduct = {
+        ...product,
+        productId: product.productId,
+        productName: product.productName,
+        quantityPurchased: product.purchaseQuantity || 1,
+        purchasePriceBeforeDiscount: product.purchasePriceBeforeDiscount || 0,
+        profitMargin: product.profitMargin || 0,
+        unitSellingPrice: product.sellingPrice || 0,
+        mfgDate: product.mfgDate || '',
+        expDate: product.expDate || '',
+        purchasePriceAfterDiscount: product.purchasePriceAfterDiscount || 0,
+        totalAmount: (product.purchaseQuantity || 1) * (product.purchasePriceBeforeDiscount || 0)
+      };
 
-    setSelectedProducts(prev => [...prev, newProduct]);
-    setSearchTerm(''); // Clear search term after selection
-   
-  } else {
-    alert('This product has already been added');
-  }
-};
- 
+      setSelectedProducts(prev => [...prev, newProduct]);
+      setSearchTerm('');
+    } else {
+      alert('This product has already been added');
+    }
+  };
 
   const handleDiscountChange = (e) => {
-  const { name, value } = e.target;
-  setCurrentDiscount(prev => ({
-    ...prev,
-    [name]: value
-  }));
-};
-
-  const handleDiscountFieldChange = (id, field, value) => {
-    setDiscountList(prev => prev.map(discount => 
-      discount.id === id ? { ...discount, [field]: value } : discount
-    ));
-  };
-
-  const deleteDiscount = (id) => {
-    setDiscountList(prev => prev.filter(discount => discount.id !== id));
-  };
-
-  const handlePurchaseDiscountChange = (e) => {
     const { name, value } = e.target;
-    setCurrentPurchaseDiscount(prev => ({
+    setCurrentDiscount(prev => ({
       ...prev,
       [name]: value
     }));
+
+    setDiscountList(prev => {
+      const updated = prev.map(discount =>
+        discount.productId === currentDiscount.productId
+          ? { ...discount, [name]: value }
+          : discount
+      );
+      return updated;
+    });
+  };
+
+  const handleDiscountFieldChange = (id, field, value) => {
+    setDiscountList(prev => {
+      const updated = prev.map(discount => {
+        if (discount.id === id) {
+          const updatedDiscount = { ...discount, [field]: value };
+          
+          const product = selectedProducts.find(p => p.productId === discount.productId);
+          if (product) {
+            const newPriceAfterDiscount = calculateDiscountedPrice(product, updatedDiscount);
+            
+            setSelectedProducts(prevProducts => 
+              prevProducts.map(p => 
+                p.productId === discount.productId 
+                  ? { 
+                      ...p, 
+                      purchasePriceAfterDiscount: newPriceAfterDiscount,
+                      totalAmount: p.quantityPurchased * parseFloat(newPriceAfterDiscount)
+                    } 
+                  : p
+              )
+            );
+          }
+          
+          return updatedDiscount;
+        }
+        return discount;
+      });
+
+      return updated;
+    });
+  };
+
+const deleteDiscount = async (id) => {
+  try {
+    await deleteProductPurchaseDiscount(id); // call backend API
+    setDiscountList(prev => prev.filter(discount => discount.id !== id)); // update UI
+  } catch (error) {
+    console.error('Failed to delete product purchase discount:', error);
+  }
+};
+
+  const handlePurchaseDiscountChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "discountCode") {
+      const selected = discountCodes.find(d => d.discountCode === value);
+      setCurrentPurchaseDiscount(prev => ({
+        ...prev,
+        discountCode: value,
+        discountId: selected?.discountId || 0
+      }));
+    } else {
+      setCurrentPurchaseDiscount(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handlePurchaseDiscountFieldChange = (id, field, value) => {
@@ -229,169 +261,229 @@ const handleProductSelect = (product) => {
     ));
   };
 
-  const deletePurchaseDiscount = (id) => {
-    setPurchaseDiscountList(prev => prev.filter(discount => discount.id !== id));
-  };
+  const handleDeletePurchaseDiscount = async (id) => {
+  try {
+    await deletePurchaseDiscount(id); // Call backend API
+    setPurchaseDiscountList(prev => prev.filter(discount => discount.id !== id)); // Update UI state
+  } catch (error) {
+    console.error('Failed to delete purchase discount:', error);
+  }
+};
 
-  const handleTaxChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentTax(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+ const deleteTax = async (id) => {
+  try {
+    await deletePurchaseTax(id); // Delete from backend
+    setTaxList(prev => prev.filter(tax => tax.id !== id)); // Update frontend list
+  } catch (error) {
+    console.error('Failed to delete purchase tax:', error);
+  }
+};
 
-  const deleteTax = (id) => {
-    setTaxList(prev => prev.filter(tax => tax.id !== id));
-  };
+  const handleDeleteProduct = async (productId) => {
+  const productToDelete = selectedProducts.find(product => product.productId === productId);
 
-  const handleTaxFieldChange = (id, field, value) => {
-    setTaxList(prev => prev.map(tax => 
-      tax.id === id ? { ...tax, [field]: value } : tax
-    ));
-  };
- const handleAddPurchaseRecord = async (e) => {
-    e.preventDefault();
+  if (productToDelete?.productPurchaseRecordId) {
     try {
+      await deleteProductPurchaseRecord(productToDelete.productPurchaseRecordId);
+    } catch (error) {
+      console.error('Failed to delete product purchase record:', error);
+    }
+  }
+
+  setSelectedProducts(prev => prev.filter(product => product.productId !== productId));
+  setDiscountList(prev => prev.filter(discount => discount.productId !== productId));
+};
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Validate form
+      if (!formData.supplierId || !formData.locationId) {
+        throw new Error('Please select supplier and location');
+      }
+
+      if (selectedProducts.length === 0) {
+        throw new Error('Please add at least one product');
+      }
+
+      // 1. Create Purchase Record
       const purchaseData = {
         supplierId: parseInt(formData.supplierId),
-      locationId: parseInt(formData.locationId),
-      date: formData.date,
-      amountPaid: parseFloat(formData.amountPaid || 0),
-      purchaseStatus: formData.purchaseStatus,
-      paymentStatus: formData.paymentStatus,
-    };
+        locationId: parseInt(formData.locationId),
+        date: formData.date,
+        amountPaid: parseFloat(formData.amountPaid || 0),
+        purchaseStatus: formData.purchaseStatus,
+        paymentStatus: formData.paymentStatus,
+      };
 
-    const createdRecord = await addPurchase(purchaseData);
-    setPurchaseRecord(createdRecord);
-    alert('Purchase record created successfully. You can now add products.');
-  } catch (error) {
-    console.error('Error creating purchase record:', error);
-    alert(`Failed to create purchase record: ${error.response?.data?.message || error.message}`);
-  }
-};
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!purchaseRecord) {
-    alert('Please create a purchase record first');
-    return;
-  }
-  if (selectedProducts.length === 0) {
-    alert('Please add at least one product');
-    return;
-  }
+      const createdPurchase = await addPurchase(purchaseData);
 
-  try {
-    // Prepare products data in backend format
-    const productsToSubmit = selectedProducts.map(product => ({
-       purchaseId: purchaseRecord.purchaseId,
-  productId: product.productId,
-  mgfDate: product.mfgDate || null,
-  expiryDate: product.expDate || null,
-  quantityPurchased: parseInt(product.quantityPurchased) || 0,
-  purchasePriceBeforeDiscount: parseFloat(product.purchasePriceBeforeDiscount || 0),
-  purchasePriceAfterDiscount: parseFloat(product.purchasePriceAfterDiscount || 0),
-  totalAmount: parseFloat(product.totalAmount || 0),
-  profitMargin: parseFloat(product.profitMargin || 0),
-  unitSellingPrice: parseFloat(product.unitSellingPrice || 0)     
-    }));
-console.log('Submitting product purchase records:', JSON.stringify(productsToSubmit, null, 2));
-    // Submit to backend
-    const response = await addProductPurchaseRecord(productsToSubmit); // array of added records with LoTId
+      // 2. Add Product Purchase Records
+      const productsToSubmit = selectedProducts.map(product => ({
+        purchaseId: createdPurchase.purchaseId,
+        productId: product.productId,
+        mgfDate: product.mfgDate || null,
+        expiryDate: product.expDate || null,
+        quantityPurchased: parseInt(product.quantityPurchased) || 0,
+        purchasePriceBeforeDiscount: parseFloat(product.purchasePriceBeforeDiscount || 0),
+        purchasePriceAfterDiscount: parseFloat(product.purchasePriceAfterDiscount || 0),
+        totalAmount: parseFloat(product.totalAmount || 0),
+        profitMargin: parseFloat(product.profitMargin || 0),
+        unitSellingPrice: parseFloat(product.unitSellingPrice || 0)     
+      }));
 
-// Merge LoTId into selectedProducts
-const updatedProducts = selectedProducts.map(product => {
-  const matched = response.find(p => p.productId === product.productId);
-  return matched ?
-   { ...product, 
-    loTId: matched.loTId ,
-  productName: product.productName 
-}
-    : product;
-});
-setSelectedProducts(updatedProducts);
-    // Show success message and prompt for discounts
-    const addDiscounts = window.confirm(
-      'Products added successfully!\n\n' +
-      'Would you like to add discounts to these products?\n\n' +
-      'Click OK to add discounts or Cancel to continue adding more products.'
-    );
+      const productRecords = await addProductPurchaseRecord(productsToSubmit);
 
-    if (addDiscounts) {
-     
-      
-      // Scroll to discount section
-      document.getElementById('discount-section')?.scrollIntoView({ behavior: 'smooth' });
-      
-      // Highlight discount section
-      const discountSection = document.getElementById('discount-section');
-      if (discountSection) {
-        discountSection.style.boxShadow = '0 0 0 2px #28a745';
-        setTimeout(() => {
-          discountSection.style.boxShadow = 'none';
-        }, 2000);
+      // 3. Add Product Discounts
+      if (discountList.length > 0) {
+        const productDiscountsToSubmit = discountList.map(discount => {
+          const product = selectedProducts.find(p => p.productId === discount.productId);
+          const discountCode = discountCodes.find(d => d.discountCode === discount.discountCode);
+          
+          return {
+            loTId: product?.loTId || productRecords.find(p => p.productId === discount.productId)?.loTId,
+            discountId: discountCode?.discountId,
+            discountType: discount.discountType,
+            discountAmount: parseFloat(discount.discountAmount) || 0,
+            discountPercentage: parseFloat(discount.discountPercentage) || 0
+          };
+        }).filter(item => item.loTId);
+
+        if (productDiscountsToSubmit.length > 0) {
+          await addProductPurchaseDiscount(productDiscountsToSubmit);
+        }
       }
-    } else {
-      // Option to add more products
-      alert('You can now add more products to this purchase');
-      // Products remain in the table for reference
-    }
-    
-  }  catch (error) {
-    console.error('Error submitting purchase:', error);
-    console.error('Validation errors:', error.response?.data?.errors);
-    alert(`Failed to submit purchase: ${error.response?.data?.message || error.message}`);
-  }
-};
 
-  // Add delete product handler
-  const handleDeleteProduct = (productId) => {
-    setAvailableProducts(prev => prev.filter(product => product.id !== productId));
-    setSelectedProducts(prev => prev.filter(product => product.id !== productId));
+      // 4. Add Purchase Discounts
+      if (purchaseDiscountList.length > 0) {
+        const purchaseDiscountsToSubmit = purchaseDiscountList.map(discount => {
+          const discountCode = discountCodes.find(d => d.discountCode === discount.discountCode);
+          
+          return {
+            purchaseId: createdPurchase.purchaseId,
+            discountId: discountCode?.discountId,
+            discountType: discount.discountType,
+            discountAmount: parseFloat(discount.discountAmount) || 0,
+            discountPercentage: parseFloat(discount.discountPercentage) || 0
+          };
+        }).filter(item => item.discountId);
+
+        if (purchaseDiscountsToSubmit.length > 0) {
+          await addPurchaseDiscount(purchaseDiscountsToSubmit);
+        }
+      }
+
+      // 5. Add Purchase Taxes
+      if (taxList.length > 0) {
+        const taxesToSubmit = taxList.map(tax => ({
+          purchaseId: createdPurchase.purchaseId,
+          taxLocationId: tax.taxLocationId
+        }));
+
+        await addPurchaseTax(taxesToSubmit);
+      }
+
+      alert('Purchase created successfully!');
+     navigate('/purchase/list', { state: { refresh: true } });
+    } catch (error) {
+      console.error('Error submitting purchase:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to create purchase');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-const handleAddDiscount = async () => {
-  try {
-    if (!currentDiscount.productId || !currentDiscount.discountCode || !currentDiscount.discountType) {
-      alert("Please fill all fields");
-      return;
-    }
 
-    const selectedDiscount = discountCodes.find(d => d.discountCode === currentDiscount.discountCode);
-   const product = selectedProducts.find(p => p.productId === currentDiscount.productId);
-console.log('Selected Product:', product);
-    const payload = [{
-      loTId: product.loTId,
-      discountId: selectedDiscount.discountId,
-      discountType: currentDiscount.discountType,
-      discountAmount: parseFloat(currentDiscount.discountAmount) || 0,
-      discountPercentage: parseFloat(currentDiscount.discountPercentage) || 0
-    }];
+  // Style constants
+  const tableHeaderStyle = {
+    padding: '12px 15px',
+    textAlign: 'left',
+    borderBottom: '2px solid #dee2e6',
+    fontWeight: '600',
+    color: '#495057'
+  };
 
-    await addProductPurchaseDiscount(payload); 
+  const tableCellStyle = {
+    padding: '12px 15px',
+    verticalAlign: 'middle'
+  };
 
-     const newDiscountEntry = {
-      id: Date.now(),
-      productId: product.productId,
-      productName: product.productName, // ✅ correct field
-      discountCode: selectedDiscount.discountCode,
-      discountType: currentDiscount.discountType,
-      discountAmount: payload[0].discountAmount,
-      discountPercentage: payload[0].discountPercentage
-    };
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '14px',
+    height: '40px',
+    boxSizing: 'border-box'
+  };
 
-    setDiscountList(prev => [...prev, newDiscountEntry]);
+  const selectStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '14px',
+    height: '40px',
+    backgroundColor: '#fff',
+    boxSizing: 'border-box'
+  };
 
+  const formRowStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '20px',
+    marginBottom: '20px'
+  };
 
-    alert("Discount added successfully!");
-    setCurrentDiscount({ productSearch: '', productId: '', productName: '', discountCode: '', discountType: '', discountAmount: '', discountPercentage: '' });
+  const formGroupStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  };
 
-  } catch (error) {
-    console.error("Failed to add discount:", error);
-    console.error('Validation errors:', error.response?.data?.errors);
-    alert(`Error: ${error.response?.data?.message || error.message}`);
-  }
-};
+  const labelStyle = {
+    fontWeight: '500',
+    fontSize: '14px',
+    color: '#333'
+  };
 
+  const sectionStyle = {
+    backgroundColor: '#fff',
+    padding: '25px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    marginBottom: '30px'
+  };
+
+  const sectionHeaderStyle = {
+    backgroundColor: '#f8f9fa',
+    padding: '15px 25px',
+    borderBottom: '1px solid #eee',
+    marginBottom: '20px'
+  };
+
+  const deleteButtonStyle = {
+    padding: '8px 16px',
+    borderRadius: '4px',
+    border: 'none',
+    backgroundColor: '#dc3545',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '14px',
+    height: '40px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    transition: 'all 0.2s ease',
+    width: '100px',
+    boxShadow: '0 2px 4px rgba(220, 53, 69, 0.2)'
+  };
+
+ 
   return (
     <div className="purchase-page">
       <Topbar />
@@ -407,42 +499,42 @@ console.log('Selected Product:', product);
             <div style={formRowStyle}>
               <div style={formGroupStyle}>
                 <label htmlFor="supplier" style={labelStyle}>Supplier</label>
-            <select
-  id="supplier"
-  name="supplierId"
-  value={formData.supplierId}
-  onChange={handleChange}
-   className="form-select"
-  required
-  style={selectStyle}
->
-  <option value="">Select Supplier</option>
-  {suppliers.map(supplier => (
-    <option key={supplier.supplierId} value={supplier.supplierId}>
-      {supplier.supplierName}
-    </option>
-  ))}
-</select>
+                <select
+                  id="supplier"
+                  name="supplierId"
+                  value={formData.supplierId}
+                  onChange={handleChange}
+                  className="form-select"
+                  required
+                  style={selectStyle}
+                >
+                  <option value="">Select Supplier</option>
+                  {suppliers.map(supplier => (
+                    <option key={supplier.supplierId} value={supplier.supplierId}>
+                      {supplier.supplierName}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="location" style={labelStyle}>Location</label>
-             <select
-  id="location"
-  name="locationId"
-  value={formData.locationId}
-  onChange={handleChange}
-   className="form-select"
-  required
-  style={selectStyle}
->
-  <option value="">Select Location</option>
-  {locations.map(location => (
-    <option key={location.locationId} value={location.locationId}>
-      {location.locationName}
-    </option>
-  ))}
-</select>
+                <select
+                  id="location"
+                  name="locationId"
+                  value={formData.locationId}
+                  onChange={handleChange}
+                  className="form-select"
+                  required
+                  style={selectStyle}
+                >
+                  <option value="">Select Location</option>
+                  {locations.map(location => (
+                    <option key={location.locationId} value={location.locationId}>
+                      {location.locationName}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={formGroupStyle}>
@@ -480,76 +572,39 @@ console.log('Selected Product:', product);
 
               <div style={formGroupStyle}>
                 <label htmlFor="purchaseStatus" style={labelStyle}>Purchase Status</label>
-               <select
-  id="purchaseStatus"
-  name="purchaseStatus"
-  value={formData.purchaseStatus}
-  onChange={handleChange}
-  required
-  style={selectStyle}
->
-  <option value="">Select Purchase Status</option>
-  {purchaseStatuses.map(status => (
-    <option key={status} value={status}>{status}</option>
-  ))}
-</select>
+                <select
+                  id="purchaseStatus"
+                  name="purchaseStatus"
+                  value={formData.purchaseStatus}
+                  onChange={handleChange}
+                  required
+                  style={selectStyle}
+                >
+                  <option value="">Select Purchase Status</option>
+                  {purchaseStatuses.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
               </div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="paymentStatus" style={labelStyle}>Payment Status</label>
-               <select
-  id="paymentStatus"
-  name="paymentStatus"
-  value={formData.paymentStatus}
-  onChange={handleChange}
-  required
-  style={selectStyle}
->
-  <option value="">Select Payment Status</option>
-  {paymentStatuses.map(status => (
-    <option key={status} value={status}>{status}</option>
-  ))}
-</select>
+                <select
+                  id="paymentStatus"
+                  name="paymentStatus"
+                  value={formData.paymentStatus}
+                  onChange={handleChange}
+                  required
+                  style={selectStyle}
+                >
+                  <option value="">Select Payment Status</option>
+                  {paymentStatuses.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
               </div>
             </div>
-
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'flex-end',
-              marginTop: '20px',
-              paddingTop: '20px',
-              borderTop: '1px solid #eee'
-            }}>
-                 <button
-                type="button"
-                onClick={handleAddPurchaseRecord}
-                style={{ 
-                  ...addButtonStyle, 
-                  width: '130px',
-                  backgroundColor: purchaseRecord ? '#6c757d' : '#28a745',
-                  height: '36px',
-                  fontSize: '12px'
-                }}
-                disabled={purchaseRecord}
-                onMouseOver={(e) => {
-                  if (!purchaseRecord) {
-                    e.currentTarget.style.backgroundColor = '#218838';
-                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!purchaseRecord) {
-                    e.currentTarget.style.backgroundColor = '#28a745';
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
-                  }
-                }}
-              >
-                <i className="fas fa-plus" style={{ fontSize: '10px' }}></i>
-                {purchaseRecord ? 'Purchase Created' : 'Add Purchase'}
-              </button>
-  
-            </div>
-         </div>
+          </div>
 
           {/* Products Section */}
           <div className="section-container" style={sectionStyle}>
@@ -561,438 +616,432 @@ console.log('Selected Product:', product);
               padding: '12px 20px'
             }}>
               <h3 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '600' }}>Products</h3>
-<button
-  type="submit"
-  style={{ 
-    ...addButtonStyle, 
-    width: '155px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    marginTop: '10px'
-  }}
->
-  <i className="fas fa-save" style={{ fontSize: '9px' }}></i>
-  Add Purchase Detail
-</button>
- </div>
+            </div>
 
-     <div className="search-bar" style={{ marginBottom: '20px', position: 'relative' }}>
-  <input
-    type="text"
-    placeholder="Search products by name or ID..."
-    value={searchTerm}
-    onChange={handleSearch}
-    style={inputStyle}
-    ref={searchInputRef}
-  />
-  {searchTerm.length >= 2 && (
-    <div style={{
-      position: 'absolute',
-      top: '100%',
-      left: 0,
-      right: 0,
-      backgroundColor: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      zIndex: 1000,
-      maxHeight: '300px',
-      overflowY: 'auto',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}>
-      {products.length > 0 ? (
-        products.map(product => (
-          <div 
-            key={product.productId}
-            onClick={() => handleProductSelect(product)}
-            style={{
-              padding: '10px',
-              cursor: 'pointer',
-              borderBottom: '1px solid #eee'
-            }}
-          >
-            {product.productName} (ID: {product.productId})
-          </div>
-        ))
-      ) : (
-        <div style={{ padding: '10px', color: '#666' }}>
-          No products found
-        </div>
-      )}
-    </div>
-  )}
-</div>
+            <div className="search-bar" style={{ marginBottom: '20px', position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Search products by name or ID..."
+                value={searchTerm}
+                onChange={handleSearch}
+                style={inputStyle}
+                ref={searchInputRef}
+              />
+              {searchTerm.length >= 2 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#fff',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  zIndex: 1000,
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  {products.length > 0 ? (
+                    products.map(product => (
+                      <div 
+                        key={product.productId}
+                        onClick={() => handleProductSelect(product)}
+                        style={{
+                          padding: '10px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #eee'
+                        }}
+                      >
+                        {product.productName} (ID: {product.productId})
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '10px', color: '#666' }}>
+                      No products found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
+            {/* Products Table */}
+            <div className="table-responsive" style={{ overflowX: 'auto', marginBottom: '30px' }}>
+              <table className="data-table" style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                backgroundColor: '#fff',
+                fontSize: '14px'
+              }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <th style={tableHeaderStyle}>Product Name</th>
+                    <th style={tableHeaderStyle}>Mfg Date</th>
+                    <th style={tableHeaderStyle}>Exp Date</th>
+                    <th style={tableHeaderStyle}>Quantity Purchase</th>
+                    <th style={tableHeaderStyle}>Price Before Discount</th>
+                    <th style={tableHeaderStyle}>Price After Discount</th>
+                    <th style={tableHeaderStyle}>Total Amount</th>
+                    <th style={tableHeaderStyle}>Profit Margin (%)</th>
+                    <th style={tableHeaderStyle}>Unit Selling Price</th>
+                    <th style={tableHeaderStyle}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedProducts.map((product) => (
+                    <tr key={product.productId} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={tableCellStyle}>
+                        {product.productName}
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="date"
+                          value={product.mfgDate}
+                          onChange={(e) => {
+                            setSelectedProducts(prev =>
+                              prev.map(p =>
+                                p.productId === product.productId ? { ...p, mfgDate: e.target.value } : p
+                              )
+                            );
+                          }}
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="date"
+                          value={product.expDate}
+                          onChange={(e) => {
+                            setSelectedProducts(prev =>
+                              prev.map(p =>
+                                p.productId === product.productId ? { ...p, expDate: e.target.value } : p
+                              )
+                            );
+                          }}
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="number"
+                          value={product.quantityPurchased || 1}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 1;
+                            setSelectedProducts(prev =>
+                              prev.map(p =>
+                                p.productId === product.productId
+                                  ? {
+                                      ...p,
+                                      quantityPurchased: value === '' ? '' : parseInt(value),
+                                      totalAmount: (value === '' ? 0 : parseInt(value)) * (p.purchasePriceAfterDiscount || p.purchasePriceBeforeDiscount || 0)
+                                    }
+                                  : p
+                              )
+                            );
+                          }}
+                          min="1"
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="number"
+                          value={product.purchasePriceBeforeDiscount || ''}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            const productDiscount = discountList.find(d => d.productId === product.productId);
+                            
+                            setSelectedProducts(prev =>
+                              prev.map(p =>
+                                p.productId === product.productId 
+                                  ? { 
+                                      ...p, 
+                                      purchasePriceBeforeDiscount: value,
+                                      purchasePriceAfterDiscount: productDiscount 
+                                        ? calculateDiscountedPrice({ ...p, purchasePriceBeforeDiscount: value }, productDiscount)
+                                        : value,
+                                      totalAmount: p.quantityPurchased * (productDiscount 
+                                        ? calculateDiscountedPrice({ ...p, purchasePriceBeforeDiscount: value }, productDiscount)
+                                        : value)
+                                    } 
+                                  : p
+                              )
+                            );
+                          }}
+                          min="0"
+                          step="0.01"
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="number"
+                          value={product.purchasePriceAfterDiscount || ''}
+                          readOnly
+                          style={{ ...inputStyle, backgroundColor: '#f8f9fa' }}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="number"
+                          value={product.totalAmount || ''}
+                          readOnly
+                          style={{ ...inputStyle, backgroundColor: '#f8f9fa' }}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="number"
+                          value={product.profitMargin || ''}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0 ;
+                            setSelectedProducts(prev =>
+                              prev.map(p =>
+                                p.productId === product.productId ? { ...p, profitMargin: value } : p
+                              )
+                            );
+                          }}
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          style={inputStyle}
+                        />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="number"
+                          value={product.unitSellingPrice || ''}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0 ;
+                            setSelectedProducts(prev =>
+                              prev.map(p =>
+                                p.productId === product.productId ? { ...p, unitSellingPrice: value } : p
+                              )
+                            );
+                          }}
+                          min="0"
+                          step="0.01"
+                          style={inputStyle}
+                        />
+                      </td>
+                     <td style={tableCellStyle}>
+  <button
+    onClick={() => handleDeleteProduct(product.productId)}
+    className="btn btn-danger btn-sm"
+    style={deleteButtonStyle}
+  >
+    <i className="fas fa-trash-alt"></i>
+    Delete
+  </button>
+</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
+            {/* Discount Section */}
+            <div style={sectionStyle}>
+              <div style={{
+                ...sectionHeaderStyle,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '500' }}>Add Discount</h4>
+              
+              </div>
 
-              {/* Products Table */}
-              <div className="table-responsive" style={{ overflowX: 'auto', marginBottom: '30px' }}>
+              {/* Product Search Bar */}
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
+                <input
+                  id="discount-search"
+                  type="text"
+                  placeholder="Search products to apply discount..."
+                  value={currentDiscount.productSearch}
+                  onChange={(e) => {
+                    setCurrentDiscount(prev => ({
+                      ...prev,
+                      productSearch: e.target.value
+                    }));
+                  }}
+                  style={inputStyle}
+                />
+                {currentDiscount.productSearch && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#fff',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    zIndex: 1000,
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    {selectedProducts
+                      .filter(product => 
+                        product.productName.toLowerCase().includes(currentDiscount.productSearch.toLowerCase()) ||
+                        product.productId.toString().includes(currentDiscount.productSearch)
+                      )
+                      .map(product => (
+                        <div 
+                          key={product.productId}
+                          onClick={() => {
+                            const alreadyAdded = discountList.find(d => d.productId === product.productId);
+                            if (alreadyAdded) {
+                              alert("This product is already in the discount table.");
+                              return;
+                            }
+
+                            const newDiscount = {
+                              id: Date.now(),
+                              productId: product.productId,
+                              productName: product.productName,
+                              loTId: product.loTId,             
+                              discountCode: '',
+                              discountType: '',
+                              discountAmount: '',
+                              discountPercentage: ''
+                            };
+
+                            setDiscountList(prev => [...prev, newDiscount]);
+
+                            setCurrentDiscount({
+                              productSearch: '',
+                              productId: product.productId,
+                              productName: product.productName,
+                              loTId: product.loTId,
+                              discountCode: '',
+                              discountType: '',
+                              discountAmount: '',
+                              discountPercentage: ''
+                            });
+                          }}
+                          style={{
+                            padding: '10px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #eee',
+                            backgroundColor: currentDiscount.productId === product.productId ? '#f0f0f0' : '#fff'
+                          }}
+                        >
+                          {product.productName} (ID: {product.productId})
+                        </div>
+                      ))
+                    }
+                  </div>
+                )}
+              </div>
+              <div style={formRowStyle}>
+                <select
+                  name="discountCode"
+                  value={currentDiscount.discountCode}
+                  onChange={handleDiscountChange}
+                  style={selectStyle}
+                >
+                  <option value="">Select Discount Code</option>
+                  {discountCodes.map(code => (
+                    <option key={code.discountId} value={code.discountCode}>
+                      {code.discountCode} ({code.status})
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  name="discountType"
+                  value={currentDiscount.discountType}
+                  onChange={handleDiscountChange}
+                  style={selectStyle}
+                >
+                  <option value="">Select Discount Type</option>
+                  {discountTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+
+                <div style={{ visibility: 'hidden' }}></div>
+              </div>
+
+              {/* Discount Table */}
+              <div className="table-responsive" style={{
+                overflowX: 'auto',
+                width: '100%',
+                position: 'relative',
+                marginTop: '20px',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px'
+              }}>
                 <table className="data-table" style={{
                   width: '100%',
+                  minWidth: '1200px',
                   borderCollapse: 'collapse',
                   backgroundColor: '#fff',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                 }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <tr style={{ backgroundColor: '#f1f3f5' }}>
                       <th style={tableHeaderStyle}>Product Name</th>
-                      <th style={tableHeaderStyle}>Mfg Date</th>
-                      <th style={tableHeaderStyle}>Exp Date</th>
-                    
-                      <th style={tableHeaderStyle}>Quantity Purchase</th>
-                      <th style={tableHeaderStyle}>Price Before Discount</th>
-                      <th style={tableHeaderStyle}>Price After Discount</th>
-                      <th style={tableHeaderStyle}>Total Amount</th>
-                      <th style={tableHeaderStyle}>Profit Margin (%)</th>
-                      <th style={tableHeaderStyle}>Unit Selling Price</th>
-                      <th style={tableHeaderStyle}>Action</th>
+                      <th style={tableHeaderStyle}>Discount Code</th>
+                      <th style={tableHeaderStyle}>Discount Type</th>
+                      <th style={tableHeaderStyle}>Discount Amount</th>
+                      <th style={tableHeaderStyle}>Discount Percentage</th>
+                      <th style={{
+                        ...tableHeaderStyle,
+                        width: '120px',
+                        textAlign: 'center'
+                      }}>Action</th>
                     </tr>
                   </thead>
-     <tbody>
-  {selectedProducts.map((product) => (
-    <tr key={product.productId} style={{ borderBottom: '1px solid #eee' }}>
-      <td style={tableCellStyle}>
-        {product.productName}
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="date"
-          value={product.mfgDate}
-          onChange={(e) => {
-            setSelectedProducts(prev =>
-              prev.map(p =>
-                p.productId === product.productId ? { ...p, mfgDate: e.target.value } : p
-              )
-            );
-          }}
-          style={inputStyle}
-        />
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="date"
-          value={product.expDate}
-          onChange={(e) => {
-            setSelectedProducts(prev =>
-              prev.map(p =>
-                p.productId === product.productId ? { ...p, expDate: e.target.value } : p
-              )
-            );
-          }}
-          style={inputStyle}
-        />
-      </td>
-      <td style={tableCellStyle}>
-       <input
-  type="number"
-  value={product.quantityPurchased || 1}
-  onChange={(e) => {
-    const value = parseInt(e.target.value) || 1;
-    setSelectedProducts(prev =>
-      prev.map(p =>
-        p.productId === product.productId
-          ? {
-              ...p,
-               quantityPurchased: value === '' ? '' : parseInt(value),
-              totalAmount: (value === '' ? 0 : parseInt(value)) * (p.purchasePriceBeforeDiscount || 0)
-            }
-          : p
-      )
-    );
-  }}
-  min="1"
-  style={inputStyle}
-/>
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="number"
-          value={product.purchasePriceBeforeDiscount || ''}
-          onChange={(e) => {
-            const value = parseFloat(e.target.value) || 0 ;
-            setSelectedProducts(prev =>
-              prev.map(p =>
-                p.productId === product.productId ? 
-                { ...p, 
-                  purchasePriceBeforeDiscount: value,
-              totalAmount: p.quantityPurchased * value 
-                } 
-                : p
-              )
-            );
-          }}
-          min="0"
-          step="0.01"
-          style={inputStyle}
-        />
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="number"
-          value={product.purchasePriceAfterDiscount || ''}
-          readOnly
-          style={{ ...inputStyle, backgroundColor: '#f8f9fa' }}
-        />
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="number"
-          value={product.totalAmount || ''}
-          readOnly
-          style={{ ...inputStyle, backgroundColor: '#f8f9fa' }}
-        />
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="number"
-          value={product.profitMargin || ''}
-          onChange={(e) => {
-            const value = parseFloat(e.target.value) || 0 ;
-            setSelectedProducts(prev =>
-              prev.map(p =>
-                p.productId === product.productId ? { ...p, profitMargin: value } : p
-              )
-            );
-          }}
-          min="0"
-          max="100"
-          step="0.01"
-          style={inputStyle}
-        />
-      </td>
-      <td style={tableCellStyle}>
-        <input
-          type="number"
-          value={product.unitSellingPrice || ''}
-          onChange={(e) => {
-            const value = parseFloat(e.target.value) || 0 ;
-            setSelectedProducts(prev =>
-              prev.map(p =>
-                p.productId === product.productId ? { ...p, unitSellingPrice: value } : p
-              )
-            );
-          }}
-          min="0"
-          step="0.01"
-          style={inputStyle}
-        />
-      </td>
-      <td style={tableCellStyle}>
-        <button
-          onClick={() => handleDeleteProduct(product.productId)}
-          className="btn btn-danger btn-sm"
-          style={deleteButtonStyle}
-        >
-          <i className="fas fa-trash-alt"></i>
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-                </table>
-              </div>
-
-              {/* Discount Section */}
-              <div style={sectionStyle}>
-                <div style={{
-                  ...sectionHeaderStyle,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '500' }}>Add Discount</h4>
-      <button
-                    type="button"
-                     onClick={handleAddDiscount}
-                    style={{ 
-                      ...addButtonStyle, 
-                      width: '120px',
-                      backgroundColor: '#28a745'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#218838';
-                      e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = '#28a745';
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
-                    }}
-                  >
-                    <i className="fas fa-plus" style={{ fontSize: '9px' }}></i>
-                    Add Discount
-                  </button>
-                   </div>
-
-                    {/* Product Search Bar */}
-  <div style={{ marginBottom: '20px', position: 'relative' }}>
-    <input
-      type="text"
-      placeholder="Search products to apply discount..."
-      value={currentDiscount.productSearch}
-      onChange={(e) => {
-        setCurrentDiscount(prev => ({
-          ...prev,
-          productSearch: e.target.value
-        }));
-      }}
-      style={inputStyle}
-    />
-    {currentDiscount.productSearch && (
-      <div style={{
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        right: 0,
-        backgroundColor: '#fff',
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        zIndex: 1000,
-        maxHeight: '300px',
-        overflowY: 'auto',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        {selectedProducts
-          .filter(product => 
-            product.productName.toLowerCase().includes(currentDiscount.productSearch.toLowerCase()) ||
-            product.productId.toString().includes(currentDiscount.productSearch)
-          )
-          .map(product => (
-            <div 
-              key={product.productId}
-              onClick={() => {
-                setCurrentDiscount(prev => ({
-                  ...prev,
-                  productId: product.productId,
-                  productName: product.productName,
-                  productSearch: product.productName
-                }));
-              }}
-              style={{
-                padding: '10px',
-                cursor: 'pointer',
-                borderBottom: '1px solid #eee',
-                backgroundColor: currentDiscount.productId === product.productId ? '#f0f0f0' : '#fff'
-              }}
-            >
-              {product.productName} (ID: {product.productId})
-            </div>
-          ))
-        }
-      </div>
-    )}
-  </div>
-                <div style={formRowStyle}>
-          <select
-  name="discountCode"
-  value={currentDiscount.discountCode}
-  onChange={handleDiscountChange}
-  style={selectStyle}
->
-  <option value="">Select Discount Code</option>
-  {discountCodes.map(code => (
-    <option key={code.discountId} value={code.discountCode}>
-      {code.discountCode} ({code.status})
-    </option>
-  ))}
-</select>
-
-
-                  <select
-                    name="discountType"
-                    value={currentDiscount.discountType}
-                    onChange={handleDiscountChange}
-                    style={selectStyle}
-                  >
-                    <option value="">Select Discount Type</option>
-                    {discountTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-
-                  <div style={{ visibility: 'hidden' }}></div>
-                </div>
-
-                {/* Discount Table */}
-                <div className="table-responsive" style={{
-                  overflowX: 'auto',
-                  width: '100%',
-                  position: 'relative',
-                  marginTop: '20px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px'
-                }}>
-                  <table className="data-table" style={{
-                    width: '100%',
-                    minWidth: '1200px',
-                    borderCollapse: 'collapse',
-                    backgroundColor: '#fff',
-                    fontSize: '14px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                  }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f1f3f5' }}>
-                         <th style={tableHeaderStyle}>Product Name</th>
-                        <th style={tableHeaderStyle}>Discount Code</th>
-                        <th style={tableHeaderStyle}>Discount Type</th>
-                        <th style={tableHeaderStyle}>Discount Amount</th>
-                        <th style={tableHeaderStyle}>Discount Percentage</th>
-                        <th style={{
-                          ...tableHeaderStyle,
+                  <tbody>
+                    {discountList.map((discount) => (
+                      <tr key={discount.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={tableCellStyle}>{discount.productName}</td>
+                        <td style={tableCellStyle}>{discount.discountCode}</td>
+                        <td style={tableCellStyle}>{discount.discountType}</td>
+                        <td style={tableCellStyle}>
+                          <input
+                            type="number"
+                            value={discount.discountAmount}
+                            onChange={(e) => handleDiscountFieldChange(discount.id, 'discountAmount', e.target.value)}
+                            style={inputStyle}
+                            placeholder="Enter Amount"
+                            min="0"
+                            step="0.01"
+                          />
+                        </td>
+                        <td style={tableCellStyle}>
+                          <input
+                            type="number"
+                            value={discount.discountPercentage}
+                            onChange={(e) => handleDiscountFieldChange(discount.id, 'discountPercentage', e.target.value)}
+                            style={inputStyle}
+                            placeholder="Enter Percentage"
+                            min="0"
+                            max="100"
+                          />
+                        </td>
+                        <td style={{
+                          ...tableCellStyle,
                           width: '120px',
                           textAlign: 'center'
-                        }}>Action</th>
+                        }}>
+                        <button
+  onClick={() => deleteDiscount(discount.id)}
+  className="btn btn-danger btn-sm"
+  style={deleteButtonStyle}
+>
+  <i className="fas fa-trash-alt"></i>
+  Delete
+</button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {discountList.map((discount) => (
-                        <tr key={discount.id} style={{ borderBottom: '1px solid #eee' }}>
-                          <td style={tableCellStyle}>{discount.productName}</td>
-                          <td style={tableCellStyle}>{discount.discountCode}</td>
-                          <td style={tableCellStyle}>{discount.discountType}</td>
-                          <td style={tableCellStyle}>
-                            <input
-                              type="number"
-                              value={discount.discountAmount}
-                              onChange={(e) => handleDiscountFieldChange(discount.id, 'discountAmount', e.target.value)}
-                              style={inputStyle}
-                              placeholder="Enter Amount"
-                              min="0"
-                              step="0.01"
-                            />
-                          </td>
-                          <td style={tableCellStyle}>
-                            <input
-                              type="number"
-                              value={discount.discountPercentage}
-                              onChange={(e) => handleDiscountFieldChange(discount.id, 'discountPercentage', e.target.value)}
-                              style={inputStyle}
-                              placeholder="Enter Percentage"
-                              min="0"
-                              max="100"
-                            />
-                          </td>
-                          <td style={{
-                            ...tableCellStyle,
-                            width: '120px',
-                            textAlign: 'center'
-                          }}>
-                            <button
-                              onClick={() => deleteDiscount(discount.id)}
-                              className="btn btn-danger btn-sm"
-                              style={deleteButtonStyle}
-                            >
-                              <i className="fas fa-trash-alt"></i>
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-          
-            
+            </div>
           </div>
 
           {/* Purchase Discounts Section */}
@@ -1005,61 +1054,24 @@ console.log('Selected Product:', product);
               padding: '12px 20px'
             }}>
               <h3 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '600' }}>Purchase Discounts</h3>
-                           <button
-                type="button"
-                onClick={() => {
-                  if (currentPurchaseDiscount.discountCode && currentPurchaseDiscount.discountType) {
-                    const newDiscount = {
-                      id: Date.now().toString(),
-                      discountCode: currentPurchaseDiscount.discountCode,
-                      discountType: currentPurchaseDiscount.discountType,
-                      discountAmount: '',
-                      discountPercentage: ''
-                    };
-                    setPurchaseDiscountList(prev => [...prev, newDiscount]);
-                    setCurrentPurchaseDiscount({
-                      id: '',
-                      discountCode: '',
-                      discountType: '',
-                      discountAmount: '',
-                      discountPercentage: ''
-                    });
-                  }
-                }}
-                style={{ 
-                  ...addButtonStyle, 
-                  width: '165px',
-                  backgroundColor: '#28a745'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#218838';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
-                }}
-              >
-                <i className="fas fa-plus" style={{ fontSize: '9px' }}></i>
-                Add Purchase Discount
-              </button>
+            
             </div>
 
-
             <div style={formRowStyle}>
-           <select
-  name="discountCode"
-  value={currentPurchaseDiscount.discountCode}
-  onChange={handlePurchaseDiscountChange}
-  style={selectStyle}
->
-  <option value="">Select Discount Code</option>
-  {discountCodes.map(code => (
-    <option key={code.discountId} value={code.discountCode}>
-      {code.discountCode} ({code.status})
-    </option>
-  ))}
-</select>
+              <select
+                id="purchase-discount-code"
+                name="discountCode"
+                value={currentPurchaseDiscount.discountCode}
+                onChange={handlePurchaseDiscountChange}
+                style={selectStyle}
+              >
+                <option value="">Select Discount Code</option>
+                {discountCodes.map(code => (
+                  <option key={code.discountId} value={code.discountCode}>
+                    {code.discountCode} ({code.status})
+                  </option>
+                ))}
+              </select>
 
               <select
                 name="discountType"
@@ -1138,203 +1150,164 @@ console.log('Selected Product:', product);
                         width: '120px',
                         textAlign: 'center'
                       }}>
-                        <button
-                          onClick={() => deletePurchaseDiscount(discount.id)}
-                          className="btn btn-danger btn-sm"
-                          style={deleteButtonStyle}
-                        >
-                          <i className="fas fa-trash-alt"></i>
-                          Delete
-                        </button>
+                      <button
+  onClick={() => handleDeletePurchaseDiscount(discount.id)}
+  className="btn btn-danger btn-sm"
+  style={deleteButtonStyle}
+>
+  <i className="fas fa-trash-alt"></i>
+  Delete
+</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          
           </div>
+{/* Taxes Section */}
+<div className="section-container" style={sectionStyle}>
+  <div className="section-header" style={{
+    ...sectionHeaderStyle,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 20px'
+  }}>
+    <h3 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '600' }}>Taxes</h3>
+    
+  </div>
 
-          {/* Taxes Section */}
-          <div className="section-container" style={sectionStyle}>
-            <div className="section-header" style={{
-              ...sectionHeaderStyle,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '12px 20px'
-            }}>
-              <h3 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '600' }}>Taxes</h3>
-     <button
-                type="button"
-                onClick={() => {
-                  if (currentTax.taxName && formData.location) {
-                    const newTax = {
-                      id: Date.now().toString(),
-                      taxName: currentTax.taxName,
-                      location: formData.location,
-                      taxPercentage: '',
-                      effectiveDate: new Date().toISOString().split('T')[0]
-                    };
-                    setTaxList(prev => [...prev, newTax]);
-                    setCurrentTax(prev => ({
-                      ...prev,
-                      taxName: '',
-                    }));
-                  }
-                }}
-                style={{ 
-                  ...addButtonStyle, 
-                  width: '100px',
-                  backgroundColor: '#28a745'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#218838';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
-                }}
-              >
-                <i className="fas fa-plus" style={{ fontSize: '9px' }}></i>
-                Add Tax
-              </button>
-            </div>
-            <div className="section-content">
-              {formData.location ? (
-                <>
-                  <div style={formRowStyle}>
-                    <select
-                      name="taxName"
-                      value={currentTax.taxName}
-                      onChange={handleTaxChange}
-                      style={selectStyle}
-                    >
-                      <option value="">Select Tax Name</option>
-                      {taxNames.map(tax => (
-                        <option key={tax} value={tax}>{tax}</option>
-                      ))}
-                    </select>
+  <div className="section-content">
+    {/* Tax dropdown always visible */}
+ <div style={formRowStyle}>
+  <select
+  name="taxLocationId"
+  value={currentTax.taxLocationId}
+  onChange={(e) => {
+    const selectedTaxLocationId = e.target.value;
+    const taxLocation = taxLocations.find(
+      tl => tl.taxLocationId.toString() === selectedTaxLocationId
+    );
 
-                    <div style={{ visibility: 'hidden' }}></div>
-                    <div style={{ visibility: 'hidden' }}></div>
-                  </div>
+    if (taxLocation) {
+      const newTax = {
+        id: Date.now().toString(),
+        taxLocationId: taxLocation.taxLocationId.toString(),
+        taxId: taxLocation.taxId.toString(),
+        taxName: getTaxNameById(taxLocation.taxId),
+        taxPercentage: taxLocation.taxPercentage
+      };
 
-                  <div className="table-responsive" style={{
-                    overflowX: 'auto',
-                    width: '100%',
-                    position: 'relative',
-                    marginBottom: '20px',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '4px'
-                  }}>
-                    <table className="data-table" style={{
-                      width: '100%',
-                      minWidth: '1000px',
-                      borderCollapse: 'collapse',
-                      backgroundColor: '#fff',
-                      fontSize: '14px',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                    }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f1f3f5' }}>
-                          <th style={tableHeaderStyle}>Tax Name</th>
-                          <th style={tableHeaderStyle}>Location</th>
-                          <th style={tableHeaderStyle}>Tax Percentage</th>
-                          <th style={tableHeaderStyle}>Effective Date</th>
-                          <th style={{
-                            ...tableHeaderStyle,
-                            width: '120px',
-                            textAlign: 'center',
-                            backgroundColor: '#f8f9fa'
-                          }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {taxList.map((tax) => (
-                          <tr key={tax.id} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={tableCellStyle}>{tax.taxName}</td>
-                            <td style={tableCellStyle}>{formData.location}</td>
-                            <td style={tableCellStyle}>
-                              <input
-                                type="number"
-                                value={tax.taxPercentage}
-                                onChange={(e) => handleTaxFieldChange(tax.id, 'taxPercentage', e.target.value)}
-                                style={inputStyle}
-                                placeholder="Enter Tax Percentage"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                              />
-                            </td>
-                            <td style={tableCellStyle}>
-                              <input
-                                type="date"
-                                value={tax.effectiveDate}
-                                onChange={(e) => handleTaxFieldChange(tax.id, 'effectiveDate', e.target.value)}
-                                style={inputStyle}
-                              />
-                            </td>
-                            <td style={{
-                              ...tableCellStyle,
-                              width: '120px',
-                              textAlign: 'center',
-                              backgroundColor: '#fff'
-                            }}>
-                              <button
-                                onClick={() => deleteTax(tax.id)}
-                                className="btn btn-danger btn-sm"
-                                style={deleteButtonStyle}
-                              >
-                                <i className="fas fa-trash-alt"></i>
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-              
-                </>
-              ) : (
-                <div style={{
-                  padding: '20px',
-                  textAlign: 'center',
-                  color: '#6c757d',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '4px'
-                }}>
-                  Please select a location in the main form first to add taxes.
-                </div>
-              )}
-            </div>
-          </div>
+      const isDuplicate = taxList.some(
+        t => t.taxLocationId === newTax.taxLocationId
+      );
 
-          <div className="form-buttons" style={{ 
+      if (!isDuplicate) {
+        setTaxList(prev => [...prev, newTax]);
+      }
+
+      // Reset dropdown
+      setCurrentTax({
+        taxLocationId: '',
+        taxId: '',
+        taxName: ''
+      });
+    }
+  }}
+  style={selectStyle}
+>
+  <option value="">Select Tax</option>
+  {taxLocations
+    .filter(tl => tl.locationId.toString() === formData.locationId)
+    .map(tl => (
+      <option key={tl.taxLocationId} value={tl.taxLocationId}>
+        {getTaxNameById(tl.taxId)} ({tl.taxPercentage}%)
+      </option>
+  ))}
+</select>
+</div>
+
+{/* Tax Table */}
+<div className="table-responsive" style={{
+  overflowX: 'auto',
+  width: '100%',
+  position: 'relative',
+  marginBottom: '20px',
+  border: '1px solid #dee2e6',
+  borderRadius: '4px'
+}}>
+  <table className="data-table" style={{
+    width: '100%',
+    minWidth: '1000px',
+    borderCollapse: 'collapse',
+    backgroundColor: '#fff',
+    fontSize: '14px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+  }}>
+    <thead>
+      <tr style={{ backgroundColor: '#f1f3f5' }}>
+        <th style={tableHeaderStyle}>Tax Name</th>
+        <th style={tableHeaderStyle}>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {taxList.map((tax) => (
+        <tr key={tax.id} style={{ borderBottom: '1px solid #eee' }}>
+          <td style={tableCellStyle}>{tax.taxName}</td>
+          <td style={tableCellStyle}>
+            <button
+              onClick={() => deleteTax(tax.id)}
+              className="btn btn-danger btn-sm"
+              style={deleteButtonStyle}
+            >
+              <i className="fas fa-trash-alt"></i> Delete
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+       <div className="form-buttons" style={{ 
             display: 'flex', 
             gap: '15px',
             justifyContent: 'flex-end',
             marginTop: '30px'
           }}>
-           <button 
+            {error && (
+              <div style={{ color: 'red', marginRight: 'auto' }}>
+                {error}
+              </div>
+            )}
+            <button 
               type="submit" 
               className="btn btn-success" 
               style={{
                 padding: '10px 20px',
                 borderRadius: '4px',
                 border: 'none',
-                backgroundColor: purchaseRecord ? '#28a745' : '#6c757d',
+                backgroundColor: isSubmitting ? '#6c757d' : '#28a745',
                 color: '#fff',
-                cursor: purchaseRecord ? 'pointer' : 'not-allowed',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 height: '40px',
                 minWidth: '120px'
               }}
-              disabled={!purchaseRecord}
+              disabled={isSubmitting}
             >
-              <i className="fas fa-save"></i> Save Purchase
+              {isSubmitting ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i> Processing...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-save"></i> Save Purchase
+                </>
+              )}
             </button>
   
             <button 
@@ -1355,142 +1328,8 @@ console.log('Selected Product:', product);
               <i className="fas fa-times"></i> Cancel
             </button>
           </div>
-        
         </form>
       </div>
     </div>
-
-   
   );
 }
-// const searchResultsStyle = {
-//   position: 'absolute',
-//   top: '100%',
-//   left: 0,
-//   right: 0,
-//   backgroundColor: '#fff',
-//   border: '1px solid #ddd',
-//   borderRadius: '4px',
-//   zIndex: 1000,
-//   maxHeight: '300px',
-//   overflowY: 'auto',
-//   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-// };
-
-// const searchResultItemStyle = {
-//   padding: '10px',
-//   cursor: 'pointer',
-//   borderBottom: '1px solid #eee',
-//   ':hover': {
-//     backgroundColor: '#f5f5f5'
-//   }
-// };
-// Shared styles at the bottom of the file
-const tableHeaderStyle = {
-  padding: '12px 15px',
-  textAlign: 'left',
-  borderBottom: '2px solid #dee2e6',
-  fontWeight: '600',
-  color: '#495057'
-};
-
-const tableCellStyle = {
-  padding: '12px 15px',
-  verticalAlign: 'middle'
-};
-
-const inputStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: '4px',
-  border: '1px solid #ddd',
-  fontSize: '14px',
-  height: '40px',
-  boxSizing: 'border-box'
-};
-
-const selectStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: '4px',
-  border: '1px solid #ddd',
-  fontSize: '14px',
-  height: '40px',
-  backgroundColor: '#fff',
-  boxSizing: 'border-box'
-};
-
-const formRowStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
-  gap: '20px',
-  marginBottom: '20px'
-};
-
-const formGroupStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px'
-};
-
-const labelStyle = {
-  fontWeight: '500',
-  fontSize: '14px',
-  color: '#333'
-};
-
-const sectionStyle = {
-  backgroundColor: '#fff',
-  padding: '25px',
-  borderRadius: '8px',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  marginBottom: '30px'
-};
-
-const sectionHeaderStyle = {
-  backgroundColor: '#f8f9fa',
-  padding: '15px 25px',
-  borderBottom: '1px solid #eee',
-  marginBottom: '20px'
-};
-
-const deleteButtonStyle = {
-  padding: '8px 16px',
-  borderRadius: '4px',
-  border: 'none',
-  backgroundColor: '#dc3545',
-  color: '#fff',
-  cursor: 'pointer',
-  fontSize: '14px',
-  height: '40px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '6px',
-  transition: 'all 0.2s ease',
-  width: '100px',
-  boxShadow: '0 2px 4px rgba(220, 53, 69, 0.2)'
-};
-
-// Update the base button style
-const addButtonStyle = {
-  padding: '0 12px',
-  borderRadius: '4px',
-  border: 'none',
-  backgroundColor: '#28a745',
-  color: '#fff',
-  cursor: 'pointer',
-  fontSize: '11px',
-  fontWeight: '500',
-  height: '30px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '6px',
-  transition: 'all 0.2s ease',
-  boxShadow: '0 1px 3px rgba(40, 167, 69, 0.2)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.2px',
-  whiteSpace: 'nowrap',
-  minWidth: 'fit-content'
-}; 

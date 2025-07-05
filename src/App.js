@@ -23,6 +23,7 @@ import Brands from "./pages/inventory/Brands";
 import DiscountList from "./pages/discount/DiscountList";
 import AddDiscount from "./pages/discount/AddDiscount";
 import TaxList from "./tax/TaxList";
+import ManageTax from "./tax/ManageTax";
 import StockList from "./pages/inventory/StockList";
 import StockTransfer from "./pages/stock/StockTransfer";
 import AddStockTransfer from "./pages/stock/AddStockTransfer";
@@ -129,13 +130,21 @@ function App() {
                     }
                   />
                   <Route
-                    path="/taxes" 
+                    path="/tax" 
                     element={
                       <ProtectedRoute>
                         <TaxList />
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+  path="/tax/manage"
+  element={
+    <ProtectedRoute>
+      <ManageTax />
+    </ProtectedRoute>
+  }
+/>
                   <Route
                     path="/stock/list"
                     element={

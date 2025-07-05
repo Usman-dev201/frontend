@@ -7,7 +7,7 @@ import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
     const navigate = useNavigate();
-    const { products, deleteProduct,loading } = useProducts();
+  const { products, stocks = [], deleteProduct, loading } = useProducts();
     const [showDropdown, setShowDropdown] = useState(null);
    
   useEffect(() => {
@@ -69,6 +69,9 @@ export default function ListProduct() {
   };
 
   // Close dropdown when clicking outside
+const getStockByProductId = (productId) => {
+  return stocks.find((stock) => stock.productId === productId);
+};
 
 
   return (
@@ -121,85 +124,102 @@ export default function ListProduct() {
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.productId}>
-                  <td>{product.productId}</td>
-                  <td>{product.date || new Date().toLocaleDateString()}</td>
-                  <td>
-                    {product.imageData ? (
-                      <img 
-                        src={product.imageData} 
-                        alt={product.productName} 
-                        className="product-image"
-                      />
-                    ) : (
-                      <div className="no-image">No Image</div>
-                    )}
-                  </td>
-                  <td>{product.productName}</td>
-                  <td>{product.shortName || '-'}</td>
-                  <td>{product.location}</td>
-                  <td>{product.sku}</td>
-                  <td>
-                    <span className={`stock-badge ${product.quantity <= 0 ? 'out-of-stock' : product.quantity <= product.quantityThreshold ? 'low-stock' : 'in-stock'}`}>
-                      {product.quantity || 0}
-                    </span>
-                  </td>
-                  <td>{formatPrice(product.purchasePrice)}</td>
-                  <td>{formatPrice(product.markedPrice)}</td>
-                  <td>{formatPrice(product.sellingPrice)}</td>
-                  <td>
-                    {product.discounts && product.discounts.length > 0 ? (
-                      <span className="discount-badge">
-                        {product.discounts[0].code}
-                      </span>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td>{product.category?.categoryName}</td>
-<td>{product.brand?.brandName}</td>
-                  <td>
-  <span className="barcode-type-badge">
-    {product.barcode?.barcodeType || 'N/A'}
-  </span>
-</td>
-                  <td>
-                    <span className={`alert-badge ${product.quantity <= product.quantityAlert  ? 'alert' : ''}`}>
-                      {product.quantityAlert }
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-dropdown">
-                      <button 
-                        className="action-button dropdown-toggle"
-                        onClick={() => toggleDropdown(product.productId)}
-                      >
-                        Actions <i className="fas fa-chevron-down"></i>
-                      </button>
-                      {showDropdown === product.productId && (
-                        <div className="dropdown-menu">
-                          <button 
-                            className="edit-button"
-                            onClick={() => handleEdit(product)}
-                          >
-                            <i className="fas fa-edit"></i>
-                            Edit
-                          </button>
-                          <button 
-                            className="delete-button"
-                            onClick={() => handleDelete(product.productId)}
-                          >
-                            <i className="fas fa-trash"></i>
-                            Delete
-                          </button>
-                        </div>
+               <tbody>
+              {products.map((product) => {
+                const stock = getStockByProductId(product.productId);
+                return (
+                  <tr key={product.productId}>
+                    <td>{product.productId}</td>
+                    <td>{product.date || new Date().toLocaleDateString()}</td>
+                    <td>
+                      {product.imageData ? (
+                        <img
+                          src={product.imageData}
+                          alt={product.productName}
+                          className="product-image"
+                        />
+                      ) : (
+                        <div className="no-image">No Image</div>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>{product.productName}</td>
+                    <td>{product.shortName || '-'}</td>
+                    <td>{stock?.location?.locationName || 'N/A'}</td>
+                    <td>{product.sku}</td>
+                    <td>
+                      <span
+                        className={`stock-badge ${
+                          stock?.currentStock <= 0
+                            ? 'out-of-stock'
+                            : stock?.currentStock <= product.quantityThreshold
+                            ? 'low-stock'
+                            : 'in-stock'
+                        }`}
+                      >
+                        {stock?.currentStock ?? 0}
+                      </span>
+                    </td>
+                    <td>{formatPrice(stock?.purchasePrice)}</td>
+                    <td>{formatPrice(stock?.markedPrice)}</td>
+                    <td>{formatPrice(stock?.sellingPrice)}</td>
+                    <td>
+                      {product.discounts?.length > 0 ? (
+                        <span className="discount-badge">
+                          {product.discounts[0].code}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>{product.category?.categoryName}</td>
+                    <td>{product.brand?.brandName}</td>
+                    <td>
+                      <span className="barcode-type-badge">
+                        {product.barcode?.barcodeType || 'N/A'}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`alert-badge ${
+                          stock?.currentStock <= product.quantityAlert
+                            ? 'alert'
+                            : ''
+                        }`}
+                      >
+                        {product.quantityAlert}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="action-dropdown">
+                        <button
+                          className="action-button dropdown-toggle"
+                          onClick={() => toggleDropdown(product.productId)}
+                        >
+                          Actions <i className="fas fa-chevron-down"></i>
+                        </button>
+                        {showDropdown === product.productId && (
+                          <div className="dropdown-menu">
+                            <button
+                              className="edit-button"
+                              onClick={() => handleEdit(product)}
+                            >
+                              <i className="fas fa-edit"></i>
+                              Edit
+                            </button>
+                            <button
+                              className="delete-button"
+                              onClick={() => handleDelete(product.productId)}
+                            >
+                              <i className="fas fa-trash"></i>
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

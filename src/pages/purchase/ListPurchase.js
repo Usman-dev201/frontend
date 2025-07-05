@@ -21,9 +21,9 @@ const getSupplierName = (id) => {
     navigate('/purchase/add');
   };
 
-  const handleEdit = (id) => {
-    navigate(`/purchase/edit/${id}`);
-  };
+ const handleEdit = (id) => {
+  navigate(`/purchase/edit/${id}`);
+};
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this purchase?')) {
@@ -92,12 +92,12 @@ const getSupplierName = (id) => {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => handleEdit(purchase.id)}
-                      >
-                        <i className="fas fa-edit"></i> Edit
-                      </button>
+                     <button 
+  className="btn btn-primary"
+  onClick={() => handleEdit(purchase.purchaseId)}  
+>
+  <i className="fas fa-edit"></i> Edit
+</button>
                       <button 
                         className="btn btn-danger"
                         onClick={() => handleDelete(purchase.id)}

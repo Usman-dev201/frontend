@@ -8,6 +8,20 @@ export const TaxProvider = ({ children }) => {
   const [taxList, setTaxList] = useState([]);
 
 const [loading, setLoading] = useState(false);
+const getTaxLocations = async () => {
+  const response = await api.get("/TaxLocation"); // adjust endpoint as needed
+  return response.data;
+};
+
+const addTaxLocation = async (taxLocationData) => {
+  try {
+    const response = await api.post('/TaxLocation', [taxLocationData]); // Send as an array
+    return response.data;
+  } catch (error) {
+    console.error("Error adding tax location:", error);
+    throw error;
+  }
+};
  const fetchTaxes = async () => {
   try {
     setLoading(true);
@@ -71,7 +85,15 @@ const [loading, setLoading] = useState(false);
   }, []);
 
   return (
-    <TaxContext.Provider value={{ taxList, addTax, editTax, deleteTax , loading}}>
+    <TaxContext.Provider value={{
+        taxList,
+        addTax,
+        editTax,
+        deleteTax,
+        getTaxLocations,
+          addTaxLocation,
+        loading,
+      }}>
       {children}
     </TaxContext.Provider>
   );

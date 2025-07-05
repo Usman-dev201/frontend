@@ -18,7 +18,17 @@ export function PurchaseProvider({ children }) {
   const [taxNames, setTaxNames] = useState([]);
 const [discountTypes, setDiscountTypes] = useState([]); 
   const [productDiscounts, setProductDiscounts] = useState([]);
+  
+const [taxLocations, setTaxLocations] = useState([]);
 
+const fetchTaxLocations = async () => {
+  try {
+    const res = await api.get('/TaxLocation');
+    setTaxLocations(res.data);
+  } catch (error) {
+    console.error('Error fetching tax locations:', error);
+  }
+};
 const fetchProductDiscountsWithProductName = async () => {
   try {
     const res = await api.get('/ProductPurchaseDiscount/WithProductInfo');
@@ -101,6 +111,15 @@ const fetchProducts = async (searchTerm = '') => {
       console.error('Error fetching discount types:', error);
     }
   };
+   const fetchPurchaseDiscountTypes = async () => {
+    try {
+      const res = await api.get('/PurchaseDiscount/discountType');
+      setDiscountTypes(res.data);
+    } catch (error) {
+      console.error('Error fetching discount types:', error);
+    }
+  };
+
 
   const fetchTaxNames = async () => {
     try {
@@ -221,10 +240,15 @@ const fetchProducts = async (searchTerm = '') => {
     }
   };
 
-  // Optional: Get purchase by ID (from local state)
-  const getPurchaseById = (id) => {
-    return purchases.find(p => p.id === id);
-  };
+  const getPurchaseById = async (id) => {
+  try {
+    const res = await api.get(`/PurchaseRecord/${id}`);
+    return res.data;
+  } catch (error) {
+    console.error(`Error fetching purchase by ID (${id}):`, error);
+    throw error;
+  }
+};
 const addPurchase = async (purchaseData) => {
   try {
      const locationObj = locations.find(l => l.locationId === purchaseData.locationId);
@@ -261,9 +285,11 @@ const addPurchase = async (purchaseData) => {
     fetchProducts();
     fetchDiscountCodes();
     fetchDiscountTypes();
+     fetchPurchaseDiscountTypes();
     fetchTaxNames();
+    fetchTaxLocations();
   }, []);
-  return (
+   return (
     <PurchaseContext.Provider value={{
       purchases,
       suppliers,
@@ -274,13 +300,12 @@ const addPurchase = async (purchaseData) => {
       discountCodes,
       discountTypes,
       taxNames,
-        fetchProductDiscountsWithProductName,
-    productDiscounts,
+      fetchProductDiscountsWithProductName,
+      productDiscounts,
       fetchProducts,
       fetchPurchases,
       addPurchase,
-
-
+      taxLocations,
       updatePurchase,
       deletePurchase,
       getPurchaseById,
@@ -291,7 +316,8 @@ const addPurchase = async (purchaseData) => {
       addPurchaseDiscount,
       deletePurchaseDiscount,
       addPurchaseTax,
-      deletePurchaseTax
+      deletePurchaseTax,
+     
     }}>
       {children}
     </PurchaseContext.Provider>
