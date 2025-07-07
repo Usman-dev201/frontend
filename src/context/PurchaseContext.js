@@ -200,8 +200,13 @@ const getPurchaseDiscountsByPurchaseId = async (purchaseId) => {
     const res = await api.get(`/PurchaseDiscount/byPurchaseId/${purchaseId}`);
     return res.data;
   } catch (error) {
+    // Handle 404 (no discounts found) by returning empty array
+    if (error.response?.status === 404) {
+      console.log(`No discounts found for purchase ${purchaseId} - returning empty array`);
+      return [];
+    }
     console.error('Failed to fetch purchase discounts:', error);
-    return [];
+    throw error; // Re-throw other errors
   }
 };
 const updateProductPurchaseRecords = async (records) => {
@@ -238,11 +243,7 @@ const updateProductPurchaseDiscounts = async (discounts) => {
     for (const discount of discounts) {
       const id = discount.productPurchaseDiscountId;
 
-      if (!id) {
-        console.error("❌ Missing ProductPurchaseDiscountId:", discount);
-        continue; // skip or throw depending on your use case
-      }
-
+   
       const payload = {
         loTId: discount.loTId,
         discountId: discount.discountId,
@@ -283,16 +284,21 @@ const updateProductPurchaseDiscounts = async (discounts) => {
   };
   const updatePurchaseDiscounts = async (discounts) => {
   try {
-    // Send the entire list as one PUT request (not individual calls)
+    // Only send if we have discounts
+    if (!discounts || discounts.length === 0) {
+      console.log('No discounts to update - skipping API call');
+      return [];
+    }
+    
     const res = await api.put('/PurchaseDiscount', discounts);
     return res.data;
   } catch (error) {
-  if (error.response && error.response.data && error.response.data.errors) {
-    console.error("Validation errors:", error.response.data.errors);
-  } else {
-    console.error("Error updating purchase discounts:", error);
-  }
-  throw error;
+    if (error.response?.data?.errors) {
+      console.error("Validation errors:", error.response.data.errors);
+    } else {
+      console.error("Error updating purchase discounts:", error);
+    }
+    throw error;
   }
 };
 
@@ -315,10 +321,15 @@ const getPurchaseTaxRecordsByPurchaseId = async (purchaseId) => {
 };
 const updatePurchaseTaxes = async (taxes) => {
   try {
+    if (!taxes || taxes.length === 0) {
+      console.log('No tax records to update - skipping API call');
+      return [];
+    }
+
     const response = await api.put('/PurchaseTax', taxes);
     return response.data;
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.errors) {
+    if (error.response?.data?.errors) {
       console.error("Validation errors:", error.response.data.errors);
     } else {
       console.error("Error updating purchase taxes:", error);
@@ -326,6 +337,7 @@ const updatePurchaseTaxes = async (taxes) => {
     throw error;
   }
 };
+
  const addPurchaseTax = async (data) => {
     try {
       const res = await api.post('/PurchaseTax', data);

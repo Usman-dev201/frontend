@@ -61,7 +61,7 @@ export default function StockList() {
             <tbody>
                {stocks.map((stock) => (
                 <tr key={`${stock.productId}-${stock.locationId}`}>
-                  <td>{stock.stockId}</td>
+                  <td>{stock.productId}</td>
                   <td>{stock.product?.productName}</td>
                   <td>{stock.location?.locationName}</td>
                   <td>{formatPrice(stock.purchasePrice)}</td>

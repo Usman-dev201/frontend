@@ -31,7 +31,7 @@ export default function EditPurchase() {
      updatePurchaseTaxes,
      discountCodes,
      discountTypes,
-     
+     deleteProductPurchaseDiscount
     
     } = usePurchase();
  const calculateDiscountedPrice = (product, discount) => {
@@ -188,6 +188,7 @@ setTaxList(enrichedTaxList);
    getPurchaseDiscountsByPurchaseId, 
    getPurchaseTaxRecordsByPurchaseId,
     navigate]);
+
 const getTaxNameById = (taxId) => {
   const tax = taxNames.find(t => t.taxId.toString() === taxId.toString());
   return tax ? tax.taxName : 'Unknown';
@@ -258,17 +259,33 @@ const getTaxNameById = (taxId) => {
 const handleDeleteProduct = async (productId) => {
   const productToDelete = selectedProducts.find(product => product.productId === productId);
 
-  if (productToDelete?.productPurchaseRecordId) {
-    try {
-      await deleteProductPurchaseRecord(productToDelete.productPurchaseRecordId);
-    } catch (error) {
-      console.error('Failed to delete product purchase record:', error);
+  if (productToDelete) {
+    // Step 1: Delete all associated ProductPurchaseDiscounts
+    if (productToDelete.productPurchaseDiscountIds && productToDelete.productPurchaseDiscountIds.length > 0) {
+      for (const discountId of productToDelete.productPurchaseDiscountIds) {
+        try {
+          await deleteProductPurchaseDiscount(discountId);
+        } catch (error) {
+          console.error(`Failed to delete discount ID ${discountId}:`, error);
+        }
+      }
     }
-  }
 
-  setSelectedProducts(prev => prev.filter(product => product.productId !== productId));
-  setDiscountList(prev => prev.filter(discount => discount.productId !== productId));
+    // Step 2: Delete the associated ProductPurchaseRecord
+    if (productToDelete.productPurchaseRecordId) {
+      try {
+        await deleteProductPurchaseRecord(productToDelete.productPurchaseRecordId);
+      } catch (error) {
+        console.error('Failed to delete product purchase record:', error);
+      }
+    }
+
+    // Step 3: Update state
+    setSelectedProducts(prev => prev.filter(product => product.productId !== productId));
+    setDiscountList(prev => prev.filter(discount => discount.productId !== productId));
+  }
 };
+
   
 
   const handleDiscountChange = (e) => {
@@ -371,6 +388,10 @@ const updatedPurchaseDiscounts = purchaseDiscountList.map(d => ({
   discountPercentage: parseFloat(d.discountPercentage)
 }));
 await updatePurchaseDiscounts(updatedPurchaseDiscounts);
+// Only update purchase discounts if there are any
+if (updatedPurchaseDiscounts.length > 0) {
+  await updatePurchaseDiscounts(updatedPurchaseDiscounts);
+}
 
 const updatedTaxRecords = taxList.map(t => ({
   purchaseTaxId: parseInt(t.purchaseTaxId), // You must store this when loading existing taxes
@@ -378,7 +399,9 @@ const updatedTaxRecords = taxList.map(t => ({
   taxLocationId: parseInt(t.taxLocationId)
 }));
 
-await updatePurchaseTaxes(updatedTaxRecords);
+if (updatedTaxRecords.length > 0) {
+  await updatePurchaseTaxes(updatedTaxRecords);
+}
     navigate('/purchase/list');
   } catch (error) {
     console.error("Failed to update purchase:", error);
