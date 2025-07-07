@@ -27,6 +27,7 @@ export default function AddPurchase() {
     deleteProductPurchaseDiscount,
     deletePurchaseDiscount,
       deletePurchaseTax,
+      
   } = usePurchase();
   
   const calculateDiscountedPrice = (product, discount) => {

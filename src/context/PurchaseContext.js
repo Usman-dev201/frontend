@@ -18,6 +18,8 @@ export function PurchaseProvider({ children }) {
   const [taxNames, setTaxNames] = useState([]);
 const [discountTypes, setDiscountTypes] = useState([]); 
   const [productDiscounts, setProductDiscounts] = useState([]);
+  // const [productPurchaseRecords, setProductPurchaseRecords] = useState([]);
+
   
 const [taxLocations, setTaxLocations] = useState([]);
 
@@ -174,6 +176,44 @@ const fetchProducts = async (searchTerm = '') => {
     throw error;
   }
 };
+const getProductPurchaseRecordsByPurchaseId = async (purchaseId) => {
+  try {
+    const res = await api.get(`/ProductPurchaseRecord/byPurchase/${purchaseId}`);
+    return res.data; 
+  } catch (error) {
+    console.error('Error fetching product purchase records:', error);
+    throw error;
+  }
+};
+
+const getProductPurchaseDiscountsByPurchaseId = async (purchaseId) => {
+  try {
+    const res = await api.get(`/ProductPurchaseDiscount/byPurchaseId/${purchaseId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to fetch product discounts:", error);
+    return [];
+  }
+};
+const getPurchaseDiscountsByPurchaseId = async (purchaseId) => {
+  try {
+    const res = await api.get(`/PurchaseDiscount/byPurchaseId/${purchaseId}`);
+    return res.data;
+  } catch (error) {
+    console.error('Failed to fetch purchase discounts:', error);
+    return [];
+  }
+};
+const updateProductPurchaseRecords = async (records) => {
+  try {
+    for (const record of records) {
+      await api.put(`/ProductPurchaseRecord/${record.lotId}`, record); 
+    }
+  } catch (error) {
+    console.error('Error updating ProductPurchaseRecords:', error);
+    throw error;
+  }
+};
 
   // Delete product purchase record
   const deleteProductPurchaseRecord = async (id) => {
@@ -193,6 +233,35 @@ const fetchProducts = async (searchTerm = '') => {
       throw error;
     }
   };
+const updateProductPurchaseDiscounts = async (discounts) => {
+  try {
+    for (const discount of discounts) {
+      const id = discount.productPurchaseDiscountId;
+
+      if (!id) {
+        console.error("❌ Missing ProductPurchaseDiscountId:", discount);
+        continue; // skip or throw depending on your use case
+      }
+
+      const payload = {
+        loTId: discount.loTId,
+        discountId: discount.discountId,
+        discountType: discount.discountType,
+        discountAmount: discount.discountAmount,
+        discountPercentage: discount.discountPercentage
+      };
+
+      console.log("📦 Sending update for ID:", id, payload);
+      await api.put(`/ProductPurchaseDiscount/${id}`, payload);
+    }
+  } catch (error) {
+    console.error("Error updating product discounts:", error);
+    if (error.response?.data?.errors) {
+      console.log("🔍 Validation Errors:", error.response.data.errors);
+    }
+    throw error;
+  }
+};
 
   // Delete product purchase discount
   const deleteProductPurchaseDiscount = async (id) => {
@@ -212,6 +281,21 @@ const fetchProducts = async (searchTerm = '') => {
       throw error;
     }
   };
+  const updatePurchaseDiscounts = async (discounts) => {
+  try {
+    // Send the entire list as one PUT request (not individual calls)
+    const res = await api.put('/PurchaseDiscount', discounts);
+    return res.data;
+  } catch (error) {
+  if (error.response && error.response.data && error.response.data.errors) {
+    console.error("Validation errors:", error.response.data.errors);
+  } else {
+    console.error("Error updating purchase discounts:", error);
+  }
+  throw error;
+  }
+};
+
   // Delete purchase discount
   const deletePurchaseDiscount = async (id) => {
     try {
@@ -220,7 +304,28 @@ const fetchProducts = async (searchTerm = '') => {
       console.error('Error deleting purchase discount:', error);
     }
   };
-
+const getPurchaseTaxRecordsByPurchaseId = async (purchaseId) => {
+  try {
+    const res = await api.get(`/PurchaseTax/byPurchaseId/${purchaseId}`);
+    return res.data;
+  } catch (error) {
+    console.error('Failed to fetch purchase tax records:', error);
+    return [];
+  }
+};
+const updatePurchaseTaxes = async (taxes) => {
+  try {
+    const response = await api.put('/PurchaseTax', taxes);
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data && error.response.data.errors) {
+      console.error("Validation errors:", error.response.data.errors);
+    } else {
+      console.error("Error updating purchase taxes:", error);
+    }
+    throw error;
+  }
+};
  const addPurchaseTax = async (data) => {
     try {
       const res = await api.post('/PurchaseTax', data);
@@ -310,6 +415,7 @@ const addPurchase = async (purchaseData) => {
       deletePurchase,
       getPurchaseById,
       addProductPurchaseRecord,
+      getProductPurchaseRecordsByPurchaseId,
       deleteProductPurchaseRecord,
       addProductPurchaseDiscount,
       deleteProductPurchaseDiscount,
@@ -317,7 +423,14 @@ const addPurchase = async (purchaseData) => {
       deletePurchaseDiscount,
       addPurchaseTax,
       deletePurchaseTax,
-     
+      updateProductPurchaseRecords,
+      getProductPurchaseDiscountsByPurchaseId,
+  updateProductPurchaseDiscounts,
+  getPurchaseDiscountsByPurchaseId,
+  updatePurchaseDiscounts,
+  getPurchaseTaxRecordsByPurchaseId,
+  updatePurchaseTaxes
+  
     }}>
       {children}
     </PurchaseContext.Provider>

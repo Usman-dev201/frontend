@@ -71,13 +71,13 @@ const getSupplierName = (id) => {
                  <td>{getSupplierName(purchase.supplierId)}</td>
     <td>{getLocationName(purchase.locationId)}</td>
                   <td className="purchase-amount">
-                    ${purchase.totalAmount?.toFixed(2) || '0.00'}
+                    Rs {purchase.totalAmount?.toFixed(2) || '0.00'}
                   </td>
                   <td className="purchase-amount">
-                    ${purchase.grandTotal?.toFixed(2) || '0.00'}
+                    Rs {purchase.grandTotal?.toFixed(2) || '0.00'}
                   </td>
                   <td className="purchase-amount">
-                    ${purchase.amountPaid?.toFixed(2) || '0.00'}
+                    Rs {purchase.amountPaid?.toFixed(2) || '0.00'}
                   </td>
                   <td className="purchase-date">{purchase.paymentDue || '-'}</td>
                   <td>
