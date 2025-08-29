@@ -810,7 +810,38 @@ if (updatedTaxRecords.length > 0) {
               </div>
             </div>
 
-          
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end',
+              marginTop: '20px',
+              paddingTop: '20px',
+              borderTop: '1px solid #eee'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  // Add your purchase logic here
+                }}
+                style={{ 
+                  ...addButtonStyle, 
+                  width: '130px',
+                  backgroundColor: '#28a745',
+                  height: '36px',
+                  fontSize: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#218838';
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#28a745';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
+                }}
+              >
+                <i className="fas fa-plus" style={{ fontSize: '10px' }}></i>
+                Add Purchase
+              </button>
+            </div>
           </div>
 
          {/* Products Section */}
@@ -1756,32 +1787,19 @@ if (updatedTaxRecords.length > 0) {
             gap: '15px',
             justifyContent: 'flex-end',
             marginTop: '30px'
+          }}>
+            <button type="submit" className="btn btn-success" style={{
+              padding: '10px 20px',
+              borderRadius: '4px',
+              border: 'none',
+              backgroundColor: '#28a745',
+              color: '#fff',
+              cursor: 'pointer',
+              height: '40px',
+              minWidth: '120px'
             }}>
-          <button 
-  type="submit" 
-  className="btn btn-success" 
-  disabled={isSubmitting}
-  style={{
-    padding: '10px 20px',
-    borderRadius: '4px',
-    border: 'none',
-    backgroundColor: isSubmitting ? '#6c757d' : '#28a745',
-    color: '#fff',
-    cursor: isSubmitting ? 'not-allowed' : 'pointer',
-    height: '40px',
-    minWidth: '120px'
-  }}
->
-  {isSubmitting ? (
-    <>
-      <i className="fas fa-spinner fa-spin"></i> Updating...
-    </>
-  ) : (
-    <>
-      <i className="fas fa-save"></i> Update Purchase
-    </>
-  )}
-</button>
+              <i className="fas fa-save"></i> Update Purchase
+            </button>
             <button 
               type="button" 
               className="btn btn-secondary"
@@ -1790,7 +1808,7 @@ if (updatedTaxRecords.length > 0) {
                 padding: '10px 20px',
                 borderRadius: '4px',
                 border: 'none',
-                backgroundColor: '#6c757d',
+                backgroundColor: '#dc3545',
                 color: '#fff',
                 cursor: 'pointer',
                 height: '40px',
@@ -1875,7 +1893,27 @@ const sectionHeaderStyle = {
   marginBottom: '20px'
 }; 
 
-
+  const addButtonStyle = {
+    padding: '0 12px',
+    borderRadius: '4px',
+    border: 'none',
+    backgroundColor: '#28a745',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '11px',
+    fontWeight: '500',
+    height: '30px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(40, 167, 69, 0.2)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.2px',
+    whiteSpace: 'nowrap',
+    minWidth: 'fit-content'
+  };
 const inputCellStyle = {
   width: '150px',
   padding: '8px',

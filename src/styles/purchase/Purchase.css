@@ -193,34 +193,34 @@
 }
 
 .btn-success {
-  background: #48bb78;
+  background: #4299e1 ;
   color: white;
 }
 
 .btn-success:hover {
-  background: #38a169;
+  background: #4299e1 ;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(72, 187, 120, 0.2);
 }
 
 .btn-danger {
-  background: #f56565;
+  background: #dc3545;
   color: white;
 }
 
 .btn-danger:hover {
-  background: #e53e3e;
+  background: #dc3545;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(245, 101, 101, 0.2);
 }
 
 .btn-secondary {
-  background: #a0aec0;
+  background: #dc3545;
   color: white;
 }
 
 .btn-secondary:hover {
-  background: #718096;
+  background: #dc3545;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(160, 174, 192, 0.2);
 }

@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
+import api from '../../api/axios'; // your axios instance
 import './Roles.css';
 
 export default function Roles() {
-  const [roles] = useState([
-    { roleId: 1, roleName: 'Admin' },
-    { roleId: 2, roleName: 'Inventory Manager' },
-    { roleId: 3, roleName: 'User' },
-    { roleId: 4, roleName: 'Developer' }
-  ]);
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await api.get('/Role'); // adjust endpoint
+        setRoles(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load roles.');
+        setLoading(false);
+      }
+    };
+
+    fetchRoles();
+  }, []);
 
   return (
     <div className="dashboard">
@@ -21,26 +35,32 @@ export default function Roles() {
             <h1>Role Management</h1>
           </div>
 
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Role ID</th>
-                  <th>Role Name</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roles.map(role => (
-                  <tr key={role.roleId}>
-                    <td>{role.roleId}</td>
-                    <td>{role.roleName}</td>
+          {loading ? (
+            <p>Loading roles...</p>
+          ) : error ? (
+            <p className="error">{error}</p>
+          ) : (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Role ID</th>
+                    <th>Role Name</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {roles.map((role) => (
+                    <tr key={role.roleId}>
+                      <td>{role.roleId}</td>
+                      <td>{role.roleName}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-} 
+}
