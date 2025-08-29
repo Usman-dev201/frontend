@@ -13,7 +13,14 @@ import '../../styles/AddProduct.css';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const { addProduct,  loading , setLoading} = useProducts();
+const { 
+  addProduct,  
+  loading, 
+  setLoading, 
+  discountCodes, 
+  discountTypes, 
+  addProductDiscount   // ⬅️ add this
+} = useProducts();
     const { categories } = useCategories()
     const { brands} = useBrands();
      const { barcodes } = useBarcode(); 
@@ -21,11 +28,7 @@ export default function AddProduct() {
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
   const [selectedDiscountType, setSelectedDiscountType] = useState('');
-
-  // Sample discount codes and types (keep as is)
-  const discountCodes = ['SUMMER2024', 'SPECIAL50'];
-  const discountTypes = ['percentage', 'fixed'];
-
+const [currentProductId, setCurrentProductId] = useState(null);
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -114,7 +117,7 @@ export default function AddProduct() {
 
   const newProduct = {
     date: formData.get('date') || new Date().toISOString().split('T')[0],
-    imageData: uploadedImageUrl,
+     imageUrl: uploadedImageUrl,
     productName: formData.get('productName'),
     productDescription: formData.get('description'),
     sku: formData.get('sku'),
@@ -128,34 +131,28 @@ export default function AddProduct() {
     quantityAlert: parseInt(formData.get('quantityThreshold')),
   
   };
-     try {
-        // Show loading state if you have one
-        setLoading(true);
-        
-        await addProduct(newProduct);
-        
-        // Optional: Show success notification
-        alert('Product added successfully!');
-        
-        // Navigate to product list
-        navigate('/product/list');
-    } catch (error) {
-        console.error('Failed to add product:', error);
-        
-        // Show error message
-        alert('Failed to add product. Please try again.');
-        
-        // Optionally: Handle specific error cases
-        if (error.response) {
-            if (error.response.status === 400) {
-                alert('Validation error: ' + error.response.data);
-            } else if (error.response.status === 500) {
-                alert('Server error. Please try again later.');
-            }
-        }
-    } finally {
-        setLoading(false);
+    try {
+    setLoading(true);
+    const addedProduct = await addProduct(newProduct);
+
+    const confirmDiscount = window.confirm(
+      "Product added successfully! Do you also want to add discounts to this product?"
+    );
+
+    if (confirmDiscount) {
+      // Stay on page → let user click "Apply Discount" button
+      // Save productId in state so we know which product to apply discount to
+      setCurrentProductId(addedProduct.productId);
+      alert("Now you can add discounts using the Apply Discount button.");
+    } else {
+      navigate('/product/list');
     }
+  } catch (error) {
+    console.error('Failed to add product:', error);
+    alert('Failed to add product. Please try again.');
+  } finally {
+    setLoading(false);
+  }
 };
 
   if (loading) {
@@ -309,28 +306,30 @@ export default function AddProduct() {
               <div className="discount-controls">
                 <div className="discount-dropdowns">
                   <select 
-                    value={selectedDiscountCode}
-                    onChange={handleDiscountCodeChange}
-                    className="discount-select"
-                  >
-                    <option value="">Select Discount Code</option>
-                    {discountCodes.map(code => (
-                      <option key={code} value={code}>{code}</option>
-                    ))}
-                  </select>
+  value={selectedDiscountCode}
+  onChange={handleDiscountCodeChange}
+  className="discount-select"
+>
+  <option value="">Select Discount Code</option>
+  {discountCodes.map((discount, idx) => (
+    <option key={idx} value={discount.discountCode}>
+      {discount.discountCode}
+    </option>
+  ))}
+</select>
 
-                  <select 
-                    value={selectedDiscountType}
-                    onChange={handleDiscountTypeChange}
-                    className="discount-select"
-                  >
-                    <option value="">Select Discount Type</option>
-                    {discountTypes.map(type => (
-                      <option key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </option>
-                    ))}
-                  </select>
+<select 
+  value={selectedDiscountType}
+  onChange={handleDiscountTypeChange}
+  className="discount-select"
+>
+  <option value="">Select Discount Type</option>
+  {discountTypes.map((type, idx) => (
+    <option key={idx} value={type}>
+      {type}
+    </option>
+  ))}
+</select>
                 </div>
               </div>
 
@@ -338,7 +337,7 @@ export default function AddProduct() {
                 <table className="products-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
+                  
                       <th>Discount Code</th>
                       <th>Discount Type</th>
                       <th>Discount Amount</th>
@@ -349,7 +348,7 @@ export default function AddProduct() {
                   <tbody>
                     {discounts.map((discount, index) => (
                       <tr key={index}>
-                        <td>{index + 1}</td>
+                      
                         <td>{discount.code}</td>
                         <td>{discount.discountType}</td>
                         <td>
@@ -394,14 +393,26 @@ export default function AddProduct() {
                 <i className="fas fa-plus"></i>
                 Add Product
               </button>
-              <button 
-                type="button" 
-                className="apply-discount-button"
-                onClick={() => navigate('/discounts')}
-              >
-                <i className="fas fa-tag"></i>
-                Apply Discount
-              </button>
+             <button 
+  type="button" 
+  className="apply-discount-button"
+  onClick={async () => {
+    if (!currentProductId) {
+      alert("Please add a product first before applying discounts.");
+      return;
+    }
+    try {
+      await addProductDiscount(currentProductId, discounts);
+      alert("Discounts applied successfully!");
+      navigate('/product/list');
+    } catch (error) {
+      alert("Failed to apply discounts. Please try again.");
+    }
+  }}
+>
+  <i className="fas fa-tag"></i>
+  Apply Discount
+</button>
               <button 
                 type="button" 
                 className="cancel-button"

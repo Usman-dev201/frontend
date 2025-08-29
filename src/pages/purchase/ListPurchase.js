@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { usePurchase } from '../../context/PurchaseContext';
@@ -99,11 +100,12 @@ const getSupplierName = (id) => {
   <i className="fas fa-edit"></i> Edit
 </button>
                       <button 
-                        className="btn btn-danger"
-                        onClick={() => handleDelete(purchase.id)}
-                      >
-                        <i className="fas fa-trash"></i> Delete
-                      </button>
+    className="btn btn-danger"
+    type="button"
+    onClick={() => handleDelete(purchase.purchaseId)}   
+  >
+    <i className="fas fa-trash"></i> Delete
+  </button>
                     </div>
                   </td>
                 </tr>

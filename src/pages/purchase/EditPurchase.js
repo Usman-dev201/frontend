@@ -16,7 +16,7 @@ export default function EditPurchase() {
      paymentStatuses , 
      getProductPurchaseRecordsByPurchaseId,
      updateProductPurchaseRecords,
-
+fetchPurchases,
     //  addProductPurchaseRecord ,
      getProductPurchaseDiscountsByPurchaseId,   
      getPurchaseDiscountsByPurchaseId,
@@ -31,7 +31,9 @@ export default function EditPurchase() {
      updatePurchaseTaxes,
      discountCodes,
      discountTypes,
-     deleteProductPurchaseDiscount
+     deleteProductPurchaseDiscount,
+     deletePurchaseDiscount,
+     deletePurchaseTax
     
     } = usePurchase();
  const calculateDiscountedPrice = (product, discount) => {
@@ -59,8 +61,77 @@ export default function EditPurchase() {
   purchaseStatus: 'Pending',
   paymentStatus: 'Unpaid'
 });
+const [showLocationInfo, setShowLocationInfo] = useState(false);
+const [showStatusInfo, setShowStatusInfo] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
 // const [existingProducts, setExistingProducts] = useState([]);
 // const [newProducts] = useState([]);
+const calculateTotalAmount = () => {
+  return selectedProducts.reduce((total, product) => {
+    const quantity = parseInt(product.quantityPurchased) || 0;
+    const priceAfterDiscount = parseFloat(product.purchasePriceAfterDiscount) || 0;
+    return total + (quantity * priceAfterDiscount);
+  }, 0).toFixed(2);
+};
+
+const calculateGrandTotal = () => {
+  const subtotal = parseFloat(calculateTotalAmount()) || 0;
+  
+  // Calculate purchase-level discounts
+  let discountAmount = 0;
+  purchaseDiscountList.forEach(discount => {
+    if (discount.discountType === 'Fixed') {
+      discountAmount += parseFloat(discount.discountAmount) || 0;
+    } else if (discount.discountType === 'Percentage') {
+      const discountPercentage = parseFloat(discount.discountPercentage) || 0;
+      discountAmount += subtotal * (discountPercentage / 100);
+    }
+  });
+  
+  // Apply discounts to get discounted subtotal
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  
+  // Calculate taxes
+  let totalTaxAmount = 0;
+  taxList.forEach(tax => {
+    const taxPercentage = parseFloat(tax.taxPercentage) || 0;
+    totalTaxAmount += discountedSubtotal * (taxPercentage / 100);
+  });
+  
+  // Calculate grand total
+  const grandTotal = discountedSubtotal + totalTaxAmount;
+  
+  return grandTotal.toFixed(2);
+};
+
+const calculateDiscountAmount = () => {
+  const subtotal = parseFloat(calculateTotalAmount()) || 0;
+  let discountAmount = 0;
+  
+  purchaseDiscountList.forEach(discount => {
+    if (discount.discountType === 'Fixed') {
+      discountAmount += parseFloat(discount.discountAmount) || 0;
+    } else if (discount.discountType === 'Percentage') {
+      const discountPercentage = parseFloat(discount.discountPercentage) || 0;
+      discountAmount += subtotal * (discountPercentage / 100);
+    }
+  });
+  
+  return discountAmount.toFixed(2);
+};
+
+const calculateTaxAmount =  () => {
+  const subtotal = calculateTotalAmount() - calculateDiscountAmount();
+  return taxList.reduce((acc, tax) => {
+    const percentage = parseFloat(tax.taxPercentage) || 0;
+    return acc + (subtotal * percentage) / 100;
+  }, 0);
+};
+const calculatePaymentDue = () => {
+  const grandTotal = parseFloat(calculateGrandTotal());
+  const amountPaid = parseFloat(formData.amountPaid) || 0;
+  return Math.max(0, grandTotal - amountPaid).toFixed(2);
+};
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -169,9 +240,11 @@ console.log('Loaded purchase taxes:', purchaseTaxes);
 
 const enrichedTaxList = purchaseTaxes.map(tax => ({
   id: tax.purchaseTaxId, // for key
-  purchaseTaxId: tax.purchaseTaxId,
-  taxLocationId: tax.taxLocationId,
-  taxName: tax.taxLocation?.tax?.taxName || 'Unknown Tax'
+purchaseTaxId: tax.purchaseTaxId,
+  taxLocationId: tax.taxLocationId.toString(), // ✅ make sure it's string for select
+  taxId: tax.taxLocation?.tax?.taxId?.toString() || '',
+  taxName: tax.taxLocation?.tax?.taxName || 'Unknown Tax',
+  taxPercentage: tax.taxLocation?.taxPercentage || 0
 }));
 
 setTaxList(enrichedTaxList);
@@ -195,6 +268,16 @@ const getTaxNameById = (taxId) => {
 };
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+     if (name === "purchaseStatus") {
+    // ✅ Allow changing freely before submit
+    setFormData(prev => ({
+      ...prev,
+      purchaseStatus: value
+    }));
+    return;
+  }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -230,7 +313,12 @@ const getTaxNameById = (taxId) => {
       }
     }
   };
-
+const calculateSellingPrice = (purchasePrice, profitMargin) => {
+  const price = parseFloat(purchasePrice) || 0;
+  const margin = parseFloat(profitMargin) || 0;
+  if (margin === 0) return "0.00";
+  return (price * (1 + margin / 100)).toFixed(2);
+};
   const handleProductSelect = (product) => {
     const exists = selectedProducts.some(p => p.productId === product.productId);
 
@@ -259,34 +347,68 @@ const getTaxNameById = (taxId) => {
 const handleDeleteProduct = async (productId) => {
   const productToDelete = selectedProducts.find(product => product.productId === productId);
 
-  if (productToDelete) {
-    // Step 1: Delete all associated ProductPurchaseDiscounts
-    if (productToDelete.productPurchaseDiscountIds && productToDelete.productPurchaseDiscountIds.length > 0) {
-      for (const discountId of productToDelete.productPurchaseDiscountIds) {
-        try {
-          await deleteProductPurchaseDiscount(discountId);
-        } catch (error) {
-          console.error(`Failed to delete discount ID ${discountId}:`, error);
-        }
+  if (productToDelete && productToDelete.lotId) {
+    try {
+      // Delete associated ProductPurchaseDiscounts
+      const productDiscountsToDelete = productDiscounts.filter(
+        discount => discount.loTId === productToDelete.lotId
+      );
+      
+      for (const discount of productDiscountsToDelete) {
+        await deleteProductPurchaseDiscount(discount.productPurchaseDiscountId);
       }
-    }
 
-    // Step 2: Delete the associated ProductPurchaseRecord
-    if (productToDelete.productPurchaseRecordId) {
-      try {
-        await deleteProductPurchaseRecord(productToDelete.productPurchaseRecordId);
-      } catch (error) {
-        console.error('Failed to delete product purchase record:', error);
-      }
-    }
+      // Delete the ProductPurchaseRecord
+      await deleteProductPurchaseRecord(productToDelete.lotId);
 
-    // Step 3: Update state
+      // Update state
+      setSelectedProducts(prev => prev.filter(product => product.productId !== productId));
+      setProductDiscounts(prev => 
+        prev.filter(discount => discount.loTId !== productToDelete.lotId)
+      );
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Error deleting product. Please try again.');
+    }
+  } else {
+    // For products that haven't been saved to the backend yet
     setSelectedProducts(prev => prev.filter(product => product.productId !== productId));
-    setDiscountList(prev => prev.filter(discount => discount.productId !== productId));
   }
 };
 
-  
+  // inside EditPurchase component
+const handleDeleteProductDiscount = async (discount, index) => {
+  try {
+    // Call backend only if this discount exists in DB
+    if (discount.productPurchaseDiscountId) {
+      await deleteProductPurchaseDiscount(discount.productPurchaseDiscountId);
+    }
+
+    // Update UI after successful delete
+    const newDiscounts = productDiscounts.filter((_, i) => i !== index);
+    setProductDiscounts(newDiscounts);
+
+    // Reset product price if needed
+    const product = selectedProducts.find(p => p.lotId === discount.loTId);
+    if (product) {
+      setSelectedProducts(prev =>
+        prev.map(p =>
+          p.lotId === discount.loTId
+            ? {
+                ...p,
+                purchasePriceAfterDiscount: p.purchasePriceBeforeDiscount,
+                totalAmount: p.quantityPurchased * p.purchasePriceBeforeDiscount,
+              }
+            : p
+        )
+      );
+    }
+  } catch (error) {
+    console.error("Delete failed:", error);
+    alert("Failed to delete discount. Please try again.");
+  }
+};
+
 
   const handleDiscountChange = (e) => {
     const { name, value } = e.target;
@@ -307,12 +429,14 @@ const handleDeleteProduct = async (productId) => {
   // };
 const handleDeletePurchaseDiscount = async (id) => {
   try {
-    await deletePurchaseDiscount(id); // Call backend API
-    setPurchaseDiscountList(prev => prev.filter(discount => discount.id !== id)); // Update UI state
+    await deletePurchaseDiscount(id); // ✅ call backend
+    setPurchaseDiscountList(prev => prev.filter(discount => discount.purchaseDiscountId !== id)); // ✅ update UI state
   } catch (error) {
     console.error('Failed to delete purchase discount:', error);
+    alert('Failed to delete discount. Please try again.');
   }
 };
+
   const handlePurchaseDiscountChange = (e) => {
     const { name, value } = e.target;
     setCurrentPurchaseDiscount(prev => ({
@@ -322,21 +446,25 @@ const handleDeletePurchaseDiscount = async (id) => {
   };
 
  
-  const deletePurchaseDiscount = (id) => {
-    setPurchaseDiscountList(prev => prev.filter(discount => discount.id !== id));
-  };
-
   
 
   
 
-  const deleteTax = (id) => {
-    setTaxList(prev => prev.filter(tax => tax.id !== id));
-  };
+  
+
+  const handleDeletePurchaseTax = async (id) => {
+  try {
+    await deletePurchaseTax(id); // ✅ call backend
+    setTaxList(prev => prev.filter(tax => tax.id !== id)); // ✅ update UI
+  } catch (error) {
+    console.error('Failed to delete purchase tax:', error);
+    alert('Failed to delete tax. Please try again.');
+  }
+};
  
  const handleSubmit = async (e) => {
   e.preventDefault();
-
+ setIsSubmitting(true);  
   const updatedPurchase = {
     supplierId: parseInt(formData.supplierId),
     locationId: parseInt(formData.locationId),
@@ -402,9 +530,13 @@ const updatedTaxRecords = taxList.map(t => ({
 if (updatedTaxRecords.length > 0) {
   await updatePurchaseTaxes(updatedTaxRecords);
 }
-    navigate('/purchase/list');
-  } catch (error) {
+ await fetchPurchases(); 
+ } catch (error) {
     console.error("Failed to update purchase:", error);
+    setIsSubmitting(false);
+  } finally {
+    // ✅ Always navigate, even if some updates fail
+    navigate('/purchase/list', { state: { refresh: true } });
   }
 };
 
@@ -443,23 +575,95 @@ if (updatedTaxRecords.length > 0) {
               </div>
 
               <div style={formGroupStyle}>
-                <label htmlFor="location" style={labelStyle}>Location</label>
-       <select
-  id="locationId"
-  name="locationId"
-  value={formData.locationId}
-  disabled 
-  style={{ ...selectStyle, backgroundColor: '#e9ecef', cursor: 'not-allowed' }}
->
-  {locations
-    .filter(loc => loc.locationId === parseInt(formData.locationId))
-    .map(loc => (
-      <option key={loc.locationId} value={loc.locationId}>
-        {loc.locationName}
+  <label htmlFor="location" style={labelStyle}>
+    Location{" "}
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* Info Icon */}
+      <span
+        onMouseEnter={() => setShowLocationInfo(true)}
+        onMouseLeave={() => setShowLocationInfo(false)}
+        style={{
+          marginLeft: "8px",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "18px",
+          height: "18px",
+          borderRadius: "50%",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: "12px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+          transition: "all 0.2s ease"
+        }}
+      >
+        i
+      </span>
+
+      {/* Popup */}
+      {showLocationInfo && (
+        <div
+          style={{
+            position: "absolute",
+            top: "28px",
+            left: "0",
+            zIndex: 10,
+            backgroundColor: "#fff",
+            color: "#333",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            border: "1px solid #ddd",
+            fontSize: "13px",
+            lineHeight: "1.4",
+            width: "240px",
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+          }}
+        >
+          <div style={{ marginBottom: "6px" }}>
+            ⚠️ <b>Note:</b> After updating a purchase with status{" "}
+            <b>Completed</b> or <b>Cancelled</b>,
+          </div>
+          <div>you will not be able to update the Location again.</div>
+
+          {/* Tooltip Arrow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-6px",
+              left: "12px",
+              width: "12px",
+              height: "12px",
+              backgroundColor: "#fff",
+              borderLeft: "1px solid #ddd",
+              borderTop: "1px solid #ddd",
+              transform: "rotate(45deg)"
+            }}
+          />
+        </div>
+      )}
+    </span>
+  </label>
+
+  <select
+    id="locationId"
+    name="locationId"
+    value={formData.locationId}
+    onChange={handleChange}
+    className="form-select"
+    required
+    style={selectStyle}
+    disabled={formData.purchaseStatus === 'Completed' || formData.purchaseStatus === 'Cancelled'}
+  >
+    <option value="">Select Location</option>
+    {locations.map(location => (
+      <option key={location.locationId} value={location.locationId}>
+        {location.locationName}
       </option>
-  ))}
-</select>
-              </div>
+    ))}
+  </select>
+</div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="date" style={labelStyle}>Date</label>
@@ -477,7 +681,7 @@ if (updatedTaxRecords.length > 0) {
             </div>
 
             <div style={formRowStyle}>
-              <div style={formGroupStyle}>
+              {/* <div style={formGroupStyle}>
                 <label htmlFor="amountPaid" style={labelStyle}>Amount Paid</label>
                 <input
                   type="number"
@@ -492,30 +696,99 @@ if (updatedTaxRecords.length > 0) {
                   step="0.01"
                   style={inputStyle}
                 />
-              </div>
+              </div> */}
 
               <div style={formGroupStyle}>
-                <label htmlFor="purchaseStatus" style={labelStyle}>Purchase Status</label>
-             <select
-  id="purchaseStatus"
-  name="purchaseStatus"
-  value={formData.purchaseStatus}
-  onChange={handleChange}
-  className="form-select"
-  required
-  disabled={['Completed', 'Cancelled'].includes(originalPurchaseStatus)}
-  style={{
-    ...selectStyle,
-    backgroundColor: ['Completed', 'Cancelled'].includes(originalPurchaseStatus) ? '#e9ecef' : undefined,
-    cursor: ['Completed', 'Cancelled'].includes(originalPurchaseStatus) ? 'not-allowed' : 'pointer'
-  }}
->
-  <option value="">Select Purchase Status</option>
-  {purchaseStatuses.map(status => (
-    <option key={status} value={status}>{status}</option>
-  ))}
-</select>
-              </div>
+  <label htmlFor="purchaseStatus" style={labelStyle}>
+    Purchase Status{" "}
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* Info Icon */}
+      <span
+        onMouseEnter={() => setShowStatusInfo(true)}
+        onMouseLeave={() => setShowStatusInfo(false)}
+        style={{
+          marginLeft: "8px",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "18px",
+          height: "18px",
+          borderRadius: "50%",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: "12px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+          transition: "all 0.2s ease"
+        }}
+      >
+        i
+      </span>
+
+      {/* Popup */}
+      {showStatusInfo && (
+        <div
+          style={{
+            position: "absolute",
+            top: "28px",
+            left: "0",
+            zIndex: 10,
+            backgroundColor: "#fff",
+            color: "#333",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            border: "1px solid #ddd",
+            fontSize: "13px",
+            lineHeight: "1.4",
+            width: "220px",
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+          }}
+        >
+          <div style={{ marginBottom: "6px" }}>
+            ⚠️ <b>Note:</b> Once the status is updated to <b>Completed</b>or <b>Cancelled</b>,
+          </div>
+          <div>you will not be able to update it again.</div>
+
+          {/* Tooltip Arrow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-6px",
+              left: "12px",
+              width: "12px",
+              height: "12px",
+              backgroundColor: "#fff",
+              borderLeft: "1px solid #ddd",
+              borderTop: "1px solid #ddd",
+              transform: "rotate(45deg)"
+            }}
+          />
+        </div>
+      )}
+    </span>
+  </label>
+
+  <select
+    id="purchaseStatus"
+    name="purchaseStatus"
+    value={formData.purchaseStatus}
+    onChange={handleChange}
+    className="form-select"
+    required
+    disabled={['Completed', 'Cancelled'].includes(originalPurchaseStatus)}
+    style={{
+      ...selectStyle,
+      backgroundColor: ['Completed', 'Cancelled'].includes(originalPurchaseStatus) ? '#e9ecef' : undefined,
+      cursor: ['Completed', 'Cancelled'].includes(originalPurchaseStatus) ? 'not-allowed' : 'pointer'
+    }}
+  >
+    <option value="">Select Purchase Status</option>
+    {purchaseStatuses.map(status => (
+      <option key={status} value={status}>{status}</option>
+    ))}
+  </select>
+</div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="paymentStatus" style={labelStyle}>Payment Status</label>
@@ -537,38 +810,7 @@ if (updatedTaxRecords.length > 0) {
               </div>
             </div>
 
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'flex-end',
-              marginTop: '20px',
-              paddingTop: '20px',
-              borderTop: '1px solid #eee'
-            }}>
-              <button
-                type="button"
-                onClick={() => {
-                  // Add your purchase logic here
-                }}
-                style={{ 
-                  ...addButtonStyle, 
-                  width: '130px',
-                  backgroundColor: '#28a745',
-                  height: '36px',
-                  fontSize: '12px'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#218838';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
-                }}
-              >
-                <i className="fas fa-plus" style={{ fontSize: '10px' }}></i>
-                Add Purchase
-              </button>
-            </div>
+          
           </div>
 
          {/* Products Section */}
@@ -707,36 +949,39 @@ if (updatedTaxRecords.length > 0) {
                           style={inputStyle}
                         />
                       </td>
-                      <td style={tableCellStyle}>
-                        <input
-                          type="number"
-                          value={product.purchasePriceBeforeDiscount || ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0;
-                            const productDiscount = discountList.find(d => d.productId === product.productId);
-                            
-                            setSelectedProducts(prev =>
-                              prev.map(p =>
-                                p.productId === product.productId 
-                                  ? { 
-                                      ...p, 
-                                      purchasePriceBeforeDiscount: value,
-                                      purchasePriceAfterDiscount: productDiscount 
-                                        ? calculateDiscountedPrice({ ...p, purchasePriceBeforeDiscount: value }, productDiscount)
-                                        : value,
-                                      totalAmount: p.quantityPurchased * (productDiscount 
-                                        ? calculateDiscountedPrice({ ...p, purchasePriceBeforeDiscount: value }, productDiscount)
-                                        : value)
-                                    } 
-                                  : p
-                              )
-                            );
-                          }}
-                          min="0"
-                          step="0.01"
-                          style={inputStyle}
-                        />
-                      </td>
+                     <td style={tableCellStyle}>
+  <input
+    type="number"
+    value={product.purchasePriceBeforeDiscount || ''}
+    onChange={(e) => {
+      const value = parseFloat(e.target.value) || 0;
+      const productDiscount = discountList.find(d => d.productId === product.productId);
+      
+      // Calculate the price after discount
+      const priceAfterDiscount = productDiscount 
+        ? calculateDiscountedPrice({ ...product, purchasePriceBeforeDiscount: value }, productDiscount)
+        : value;
+      
+      setSelectedProducts(prev =>
+        prev.map(p =>
+          p.productId === product.productId 
+            ? { 
+                ...p, 
+                purchasePriceBeforeDiscount: value,
+                purchasePriceAfterDiscount: priceAfterDiscount,
+                totalAmount: p.quantityPurchased * priceAfterDiscount,
+                // Recalculate selling price based on discounted price
+                unitSellingPrice: calculateSellingPrice(priceAfterDiscount, p.profitMargin)
+              } 
+            : p
+        )
+      );
+    }}
+    min="0"
+    step="0.01"
+    style={inputStyle}
+  />
+</td>
                       <td style={tableCellStyle}>
                         <input
                           type="number"
@@ -760,10 +1005,16 @@ if (updatedTaxRecords.length > 0) {
                           onChange={(e) => {
                             const value = parseFloat(e.target.value) || 0 ;
                             setSelectedProducts(prev =>
-                              prev.map(p =>
-                                p.productId === product.productId ? { ...p, profitMargin: value } : p
-                              )
-                            );
+        prev.map(p =>
+          p.productId === product.productId 
+            ? { 
+                ...p, 
+                profitMargin: value,
+                unitSellingPrice: calculateSellingPrice(p.purchasePriceAfterDiscount, value)
+              } 
+            : p
+        )
+      );
                           }}
                           min="0"
                           max="100"
@@ -1092,33 +1343,16 @@ if (updatedTaxRecords.length > 0) {
           />
         </td>
         
-        <td>
-          <button
-            onClick={() => {
-              // Remove discount and reset price
-              const newDiscounts = productDiscounts.filter((_, i) => i !== index);
-              setProductDiscounts(newDiscounts);
-              
-              if (product) {
-                setSelectedProducts(prev =>
-                  prev.map(p =>
-                    p.lotId === d.loTId
-                      ? {
-                          ...p,
-                          purchasePriceAfterDiscount: p.purchasePriceBeforeDiscount,
-                          totalAmount: p.quantityPurchased * p.purchasePriceBeforeDiscount
-                        }
-                      : p
-                  )
-                );
-              }
-            }}
-            className="btn btn-danger btn-sm"
-            style={deleteButtonStyle}
-          >
-            <i className="fas fa-trash-alt"></i> Delete
-          </button>
-        </td>
+       <td>
+  <button
+    type="button"
+    onClick={() => handleDeleteProductDiscount(d, index)}
+    className="btn btn-danger btn-sm"
+    style={deleteButtonStyle}
+  >
+    <i className="fas fa-trash-alt"></i> Delete
+  </button>
+</td>
       </tr>
     );
   })}
@@ -1269,20 +1503,22 @@ if (updatedTaxRecords.length > 0) {
 
       {/* Delete Button */}
       <td style={{ textAlign: 'center' }}>
-        <button
-          onClick={() => handleDeletePurchaseDiscount(discount.purchaseDiscountId)}
-          style={{
-            padding: '6px 12px',
-            borderRadius: '4px',
-            backgroundColor: '#dc3545',
-            color: '#fff',
-            border: 'none',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
-        >
-          Delete
-        </button>
+      <button
+  type="button"   // ✅ prevents form submit navigation
+  onClick={() => handleDeletePurchaseDiscount(discount.purchaseDiscountId)}
+  style={{
+    padding: '6px 12px',
+    borderRadius: '4px',
+    backgroundColor: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    fontSize: '14px',
+    cursor: 'pointer'
+  }}
+>
+  Delete
+</button>
+
       </td>
     </tr>
   ))}
@@ -1350,8 +1586,8 @@ if (updatedTaxRecords.length > 0) {
     .filter(tl => tl.locationId.toString() === formData.locationId)
     .map(tl => (
       <option key={tl.taxLocationId} value={tl.taxLocationId}>
-        {getTaxNameById(tl.taxId)} ({tl.taxPercentage}%)
-      </option>
+  {tl.tax?.taxName || 'Unknown Tax'} ({tl.taxPercentage}%)
+</option>
   ))}
 </select>
 </div>
@@ -1380,12 +1616,51 @@ if (updatedTaxRecords.length > 0) {
       </tr>
     </thead>
   <tbody>
-  {taxList.map((tax) => (
+  {taxList.map((tax, index) => (
     <tr key={tax.id}>
-      <td style={tableCellStyle}>{tax.taxName}</td>
+      <td style={tableCellStyle}>
+    <select
+  value={tax.taxLocationId?.toString() || ""}   // ✅ always string
+  onChange={(e) => {
+    const selectedTaxLocationId = e.target.value;
+    const taxLocation = taxLocations.find(
+      tl => tl.taxLocationId.toString() === selectedTaxLocationId
+    );
+
+    if (taxLocation) {
+      const updatedList = [...taxList];
+      updatedList[index] = {
+        ...updatedList[index],
+        taxLocationId: taxLocation.taxLocationId.toString(), // keep string
+        taxId: taxLocation.taxId.toString(),
+        taxName: getTaxNameById(taxLocation.taxId),
+        taxPercentage: taxLocation.taxPercentage
+      };
+      setTaxList(updatedList);
+    }
+  }}
+  style={{
+    width: "100%",
+    padding: "6px",
+    borderRadius: "4px",
+    border: "1px solid #ccc"
+  }}
+>
+  <option value="">Select Tax</option>
+  {taxLocations
+    .filter(tl => tl.locationId.toString() === formData.locationId?.toString())
+    .map(tl => (
+      <option key={tl.taxLocationId} value={tl.taxLocationId.toString()}>
+        {tl.tax?.taxName || "Unknown Tax"} ({tl.taxPercentage}%)
+      </option>
+    ))}
+</select>
+      </td>
+
       <td style={tableCellStyle}>
         <button
-          onClick={() => deleteTax(tax.id)}
+          type="button"
+          onClick={() => handleDeletePurchaseTax(tax.id)}
           className="btn btn-danger btn-sm"
           style={deleteButtonStyle}
         >
@@ -1400,24 +1675,113 @@ if (updatedTaxRecords.length > 0) {
   </div>
 </div>
 
-          <div className="form-buttons" style={{ 
+      {!isSubmitting && (
+   <div className="financial-summary" style={{
+  ...sectionStyle,
+  marginBottom: '20px',
+  backgroundColor: '#f8f9fa'
+}}>
+  <h3 style={{ marginBottom: '20px', color: '#333' }}>Financial Summary</h3>
+  
+   <div style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '10px',
+    marginBottom: '20px',
+    padding: '15px',
+    backgroundColor: '#fff',
+    borderRadius: '6px',
+    border: '1px solid #dee2e6'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span>Subtotal ({selectedProducts.length} items):</span>
+      <span>Rs {calculateTotalAmount()}</span>
+    </div>
+    
+    {purchaseDiscountList.length > 0 && (
+      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#28a745' }}>
+        <span>Discounts:</span>
+        <span>-Rs {calculateDiscountAmount()}</span>
+      </div>
+    )}
+    
+    {taxList.length > 0 && (
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span>Taxes:</span>
+        <span>+Rs {calculateTaxAmount()}</span>
+      </div>
+    )}
+    
+    <hr style={{ margin: '10px 0', borderTop: '2px dashed #dee2e6' }} />
+    
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.1em' }}>
+      <span>Grand Total:</span>
+      <span>Rs {calculateGrandTotal()}</span>
+    </div>
+  </div>
+  
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '20px'
+  }}>
+    {/* Amount Paid */}
+    <div style={formGroupStyle}>
+      <label style={{...labelStyle, fontWeight: '600'}}>Amount Paid</label>
+      <input
+        type="number"
+        name="amountPaid"
+        value={formData.amountPaid}
+        onChange={handleChange}
+        min="0"
+        step="0.01"
+        style={inputStyle}
+      />
+    </div>
+
+    {/* Payment Due */}
+    <div style={formGroupStyle}>
+      <label style={{...labelStyle, fontWeight: '600', color: '#dc3545'}}>Payment Due</label>
+      <input
+        type="number"
+        value={calculatePaymentDue()}
+        readOnly
+        style={{...inputStyle, backgroundColor: '#e9ecef', fontWeight: 'bold', color: '#dc3545'}}
+      />
+    </div>
+  </div>
+</div>)}
+    <div className="form-buttons" style={{ 
             display: 'flex', 
             gap: '15px',
             justifyContent: 'flex-end',
             marginTop: '30px'
-          }}>
-            <button type="submit" className="btn btn-success" style={{
-              padding: '10px 20px',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: '#28a745',
-              color: '#fff',
-              cursor: 'pointer',
-              height: '40px',
-              minWidth: '120px'
             }}>
-              <i className="fas fa-save"></i> Update Purchase
-            </button>
+          <button 
+  type="submit" 
+  className="btn btn-success" 
+  disabled={isSubmitting}
+  style={{
+    padding: '10px 20px',
+    borderRadius: '4px',
+    border: 'none',
+    backgroundColor: isSubmitting ? '#6c757d' : '#28a745',
+    color: '#fff',
+    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+    height: '40px',
+    minWidth: '120px'
+  }}
+>
+  {isSubmitting ? (
+    <>
+      <i className="fas fa-spinner fa-spin"></i> Updating...
+    </>
+  ) : (
+    <>
+      <i className="fas fa-save"></i> Update Purchase
+    </>
+  )}
+</button>
             <button 
               type="button" 
               className="btn btn-secondary"
@@ -1511,27 +1875,7 @@ const sectionHeaderStyle = {
   marginBottom: '20px'
 }; 
 
-  const addButtonStyle = {
-    padding: '0 12px',
-    borderRadius: '4px',
-    border: 'none',
-    backgroundColor: '#28a745',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: '11px',
-    fontWeight: '500',
-    height: '30px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 1px 3px rgba(40, 167, 69, 0.2)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.2px',
-    whiteSpace: 'nowrap',
-    minWidth: 'fit-content'
-  };
+
 const inputCellStyle = {
   width: '150px',
   padding: '8px',

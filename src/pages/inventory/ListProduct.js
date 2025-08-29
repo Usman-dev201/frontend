@@ -7,9 +7,35 @@ import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
     const navigate = useNavigate();
-  const { products, stocks = [], deleteProduct, loading } = useProducts();
+  const { products, stocks = [], deleteProduct, loading ,getProductDiscounts} = useProducts();
     const [showDropdown, setShowDropdown] = useState(null);
-   
+const [productDiscountsMap, setProductDiscountsMap] = useState({});
+
+useEffect(() => {
+  if (products.length === 0) return;
+
+  products.forEach(async (product) => {
+    const discounts = await getProductDiscounts(product.productId);
+
+    // Remove duplicate discount codes
+    const uniqueDiscounts = discounts.filter(
+      (d, index, self) => self.findIndex(x => x.code === d.code) === index
+    );
+
+    setProductDiscountsMap(prev => ({
+      ...prev,
+      [product.productId]: uniqueDiscounts
+    }));
+  });
+}, [products, getProductDiscounts]);
+
+
+   const maxDiscountCount = Math.max(
+  ...Object.values(productDiscountsMap).map(d => d.length),
+  0
+);
+
+ 
   useEffect(() => {
   
 
@@ -89,6 +115,7 @@ const getStockByProductId = (productId) => {
               <i className="fas fa-boxes"></i>
               Stock List
             </button>
+             
           </div>
           <div className="header-actions">
             <button 
@@ -116,7 +143,10 @@ const getStockByProductId = (productId) => {
                 <th>Purchase Price</th>
                 <th>Marked Price</th>
                 <th>Selling Price</th>
-                <th>Discount Code</th>
+                    {/* Dynamic Discount Code Columns */}
+    {Array.from({ length: maxDiscountCount }, (_, i) => (
+      <th key={`discount-${i}`}>Discount Code {i + 1}</th>
+    ))}
                 <th>Category</th>
                 <th>Brand</th>
                 <th>Barcode Type</th>
@@ -131,17 +161,17 @@ const getStockByProductId = (productId) => {
                   <tr key={product.productId}>
                     <td>{product.productId}</td>
                     <td>{product.date || new Date().toLocaleDateString()}</td>
-                    <td>
-                      {product.imageData ? (
-                        <img
-                          src={product.imageData}
-                          alt={product.productName}
-                          className="product-image"
-                        />
-                      ) : (
-                        <div className="no-image">No Image</div>
-                      )}
-                    </td>
+                   <td>
+  {product.imageUrl ? (
+    <img
+      src={`https://localhost:7020${product.imageUrl}`}   // ✅ prepend backend URL
+      alt={product.productName}
+      className="product-image"
+    />
+  ) : (
+    <div className="no-image">No Image</div>
+  )}
+</td>
                     <td>{product.productName}</td>
                     <td>{product.shortName || '-'}</td>
                     <td>{stock?.location?.locationName || 'N/A'}</td>
@@ -162,15 +192,20 @@ const getStockByProductId = (productId) => {
                     <td>{formatPrice(stock?.purchasePrice)}</td>
                     <td>{formatPrice(stock?.markedPrice)}</td>
                     <td>{formatPrice(stock?.sellingPrice)}</td>
-                    <td>
-                      {product.discounts?.length > 0 ? (
-                        <span className="discount-badge">
-                          {product.discounts[0].code}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
+                   {/* Dynamic Discount Code Cells */}
+       {Array.from({ length: maxDiscountCount }, (_, i) => {
+  const discounts = productDiscountsMap[product.productId] || [];
+  return (
+    <td key={`discount-${i}`}>
+      {discounts[i] ? (
+        <span className="discount-badge">{discounts[i].code}</span>
+      ) : (
+        'N/A'
+      )}
+    </td>
+  );
+})}
+
                     <td>{product.category?.categoryName}</td>
                     <td>{product.brand?.brandName}</td>
                     <td>

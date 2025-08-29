@@ -7,6 +7,7 @@ import { useCategories } from '../../context/CategoryContext';
 import { useBarcode } from '../../context/BarcodeContext';
 import { useBrands } from '../../context/BrandContext';
 import '../../styles/AddProduct.css';
+import { uploadImage } from '../../context/ProductContext';
 
 export default function EditProduct() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function EditProduct() {
   const { categories } = useCategories();
   const { brands } = useBrands();
   const { barcodes } = useBarcode();
-
+const { discountCodes, discountTypes, addProductDiscount, getProductDiscounts, deleteProductDiscount } = useProducts();
 const [formData, setFormData] = useState({
   productName: '',
   shortName: '',
@@ -27,7 +28,7 @@ const [formData, setFormData] = useState({
   quantityAlert: '', 
   productDescription: '',
   date: new Date().toISOString().split('T')[0], // Default to today
-  imageData: null,
+  imageUrl: null,
  
 });
    const [imagePreview, setImagePreview] = useState(null);
@@ -36,9 +37,6 @@ const [formData, setFormData] = useState({
   const [selectedDiscountType, setSelectedDiscountType] = useState('');
 
 
-  // Sample discount codes and types
-  const discountCodes = ['SUMMER2024', 'SPECIAL50'];
-  const discountTypes = ['percentage', 'fixed'];
 
 useEffect(() => {
   if (state?.product) {
@@ -53,14 +51,25 @@ useEffect(() => {
       quantityAlert: product.quantityAlert || '', // Handle both cases
       productDescription: product.productDescription || '',
       date: product.date || new Date().toISOString().split('T')[0],
-      imageData: product.imageData || null,
+       imageUrl: product.imageUrl || null,   // ✅ correct key
    
     });
-    setImagePreview(product.imageData);
-    
+     setImagePreview(
+      product.imageUrl ? `https://localhost:7020${product.imageUrl}` : null
+    );
+   
   }
 }, [state]);
+useEffect(() => {
+  const fetchDiscounts = async () => {
+    if (state?.product?.productId) {
+      const discountsData = await getProductDiscounts(state.product.productId);
+      setDiscounts(discountsData);
+    }
+  };
 
+  fetchDiscounts();
+}, [state, getProductDiscounts]);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -69,23 +78,25 @@ useEffect(() => {
     }));
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-        setFormData(prev => ({
-          ...prev,
-          imageData: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
+const handleImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    try {
+      const uploadedUrl = await uploadImage(file); // returns /images/xxx.jpg
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: uploadedUrl
+      }));
+      setImagePreview(`https://localhost:7020${uploadedUrl}`); // preview
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      alert("Failed to upload image.");
     }
-  };
+  }
+};
 
 
-  const handleDiscountCodeChange = (e) => {
+const handleDiscountCodeChange = (e) => {
     const code = e.target.value;
     if (code) {
       setSelectedDiscountCode(code);
@@ -104,19 +115,52 @@ useEffect(() => {
       }
     }
   };
+const addNewDiscount = async (code, type) => {
+  try {
+    if (!state?.product?.productId) {
+      alert("Invalid product ID.");
+      return;
+    }
 
-  const addNewDiscount = (code, type) => {
+    // 1. Get selected discount from dropdown
+    const selectedDiscount = discountCodes.find(dc => dc.discountCode === code);
+    if (!selectedDiscount) {
+      alert("Invalid discount code.");
+      return;
+    }
+
+    // 2. Fetch already applied discounts from backend
+    const existingDiscounts = await getProductDiscounts(state.product.productId);
+
+    // 3. Check if this discount already exists (by code + type)
+    const alreadyExists = existingDiscounts.some(
+      d => d.code === code 
+    );
+
+    if (alreadyExists) {
+      alert("This discount is already applied to the product.");
+      return;
+    }
+
+    // 4. If not exists → Add to local state
     const newDiscount = {
+      discountId: selectedDiscount.discountId,
       code: code,
       discountType: type,
-      discountAmount: '',
-      discountPercentage: ''
+      discountAmount: 0,
+      discountPercentage: 0
     };
 
-    setDiscounts([...discounts, newDiscount]);
+    setDiscounts(prev => [...prev, newDiscount]);
+
+    // Reset selects
     setSelectedDiscountCode('');
     setSelectedDiscountType('');
-  };
+  } catch (error) {
+    console.error("Error adding new discount:", error);
+    alert("Failed to check existing discounts.");
+  }
+};
 
   const handleDiscountValueChange = (index, field, value) => {
     const updatedDiscounts = [...discounts];
@@ -124,12 +168,35 @@ useEffect(() => {
     setDiscounts(updatedDiscounts);
   };
 
-  const handleRemoveDiscount = (discountToRemove) => {
-    setDiscounts(discounts.filter(discount => 
-      discount.code !== discountToRemove.code || 
-      discount.discountType !== discountToRemove.discountType
-    ));
-  };
+  const handleRemoveDiscount = async (discountToRemove) => {
+  try {
+    console.log("Trying to delete:", discountToRemove);
+
+    if (!discountToRemove.productDiscountId) {
+      console.log("No productDiscountId → removing locally only");
+      setDiscounts(prev =>
+        prev.filter(d =>
+          d.code !== discountToRemove.code || d.discountType !== discountToRemove.discountType
+        )
+      );
+      return;
+    }
+
+    console.log("Deleting from backend with id:", discountToRemove.productDiscountId);
+    await deleteProductDiscount(discountToRemove.productDiscountId);
+
+    setDiscounts(prev =>
+      prev.filter(d => d.productDiscountId !== discountToRemove.productDiscountId)
+    );
+
+    alert("Discount removed successfully!");
+  } catch (error) {
+    console.error("Delete discount error:", error.response?.data || error.message);
+    alert("Failed to delete discount. Please try again.");
+  }
+};
+
+
 const handleSubmit = async (e) => {
   e.preventDefault();
   try {
@@ -146,7 +213,7 @@ const handleSubmit = async (e) => {
       productDescription: formData.productDescription,
       date: formData.date,
       quantityAlert: Number(formData.quantityAlert),
-      imageData: imagePreview,
+      imageUrl: formData.imageUrl, 
       categoryId: parseInt(formData.categoryId),
       brandId: parseInt(formData.brandId),
       barcodeId: parseInt(formData.barcodeId),
@@ -162,16 +229,13 @@ const handleSubmit = async (e) => {
         barcodeId: selectedBarcode.barcodeId,
         barcodeType: selectedBarcode.barcodeType 
       } : null,
-      discounts: discounts.map(d => ({
-        ...d,
-        discountAmount: d.discountAmount ? Number(d.discountAmount) : 0,
-        discountPercentage: d.discountPercentage ? Number(d.discountPercentage) : 0
-      }))
+     
     };
 
     console.log('Submitting:', updatedProduct);
     
     await updateProduct(id, updatedProduct);
+  
     
     // Wait briefly to ensure state updates propagate
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -364,29 +428,31 @@ const handleSubmit = async (e) => {
               </div>
               <div className="discount-controls">
                 <div className="discount-dropdowns">
-                  <select 
-                    value={selectedDiscountCode}
-                    onChange={handleDiscountCodeChange}
-                    className="discount-select"
-                  >
-                    <option value="">Select Discount Code</option>
-                    {discountCodes.map(code => (
-                      <option key={code} value={code}>{code}</option>
-                    ))}
-                  </select>
+             <select 
+  value={selectedDiscountCode}
+  onChange={handleDiscountCodeChange}
+  className="discount-select"
+>
+  <option value="">Select Discount Code</option>
+  {discountCodes.map(dc => (
+    <option key={dc.discountId} value={dc.discountCode}>
+      {dc.discountCode}
+    </option>
+  ))}
+</select>
 
-                  <select 
-                    value={selectedDiscountType}
-                    onChange={handleDiscountTypeChange}
-                    className="discount-select"
-                  >
-                    <option value="">Select Discount Type</option>
-                    {discountTypes.map(type => (
-                      <option key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </option>
-                    ))}
-                  </select>
+<select 
+  value={selectedDiscountType}
+  onChange={handleDiscountTypeChange}
+  className="discount-select"
+>
+  <option value="">Select Discount Type</option>
+  {discountTypes.map(type => (
+    <option key={type} value={type}>
+      {type}
+    </option>
+  ))}
+</select>
                 </div>
               </div>
 
@@ -394,7 +460,7 @@ const handleSubmit = async (e) => {
                 <table className="products-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
+                    
                       <th>Discount Code</th>
                       <th>Discount Type</th>
                       <th>Discount Amount</th>
@@ -405,7 +471,7 @@ const handleSubmit = async (e) => {
                   <tbody>
                     {discounts.map((discount, index) => (
                       <tr key={index}>
-                        <td>{index + 1}</td>
+                    
                         <td>{discount.code}</td>
                         <td>{discount.discountType}</td>
                         <td>
@@ -450,14 +516,30 @@ const handleSubmit = async (e) => {
                 <i className="fas fa-save"></i>
                 Update Product
               </button>
-              <button 
-                type="button" 
-                className="apply-discount-button"
-                onClick={() => navigate('/discounts')}
-              >
-                <i className="fas fa-tag"></i>
-                Apply Discount
-              </button>
+       <button 
+  type="button" 
+  className="apply-discount-button"
+  onClick={async () => {
+    try {
+      if (!state?.product?.productId) {
+        alert("Invalid product ID.");
+        return;
+      }
+      await addProductDiscount(state.product.productId, discounts);
+          // 🔑 refresh from backend so each discount has productDiscountId
+      const savedDiscounts = await getProductDiscounts(state.product.productId);
+      setDiscounts(savedDiscounts);
+      alert("Discounts applied successfully!");
+      navigate('/product/list');
+    } catch (error) {
+      console.error("Apply discount error:", error);
+      alert("Failed to apply discounts. Please try again.");
+    }
+  }}
+>
+  <i className="fas fa-tag"></i>
+  Apply Discount
+</button>
               <button 
                 type="button" 
                 className="cancel-button"

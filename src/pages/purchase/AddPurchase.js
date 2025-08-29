@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { usePurchase } from '../../context/PurchaseContext';
+
 import '../../styles/purchase/Purchase.css';
 
 export default function AddPurchase() {
@@ -29,7 +30,12 @@ export default function AddPurchase() {
       deletePurchaseTax,
       
   } = usePurchase();
-  
+  const [isPurchaseCompleted] = useState(false);
+const [showLocationInfo, setShowLocationInfo] = useState(false);
+  const [showStatusInfo, setShowStatusInfo] = useState(false);
+const [showProfitInfo, setShowProfitInfo] = useState(false);
+
+
   const calculateDiscountedPrice = (product, discount) => {
     if (!discount || !discount.discountType) return product.purchasePriceBeforeDiscount;
 
@@ -59,6 +65,78 @@ export default function AddPurchase() {
     purchaseStatus: 'Pending',
     paymentStatus: 'Unpaid',
   });
+const calculateTotalAmount = () => {
+  return selectedProducts.reduce((total, product) => {
+    const quantity = parseInt(product.quantityPurchased) || 0;
+    const priceAfterDiscount = parseFloat(product.purchasePriceAfterDiscount) || 0;
+    return total + (quantity * priceAfterDiscount);
+  }, 0).toFixed(2);
+};
+
+const calculateGrandTotal = () => {
+  const subtotal = parseFloat(calculateTotalAmount()) || 0;
+  
+  // Calculate purchase-level discounts
+  let discountAmount = 0;
+  purchaseDiscountList.forEach(discount => {
+    if (discount.discountType === 'Fixed') {
+      discountAmount += parseFloat(discount.discountAmount) || 0;
+    } else if (discount.discountType === 'Percentage') {
+      const discountPercentage = parseFloat(discount.discountPercentage) || 0;
+      discountAmount += subtotal * (discountPercentage / 100);
+    }
+  });
+  
+  // Apply discounts to get discounted subtotal
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  
+  // Calculate taxes
+  let totalTaxAmount = 0;
+  taxList.forEach(tax => {
+    const taxPercentage = parseFloat(tax.taxPercentage) || 0;
+    totalTaxAmount += discountedSubtotal * (taxPercentage / 100);
+  });
+  
+  // Calculate grand total
+  const grandTotal = discountedSubtotal + totalTaxAmount;
+  
+  return grandTotal.toFixed(2);
+};
+
+const calculateDiscountAmount = () => {
+  const subtotal = parseFloat(calculateTotalAmount()) || 0;
+  let discountAmount = 0;
+  
+  purchaseDiscountList.forEach(discount => {
+    if (discount.discountType === 'Fixed') {
+      discountAmount += parseFloat(discount.discountAmount) || 0;
+    } else if (discount.discountType === 'Percentage') {
+      const discountPercentage = parseFloat(discount.discountPercentage) || 0;
+      discountAmount += subtotal * (discountPercentage / 100);
+    }
+  });
+  
+  return discountAmount.toFixed(2);
+};
+
+const calculateTaxAmount = () => {
+  const subtotal = parseFloat(calculateTotalAmount()) || 0;
+  let discountAmount = parseFloat(calculateDiscountAmount()) || 0;
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  
+  let totalTaxAmount = 0;
+  taxList.forEach(tax => {
+    const taxPercentage = parseFloat(tax.taxPercentage) || 0;
+    totalTaxAmount += discountedSubtotal * (taxPercentage / 100);
+  });
+  
+  return totalTaxAmount.toFixed(2);
+};
+const calculatePaymentDue = () => {
+  const grandTotal = parseFloat(calculateGrandTotal());
+  const amountPaid = parseFloat(formData.amountPaid) || 0;
+  return Math.max(0, grandTotal - amountPaid).toFixed(2);
+};
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -95,10 +173,11 @@ export default function AddPurchase() {
   });
 
   
-  const getTaxNameById = (taxId) => {
-    return taxNames.find(t => t.taxId === taxId)?.taxName || '';
-  };
-
+ const getTaxNameById = (taxId) => {
+  if (!taxId || !taxNames.length) return '';
+  const match = taxNames.find(t => t.taxId.toString() === taxId.toString());
+  return match ? match.taxName : '';
+};
   useEffect(() => {
     if (searchTerm?.trim()) {
       fetchProducts(searchTerm);
@@ -127,6 +206,16 @@ export default function AddPurchase() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+ if (name === "purchaseStatus") {
+    // ✅ Allow changing freely before submit
+    setFormData(prev => ({
+      ...prev,
+      purchaseStatus: value
+    }));
+    return;
+  }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -154,7 +243,12 @@ export default function AddPurchase() {
       }
     }
   };
-
+const calculateSellingPrice = (purchasePrice, profitMargin) => {
+  const price = parseFloat(purchasePrice) || 0;
+  const margin = parseFloat(profitMargin) || 0;
+  if (margin === 0) return "0.00";
+  return (price * (1 + margin / 100)).toFixed(2);
+};
   const handleProductSelect = (product) => {
     const exists = selectedProducts.some(p => p.productId === product.productId);
 
@@ -309,7 +403,21 @@ const deleteDiscount = async (id) => {
       if (selectedProducts.length === 0) {
         throw new Error('Please add at least one product');
       }
-
+  for (const product of selectedProducts) {
+      if (
+        !product.productName ||
+        !product.quantityPurchased ||
+        !product.purchasePriceBeforeDiscount ||
+        !product.purchasePriceAfterDiscount ||
+        !product.totalAmount ||
+        product.profitMargin === "" || 
+        product.unitSellingPrice === "" ||
+        !product.mfgDate ||
+        !product.expDate
+      ) {
+        throw new Error(`Please complete all fields for product: ${product.productName || 'Unnamed Product'}`);
+      }
+    }
       // 1. Create Purchase Record
       const purchaseData = {
         supplierId: parseInt(formData.supplierId),
@@ -519,24 +627,95 @@ const deleteDiscount = async (id) => {
               </div>
 
               <div style={formGroupStyle}>
-                <label htmlFor="location" style={labelStyle}>Location</label>
-                <select
-                  id="location"
-                  name="locationId"
-                  value={formData.locationId}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                  style={selectStyle}
-                >
-                  <option value="">Select Location</option>
-                  {locations.map(location => (
-                    <option key={location.locationId} value={location.locationId}>
-                      {location.locationName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+  <label htmlFor="location" style={labelStyle}>
+    Location{" "}
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* Info Icon */}
+      <span
+        onMouseEnter={() => setShowLocationInfo(true)}
+        onMouseLeave={() => setShowLocationInfo(false)}
+        style={{
+          marginLeft: "8px",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "18px",
+          height: "18px",
+          borderRadius: "50%",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: "12px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+          transition: "all 0.2s ease"
+        }}
+      >
+        ?
+      </span>
+
+      {/* Popup */}
+      {showLocationInfo && (
+        <div
+          style={{
+            position: "absolute",
+            top: "28px",
+            left: "0",
+            zIndex: 10,
+            backgroundColor: "#fff",
+            color: "#333",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            border: "1px solid #ddd",
+            fontSize: "13px",
+            lineHeight: "1.4",
+            width: "240px",
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+          }}
+        >
+          <div style={{ marginBottom: "6px" }}>
+            ⚠️ <b>Note:</b> After adding a purchase with status{" "}
+            <b>Completed</b> or <b>Cancelled</b>,
+          </div>
+          <div>you will not be able to update the Location again.</div>
+
+          {/* Tooltip Arrow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-6px",
+              left: "12px",
+              width: "12px",
+              height: "12px",
+              backgroundColor: "#fff",
+              borderLeft: "1px solid #ddd",
+              borderTop: "1px solid #ddd",
+              transform: "rotate(45deg)"
+            }}
+          />
+        </div>
+      )}
+    </span>
+  </label>
+
+  <select
+    id="location"
+    name="locationId"
+    value={formData.locationId}
+    onChange={handleChange}
+    className="form-select"
+    required
+    style={selectStyle}
+    disabled={isPurchaseCompleted}  // ✅ lock after submit with Completed
+  >
+    <option value="">Select Location</option>
+    {locations.map(location => (
+      <option key={location.locationId} value={location.locationId}>
+        {location.locationName}
+      </option>
+    ))}
+  </select>
+</div>
 
               <div style={formGroupStyle}>
                 <label htmlFor="date" style={labelStyle}>Date</label>
@@ -554,7 +733,7 @@ const deleteDiscount = async (id) => {
             </div>
 
             <div style={formRowStyle}>
-              <div style={formGroupStyle}>
+              {/* <div style={formGroupStyle}>
                 <label htmlFor="amountPaid" style={labelStyle}>Amount Paid</label>
                 <input
                   type="number"
@@ -569,24 +748,96 @@ const deleteDiscount = async (id) => {
                   step="0.01"
                   style={inputStyle}
                 />
-              </div>
+              </div> */}
 
-              <div style={formGroupStyle}>
-                <label htmlFor="purchaseStatus" style={labelStyle}>Purchase Status</label>
-                <select
-                  id="purchaseStatus"
-                  name="purchaseStatus"
-                  value={formData.purchaseStatus}
-                  onChange={handleChange}
-                  required
-                  style={selectStyle}
-                >
-                  <option value="">Select Purchase Status</option>
-                  {purchaseStatuses.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
+           
+<div style={formGroupStyle}>
+  <label htmlFor="purchaseStatus" style={labelStyle}>
+    Purchase Status{" "}
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* Info Icon */}
+      <span
+        onMouseEnter={() => setShowStatusInfo(true)}
+        onMouseLeave={() => setShowStatusInfo(false)}
+        style={{
+          marginLeft: "8px",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "18px",   // smaller size
+          height: "18px",
+          borderRadius: "50%",
+          backgroundColor: "#007bff", // Blue circle
+          color: "#fff", // White text
+          fontWeight: "bold",
+          fontSize: "12px", // smaller font
+          boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+          transition: "all 0.2s ease"
+        }}
+      >
+        ?
+      </span>
+
+      {/* Popup */}
+      {showStatusInfo && (
+        <div
+          style={{
+            position: "absolute",
+            top: "28px",
+            left: "0",
+            zIndex: 10,
+            backgroundColor: "#fff",
+            color: "#333",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            border: "1px solid #ddd",
+            fontSize: "13px",
+            lineHeight: "1.4",
+            width: "220px",
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+          }}
+        >
+          <div style={{ marginBottom: "6px" }}>
+            ⚠️ <b>Note:</b> Once the status is set to <b>Completed</b> or <b>Cancelled</b>,
+          </div>
+          <div>you will not be able to update it again.</div>
+
+          {/* Tooltip Arrow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-6px",
+              left: "12px",
+              width: "12px",
+              height: "12px",
+              backgroundColor: "#fff",
+              borderLeft: "1px solid #ddd",
+              borderTop: "1px solid #ddd",
+              transform: "rotate(45deg)"
+            }}
+          />
+        </div>
+      )}
+    </span>
+  </label>
+
+<select
+  id="purchaseStatus"
+  name="purchaseStatus"
+  value={formData.purchaseStatus}
+  onChange={handleChange}
+  required
+  style={selectStyle}
+  disabled={isPurchaseCompleted} 
+>
+    <option value="">Select Purchase Status</option>
+    {purchaseStatuses.map(status => (
+      <option key={status} value={status}>{status}</option>
+    ))}
+  </select>
+</div>
+
 
               <div style={formGroupStyle}>
                 <label htmlFor="paymentStatus" style={labelStyle}>Payment Status</label>
@@ -682,7 +933,82 @@ const deleteDiscount = async (id) => {
                     <th style={tableHeaderStyle}>Price Before Discount</th>
                     <th style={tableHeaderStyle}>Price After Discount</th>
                     <th style={tableHeaderStyle}>Total Amount</th>
-                    <th style={tableHeaderStyle}>Profit Margin (%)</th>
+<th style={{ ...tableHeaderStyle, position: "relative", overflow: "visible" }}>
+  Profit Margin (%){" "}
+  <span
+    onMouseEnter={() => setShowProfitInfo(true)}
+    onMouseLeave={() => setShowProfitInfo(false)}
+    style={{
+      marginLeft: "8px",
+      cursor: "pointer",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "18px",
+      height: "18px",
+      borderRadius: "50%",
+      backgroundColor: "#007bff",
+      color: "#fff",
+      fontWeight: "bold",
+      fontSize: "12px",
+      boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+      transition: "all 0.2s ease",
+      position: "relative",
+      zIndex: 20
+    }}
+  >
+    i
+    {showProfitInfo && (
+      <div
+        style={{
+          position: "absolute",
+          top: "-130px",            // move popup **above** column
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 9999,
+          backgroundColor: "#fff",
+          color: "#222",
+          padding: "12px 16px",
+          borderRadius: "8px",
+          border: "1px solid #e1e5e9",
+          fontSize: "13px",
+          lineHeight: "1.5",
+          width: "280px",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+          fontWeight: "normal",
+          textAlign: "left",
+          whiteSpace: "normal"
+        }}
+      >
+        <div style={{ marginBottom: "8px", fontWeight: "600", color: "#2c3e50" }}>
+          💡 Profit Margin Guide
+        </div>
+        <div>
+          The profit margin % is used to automatically calculate the <b>selling price</b>.
+        </div>
+
+        {/* Tooltip Arrow */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "-6px",
+            left: "50%",
+            transform: "translateX(-50%) rotate(45deg)",
+            width: "12px",
+            height: "12px",
+            backgroundColor: "#fff",
+            borderRight: "1px solid #e1e5e9",
+            borderBottom: "1px solid #e1e5e9"
+          }}
+        />
+      </div>
+    )}
+  </span>
+</th>
+
+
+
+
                     <th style={tableHeaderStyle}>Unit Selling Price</th>
                     <th style={tableHeaderStyle}>Action</th>
                   </tr>
@@ -743,36 +1069,39 @@ const deleteDiscount = async (id) => {
                           style={inputStyle}
                         />
                       </td>
-                      <td style={tableCellStyle}>
-                        <input
-                          type="number"
-                          value={product.purchasePriceBeforeDiscount || ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0;
-                            const productDiscount = discountList.find(d => d.productId === product.productId);
-                            
-                            setSelectedProducts(prev =>
-                              prev.map(p =>
-                                p.productId === product.productId 
-                                  ? { 
-                                      ...p, 
-                                      purchasePriceBeforeDiscount: value,
-                                      purchasePriceAfterDiscount: productDiscount 
-                                        ? calculateDiscountedPrice({ ...p, purchasePriceBeforeDiscount: value }, productDiscount)
-                                        : value,
-                                      totalAmount: p.quantityPurchased * (productDiscount 
-                                        ? calculateDiscountedPrice({ ...p, purchasePriceBeforeDiscount: value }, productDiscount)
-                                        : value)
-                                    } 
-                                  : p
-                              )
-                            );
-                          }}
-                          min="0"
-                          step="0.01"
-                          style={inputStyle}
-                        />
-                      </td>
+                  <td style={tableCellStyle}>
+  <input
+    type="number"
+    value={product.purchasePriceBeforeDiscount || ''}
+    onChange={(e) => {
+      const value = parseFloat(e.target.value) || 0;
+      const productDiscount = discountList.find(d => d.productId === product.productId);
+      
+      // Calculate the price after discount
+      const priceAfterDiscount = productDiscount 
+        ? calculateDiscountedPrice({ ...product, purchasePriceBeforeDiscount: value }, productDiscount)
+        : value;
+      
+      setSelectedProducts(prev =>
+        prev.map(p =>
+          p.productId === product.productId 
+            ? { 
+                ...p, 
+                purchasePriceBeforeDiscount: value,
+                purchasePriceAfterDiscount: priceAfterDiscount,
+                totalAmount: p.quantityPurchased * priceAfterDiscount,
+                // Recalculate selling price based on discounted price
+                unitSellingPrice: calculateSellingPrice(priceAfterDiscount, p.profitMargin)
+              } 
+            : p
+        )
+      );
+    }}
+    min="0"
+    step="0.01"
+    style={inputStyle}
+  />
+</td>
                       <td style={tableCellStyle}>
                         <input
                           type="number"
@@ -789,24 +1118,30 @@ const deleteDiscount = async (id) => {
                           style={{ ...inputStyle, backgroundColor: '#f8f9fa' }}
                         />
                       </td>
-                      <td style={tableCellStyle}>
-                        <input
-                          type="number"
-                          value={product.profitMargin || ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0 ;
-                            setSelectedProducts(prev =>
-                              prev.map(p =>
-                                p.productId === product.productId ? { ...p, profitMargin: value } : p
-                              )
-                            );
-                          }}
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          style={inputStyle}
-                        />
-                      </td>
+                    <td style={tableCellStyle}>
+  <input
+    type="number"
+    value={product.profitMargin || ''}
+    onChange={(e) => {
+      const value = parseFloat(e.target.value) || 0;
+      setSelectedProducts(prev =>
+        prev.map(p =>
+          p.productId === product.productId 
+            ? { 
+                ...p, 
+                profitMargin: value,
+                unitSellingPrice: calculateSellingPrice(p.purchasePriceAfterDiscount, value)
+              } 
+            : p
+        )
+      );
+    }}
+    min="0"
+    max="100"
+    step="0.01"
+    style={inputStyle}
+  />
+</td>
                       <td style={tableCellStyle}>
                         <input
                           type="number"
@@ -1273,6 +1608,83 @@ const deleteDiscount = async (id) => {
   </div>
 </div>
 
+
+
+          <div className="financial-summary" style={{
+  ...sectionStyle,
+  marginBottom: '20px',
+  backgroundColor: '#f8f9fa'
+}}>
+  <h3 style={{ marginBottom: '20px', color: '#333' }}>Financial Summary</h3>
+  
+   <div style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '10px',
+    marginBottom: '20px',
+    padding: '15px',
+    backgroundColor: '#fff',
+    borderRadius: '6px',
+    border: '1px solid #dee2e6'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span>Subtotal ({selectedProducts.length} items):</span>
+      <span>Rs {calculateTotalAmount()}</span>
+    </div>
+    
+    {purchaseDiscountList.length > 0 && (
+      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#28a745' }}>
+        <span>Discounts:</span>
+        <span>-Rs {calculateDiscountAmount()}</span>
+      </div>
+    )}
+    
+    {taxList.length > 0 && (
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span>Taxes:</span>
+        <span>+Rs {calculateTaxAmount()}</span>
+      </div>
+    )}
+    
+    <hr style={{ margin: '10px 0', borderTop: '2px dashed #dee2e6' }} />
+    
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.1em' }}>
+      <span>Grand Total:</span>
+      <span>Rs {calculateGrandTotal()}</span>
+    </div>
+  </div>
+  
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '20px'
+  }}>
+    {/* Amount Paid */}
+    <div style={formGroupStyle}>
+      <label style={{...labelStyle, fontWeight: '600'}}>Amount Paid</label>
+      <input
+        type="number"
+        name="amountPaid"
+        value={formData.amountPaid}
+        onChange={handleChange}
+        min="0"
+        step="0.01"
+        style={inputStyle}
+      />
+    </div>
+
+    {/* Payment Due */}
+    <div style={formGroupStyle}>
+      <label style={{...labelStyle, fontWeight: '600', color: '#dc3545'}}>Payment Due</label>
+      <input
+        type="number"
+        value={calculatePaymentDue()}
+        readOnly
+        style={{...inputStyle, backgroundColor: '#e9ecef', fontWeight: 'bold', color: '#dc3545'}}
+      />
+    </div>
+  </div>
+</div>
 
        <div className="form-buttons" style={{ 
             display: 'flex', 

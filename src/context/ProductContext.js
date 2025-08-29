@@ -21,6 +21,28 @@ export function ProductProvider({ children }) {
  const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [discountCodes, setDiscountCodes] = useState([]);
+  const [discountTypes, setDiscountTypes] = useState([]);
+
+  const fetchDiscountCodes = async () => {
+    try {
+      const res = await api.get('/Discount');
+      setDiscountCodes(res.data);
+    } catch (error) {
+      console.error('Error fetching discount codes:', error);
+    }
+  };
+
+  const fetchDiscountTypes = async () => {
+    try {
+      const res = await api.get('/ProductDiscount/discountType');
+      setDiscountTypes(res.data);
+    } catch (error) {
+      console.error('Error fetching discount types:', error);
+    }
+  };
+
+
   const fetchProducts = async () => {
   setLoading(true);
   try {
@@ -39,9 +61,45 @@ export function ProductProvider({ children }) {
 
 useEffect(() => {
   fetchProducts();
+   fetchDiscountCodes();
+    fetchDiscountTypes();
 }, []);
+const addProductDiscount = async (productId, discounts) => {
+  try {
+    // Map frontend discount objects to backend payload
+    const payload = discounts.map(d => ({
+      productId,
+      discountId: discountCodes.find(dc => dc.discountCode === d.code)?.discountId || 0,
+      discountType: d.discountType,
+      discountAmount: Number(d.discountAmount) || 0,
+      discountPercentage: Number(d.discountPercentage) || 0,
+    }));
 
-  
+    const response = await api.post('/ProductDiscount', payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding product discounts:', error);
+    throw error;
+  }
+};
+
+  const applyProductDiscount = async (productId, newDiscount) => {
+  try {
+    const payload = {
+      productId,
+      discountId: discountCodes.find(dc => dc.discountCode === newDiscount.code)?.discountId || newDiscount.discountId || 0,
+      discountType: newDiscount.discountType,
+      discountAmount: Number(newDiscount.discountAmount) || 0,
+      discountPercentage: Number(newDiscount.discountPercentage) || 0,
+    };
+
+    const response = await api.post('/ProductDiscount', [payload]); // backend expects array
+    return response.data;
+  } catch (error) {
+    console.error('Error applying product discount:', error);
+    throw error;
+  }
+};
 
  const addProduct = async (newProduct) => {
     try {
@@ -75,8 +133,12 @@ useEffect(() => {
 const updateProduct = async (id, updatedProduct) => {
   try {
     setLoading(true);
+   const payload = { ...updatedProduct };
+    if (!updatedProduct.imageUrl) {
+      delete payload.imageUrl; 
+    }
 
-    const response = await api.put(`/Product/${id}`, updatedProduct);
+    const response = await api.put(`/Product/${id}`, payload);
     const updated = response.data;
 const productId = parseInt(id);
     // Directly update the product in local state
@@ -86,6 +148,7 @@ const productId = parseInt(id);
           ? {
               ...product,
               ...updated, 
+              
              productName: updatedProduct.productName || product.productName,
               shortName: updatedProduct.shortName || product.shortName,
               sku: updatedProduct.sku || product.sku,
@@ -93,6 +156,7 @@ const productId = parseInt(id);
               category: updatedProduct.category || product.category,
               brand: updatedProduct.brand || product.brand,
               barcode: updatedProduct.barcode || product.barcode,
+             imageUrl: payload.imageUrl ? payload.imageUrl : product.imageUrl, // ✅ al
             }
           : product
       )
@@ -105,6 +169,36 @@ const productId = parseInt(id);
     setLoading(false);
   }
 };
+const deleteProductDiscount = async (productDiscountId) => {
+  try {
+    await api.delete(`/ProductDiscount/${productDiscountId}`);
+    return true;
+  } catch (error) {
+    console.error(`Error deleting product discount ${productDiscountId}:`, error);
+    throw error;
+  }
+};
+
+const getProductDiscounts = async (productId) => {
+  try {
+    const res = await api.get(`/ProductDiscount/byProduct/${productId}`);
+    return res.data.map(d => ({
+       productDiscountId: d.productDiscountId, 
+      discountId: d.discountId,
+      code: d.discountCode || d.discount?.discountCode || '',
+      discountType: d.discountType,
+      discountAmount: d.discountAmount,
+      discountPercentage: d.discountPercentage
+    }));
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.warn(`No discounts found for product ${productId}`);
+      return [];  // 👈 return empty instead of error
+    }
+    console.error(`Error fetching discounts for product ${productId}:`, error);
+    return [];
+  }
+};
   const value = {
     products,
      stocks,
@@ -114,6 +208,12 @@ const productId = parseInt(id);
     deleteProduct,
     updateProduct,
      fetchProducts,
+      discountCodes,       // ✅ expose to context
+    discountTypes ,
+    addProductDiscount,
+      getProductDiscounts ,
+      applyProductDiscount,
+      deleteProductDiscount,
   };
 
   return (

@@ -25,6 +25,7 @@ import AddDiscount from "./pages/discount/AddDiscount";
 import TaxList from "./tax/TaxList";
 import ManageTax from "./tax/ManageTax";
 import StockList from "./pages/inventory/StockList";
+
 import StockTransfer from "./pages/stock/StockTransfer";
 import AddStockTransfer from "./pages/stock/AddStockTransfer";
 import EditStockTransfer from "./pages/stock/EditStockTransfer";
@@ -73,6 +74,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                 
                   <Route
                     path="/product/add"
                     element={

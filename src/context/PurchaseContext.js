@@ -133,15 +133,17 @@ const fetchProducts = async (searchTerm = '') => {
   };
 
   // Edit purchase
-  const updatePurchase = async (id, updatedData) => {
-    try {
-      await api.put(`/PurchaseRecord/${id}`, updatedData);
-      await fetchPurchases();
-    } catch (error) {
-      console.error('Error updating purchase:', error);
-    }
-  };
-
+const updatePurchase = async (id, updatedData) => {
+  try {
+   const response = await api.put(`/PurchaseRecord/${id}`, updatedData);
+    // Refresh the purchases list to get updated data
+    await fetchPurchases();
+     return response.data;
+  } catch (error) {
+    console.error('Error updating purchase:', error);
+    throw error; // Make sure to re-throw the error
+  }
+};
   // Delete purchase
   const deletePurchase = async (id) => {
     try {
@@ -221,14 +223,14 @@ const updateProductPurchaseRecords = async (records) => {
 };
 
   // Delete product purchase record
-  const deleteProductPurchaseRecord = async (id) => {
-    try {
-      await api.delete(`/ProductPurchaseRecord/${id}`);
-    } catch (error) {
-      console.error('Error deleting product purchase record:', error);
-    }
-  };
-
+const deleteProductPurchaseRecord = async (lotId) => {
+  try {
+    await api.delete(`/ProductPurchaseRecord/${lotId}`);
+  } catch (error) {
+    console.error('Error deleting product purchase record:', error);
+    throw error; 
+  }
+}
   const addProductPurchaseDiscount = async (data) => {
     try {
       const res = await api.post('/ProductPurchaseDiscount', data);
@@ -326,8 +328,16 @@ const updatePurchaseTaxes = async (taxes) => {
       return [];
     }
 
-    const response = await api.put('/PurchaseTax', taxes);
-    return response.data;
+    const results = [];
+    for (const tax of taxes) {
+      const response = await api.put(`/PurchaseTax/${tax.purchaseTaxId}`, {
+        purchaseId: tax.purchaseId,
+        taxLocationId: tax.taxLocationId
+      });
+      results.push(response.data);
+    }
+
+    return results;
   } catch (error) {
     if (error.response?.data?.errors) {
       console.error("Validation errors:", error.response.data.errors);
@@ -405,6 +415,7 @@ const addPurchase = async (purchaseData) => {
      fetchPurchaseDiscountTypes();
     fetchTaxNames();
     fetchTaxLocations();
+    
   }, []);
    return (
     <PurchaseContext.Provider value={{
