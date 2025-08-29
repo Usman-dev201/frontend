@@ -43,7 +43,6 @@ export default function ListUser() {
                   <th>Last Name</th>
                   <th>Email</th>
                   <th>Contact No</th>
-                  <th>Address</th>
                   <th>Role</th>
                 </tr>
               </thead>
@@ -51,18 +50,17 @@ export default function ListUser() {
                 {users.length > 0 ? (
                   users.map(user => (
                     <tr key={user.userID}>
-        <td>{user.userID}</td>
+                      <td>{user.userID}</td>
                       <td>{user.firstName}</td>
                       <td>{user.lastName}</td>
                       <td>{user.userEmail}</td>
                       <td>{user.userPhone}</td>
-                      <td>{user.address || "N/A"}</td>
                       <td>{user.role?.roleName || "N/A"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7">No users found.</td>
+                    <td colSpan="6">No users found.</td>
                   </tr>
                 )}
               </tbody>

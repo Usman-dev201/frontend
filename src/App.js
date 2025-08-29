@@ -39,12 +39,14 @@ import ListLocation from "./pages/location/ListLocation";
 import ListUser from "./pages/users/ListUser";
 import Roles from "./pages/users/Roles";
 import BarcodeList from "./pages/inventory/BarcodeList";
+import { PurchaseReturnProvider } from "./context/PurchaseReturnContext";
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <PurchaseProvider>
+         <PurchaseReturnProvider PurchaseReturnProvider>
           <ProductProvider>
             <TaxProvider>
             <DiscountProvider> 
@@ -290,6 +292,7 @@ function App() {
                     }
                   />
                   <Route path="*" element={<Navigate to="/login" replace />} />
+                  
                 </Routes>
                 </SupplierProvider>
                 </LocationProvider>
@@ -299,6 +302,7 @@ function App() {
                 </DiscountProvider>
                 </TaxProvider>
           </ProductProvider>
+          </PurchaseReturnProvider>
         </PurchaseProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -552,17 +552,17 @@ if (updatedTaxRecords.length > 0) {
                 style={{ 
                   ...addButtonStyle, 
                   width: '130px',
-                  backgroundColor: '#28a745',
+                  backgroundColor: '#4299e1 ',
                   height: '36px',
                   fontSize: '12px'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#218838';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
+                  e.currentTarget.style.backgroundColor = '#4299e1 ';
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(162, 223, 247, 0.3)';
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
+                  e.currentTarget.style.backgroundColor = '#4299e1 ';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(162, 223, 247, 0.3)';
                 }}
               >
                 <i className="fas fa-plus" style={{ fontSize: '10px' }}></i>
@@ -1410,7 +1410,7 @@ if (updatedTaxRecords.length > 0) {
               padding: '10px 20px',
               borderRadius: '4px',
               border: 'none',
-              backgroundColor: '#28a745',
+              backgroundColor: '#4299e1 ',
               color: '#fff',
               cursor: 'pointer',
               height: '40px',
@@ -1426,7 +1426,7 @@ if (updatedTaxRecords.length > 0) {
                 padding: '10px 20px',
                 borderRadius: '4px',
                 border: 'none',
-                backgroundColor: '#6c757d',
+                backgroundColor: '#dc3545',
                 color: '#fff',
                 cursor: 'pointer',
                 height: '40px',
@@ -1515,7 +1515,7 @@ const sectionHeaderStyle = {
     padding: '0 12px',
     borderRadius: '4px',
     border: 'none',
-    backgroundColor: '#28a745',
+    backgroundColor: '#4299e1 ',
     color: '#fff',
     cursor: 'pointer',
     fontSize: '11px',

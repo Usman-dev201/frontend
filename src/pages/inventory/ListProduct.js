@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
@@ -6,101 +6,79 @@ import { useProducts } from '../../context/ProductContext';
 import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const { products, stocks = [], deleteProduct, loading } = useProducts();
-    const [showDropdown, setShowDropdown] = useState(null);
-   
-  useEffect(() => {
-  
 
-  const handleClickOutside = (event) => {
-    if (!event.target.closest('.action-dropdown')) {
-      setShowDropdown(null);
-    }
-  };
-
-  document.addEventListener('mousedown', handleClickOutside);
-  return () => document.removeEventListener('mousedown', handleClickOutside);
-}, []);
-    if (loading) {
-        return (
-            <div className="list-product-page">
-                <Topbar />
-                <Sidebar />
-                <div className="list-product-content">
-                    <div className="loading-spinner">
-                        Loading products...
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
- 
-
-  // Format price function to handle currency formatting
+  // Format price to PKR
   const formatPrice = (price) => {
-    if (!price) return '₹0.00';
+    if (!price) return '0.00';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'PKR',
     }).format(price);
   };
 
-  // Handle edit function
+  // Navigate to Edit page
   const handleEdit = (product) => {
     navigate(`/product/Edit/${product.productId}`, { state: { product } });
   };
 
- const handleDelete = async (productId) => {
-  if (window.confirm('Are you sure you want to delete this product?')) {
-    try {
-      await deleteProduct(productId); // Wait for deletion to complete
-      setShowDropdown(null); // Close dropdown after successful deletion
-    } catch (error) {
-      console.error('Failed to delete product:', error);
-      alert('Failed to delete product. Please try again.');
+  // Delete product
+  const handleDelete = async (productId) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        await deleteProduct(productId);
+      } catch (error) {
+        console.error('Failed to delete product:', error);
+        alert('Failed to delete product. Please try again.');
+      }
     }
-  }
-};
-
-  const toggleDropdown = (productId) => {
-    setShowDropdown(showDropdown === productId ? null : productId);
   };
 
-  // Close dropdown when clicking outside
-const getStockByProductId = (productId) => {
-  return stocks.find((stock) => stock.productId === productId);
-};
+  // Get stock info for product
+  const getStockByProductId = (productId) => {
+    return stocks.find((stock) => stock.productId === productId);
+  };
 
+  if (loading) {
+    return (
+      <div className="list-product-page">
+        <Topbar />
+        <Sidebar />
+        <div className="list-product-content">
+          <div className="loading-spinner">Loading products...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="list-product-page">
       <Topbar />
       <Sidebar />
       <div className="list-product-content">
+        {/* Header */}
         <div className="list-product-header">
           <div className="header-title">
             <h2>Product List</h2>
-            <button 
+            <button
               className="action-button stock-button"
               onClick={() => navigate('/stock/list')}
             >
-              <i className="fas fa-boxes"></i>
-              Stock List
+              <i className="fas fa-boxes"></i> Stock List
             </button>
           </div>
           <div className="header-actions">
-            <button 
+            <button
               className="action-button add-button"
               onClick={() => navigate('/product/add')}
             >
-              <i className="fas fa-ellipsis-v"></i>
-              Add Product
+              <i className="fas fa-plus"></i> Add Product
             </button>
           </div>
         </div>
 
+        {/* Product Table */}
         <div className="products-table-container">
           <table className="products-table">
             <thead>
@@ -124,7 +102,7 @@ const getStockByProductId = (productId) => {
                 <th>Actions</th>
               </tr>
             </thead>
-               <tbody>
+            <tbody>
               {products.map((product) => {
                 const stock = getStockByProductId(product.productId);
                 return (
@@ -171,13 +149,9 @@ const getStockByProductId = (productId) => {
                         '-'
                       )}
                     </td>
-                    <td>{product.category?.categoryName}</td>
-                    <td>{product.brand?.brandName}</td>
-                    <td>
-                      <span className="barcode-type-badge">
-                        {product.barcode?.barcodeType || 'N/A'}
-                      </span>
-                    </td>
+                    <td>{product.category?.categoryName || '-'}</td>
+                    <td>{product.brand?.brandName || '-'}</td>
+                    <td>{product.barcode?.barcodeType || 'N/A'}</td>
                     <td>
                       <span
                         className={`alert-badge ${
@@ -190,32 +164,19 @@ const getStockByProductId = (productId) => {
                       </span>
                     </td>
                     <td>
-                      <div className="action-dropdown">
-                        <button
-                          className="action-button dropdown-toggle"
-                          onClick={() => toggleDropdown(product.productId)}
-                        >
-                          Actions <i className="fas fa-chevron-down"></i>
-                        </button>
-                        {showDropdown === product.productId && (
-                          <div className="dropdown-menu">
-                            <button
-                              className="edit-button"
-                              onClick={() => handleEdit(product)}
-                            >
-                              <i className="fas fa-edit"></i>
-                              Edit
-                            </button>
-                            <button
-                              className="delete-button"
-                              onClick={() => handleDelete(product.productId)}
-                            >
-                              <i className="fas fa-trash"></i>
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      {/* Direct action buttons */}
+                      <button
+                        className="edit-button action-btn"
+                        onClick={() => handleEdit(product)}
+                      >
+                        <i className="fas fa-edit"></i> Edit
+                      </button>
+                      <button
+                        className="delete-button action-btn"
+                        onClick={() => handleDelete(product.productId)}
+                      >
+                        <i className="fas fa-trash"></i> Delete
+                      </button>
                     </td>
                   </tr>
                 );
@@ -226,4 +187,4 @@ const getStockByProductId = (productId) => {
       </div>
     </div>
   );
-} 
+}

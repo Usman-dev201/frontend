@@ -3,15 +3,16 @@ import Topbar from '../components/Topbar';
 import Sidebar from '../components/Sidebar';
 import TaxListSection from '../components/TaxListSection';
 import DiscountListSection from '../components/DiscountListSection';
+import { FaDollarSign, FaBox, FaUsers, FaTags, FaPlus, FaFileAlt, FaChartBar } from "react-icons/fa";
 import '../styles/Dashboard.css';
 
 export default function Dashboard() {
   // Mock data for demonstration
   const stats = [
-    { title: 'Total Sales', value: '$24,500', change: '+12%', icon: '💰' },
-    { title: 'Total Orders', value: '1,250', change: '+8%', icon: '📦' },
-    { title: 'Total Customers', value: '850', change: '+15%', icon: '👥' },
-    { title: 'Total Products', value: '320', change: '+5%', icon: '🏷️' },
+    { title: 'Total Sales', value: '$24,500', change: '+12%', icon: <FaDollarSign /> },
+    { title: 'Total Orders', value: '1,250', change: '+8%', icon: <FaBox /> },
+    { title: 'Total Customers', value: '850', change: '+15%', icon: <FaUsers /> },
+    { title: 'Total Products', value: '320', change: '+5%', icon: <FaTags /> },
   ];
 
   const recentOrders = [
@@ -88,15 +89,15 @@ export default function Dashboard() {
           <h3>Quick Actions</h3>
           <div className="quick-actions">
             <button className="action-button">
-              <span className="action-icon">➕</span>
+              <span className="action-icon"><FaPlus /></span>
               Add New Product
             </button>
             <button className="action-button">
-              <span className="action-icon">📝</span>
+              <span className="action-icon"><FaFileAlt /></span>
               Create Order
             </button>
             <button className="action-button">
-              <span className="action-icon">📊</span>
+              <span className="action-icon"><FaChartBar /></span>
               Generate Report
             </button>
           </div>

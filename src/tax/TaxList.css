@@ -199,21 +199,21 @@
 }
 
 .save-btn {
-  background-color: #4CAF50;
+  background-color: #4299e1 !important ;
   color: white;
 }
 
 .save-btn:hover {
-  background-color: #45a049;
+  background-color: #4299e1;
 }
 
 .cancel-btn {
-  background-color: #9e9e9e;
+  background-color: #dc3545 !important;
   color: white;
 }
 
 .cancel-btn:hover {
-  background-color: #757575;
+  background-color: #dc3545;
 }
 
 .add-tax-form-container {

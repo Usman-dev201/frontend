@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import {
+  FaStore, FaTachometerAlt, FaUsers, FaChevronDown, FaChevronRight,
+  FaUserFriends, FaUserShield, FaBox, FaList, FaPlus, FaTags,
+  FaTrademark, FaBarcode, FaShoppingCart, FaUndo, FaTruck,
+  FaExchangeAlt, FaPercent, FaFileInvoiceDollar, FaMapMarkerAlt
+} from "react-icons/fa";
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -20,40 +26,41 @@ export default function Sidebar() {
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="logo-container">
-          <i className="fas fa-store"></i>
+          <FaStore />
           <h2>Retail MS</h2>
         </div>
       </div>
       <nav className="sidebar-nav">
         <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">
-            <i className="fas fa-tachometer-alt"></i>
+            <FaTachometerAlt />
           </div>
           <span>Dashboard</span>
         </NavLink>
 
+        {/* Users Section */}
         <div className="nav-section">
           <div 
             className="section-header" 
             onClick={() => toggleSection('users')}
           >
             <div className="nav-icon">
-              <i className="fas fa-users"></i>
+              <FaUsers />
             </div>
             <span>Users</span>
-            <i className={`fas fa-chevron-${expandedSections.users ? 'down' : 'right'}`}></i>
+            {expandedSections.users ? <FaChevronDown /> : <FaChevronRight />}
           </div>
           {expandedSections.users && (
             <div className="sub-items">
               <NavLink to="/users/list" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-user-friends"></i>
+                  <FaUserFriends />
                 </div>
                 <span>List Users</span>
               </NavLink>
               <NavLink to="/users/roles" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-user-shield"></i>
+                  <FaUserShield />
                 </div>
                 <span>Roles</span>
               </NavLink>
@@ -61,46 +68,47 @@ export default function Sidebar() {
           )}
         </div>
 
+        {/* Inventory Section */}
         <div className="nav-section">
           <div 
             className="section-header" 
             onClick={() => toggleSection('inventory')}
           >
             <div className="nav-icon">
-              <i className="fas fa-box"></i>
+              <FaBox />
             </div>
             <span>Inventory</span>
-            <i className={`fas fa-chevron-${expandedSections.inventory ? 'down' : 'right'}`}></i>
+            {expandedSections.inventory ? <FaChevronDown /> : <FaChevronRight />}
           </div>
           {expandedSections.inventory && (
             <div className="sub-items">
               <NavLink to="/product/list" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-list"></i>
+                  <FaList />
                 </div>
                 <span>List Product</span>
               </NavLink>
               <NavLink to="/product/add" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-plus"></i>
+                  <FaPlus />
                 </div>
                 <span>Add Product</span>
               </NavLink>
               <NavLink to="/categories" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-tags"></i>
+                  <FaTags />
                 </div>
                 <span>Categories</span>
               </NavLink>
               <NavLink to="/brands" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-trademark"></i>
+                  <FaTrademark />
                 </div>
                 <span>Brands</span>
               </NavLink>
               <NavLink to="/barcode/list" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-barcode"></i>
+                  <FaBarcode />
                 </div>
                 <span>Barcode</span>
               </NavLink>
@@ -108,74 +116,77 @@ export default function Sidebar() {
           )}
         </div>
 
+        {/* Purchase Section */}
         <div className="nav-section">
           <div 
             className="section-header" 
             onClick={() => toggleSection('purchase')}
           >
             <div className="nav-icon">
-              <i className="fas fa-shopping-cart"></i>
+              <FaShoppingCart />
             </div>
             <span>Purchase</span>
-            <i className={`fas fa-chevron-${expandedSections.purchase ? 'down' : 'right'}`}></i>
+            {expandedSections.purchase ? <FaChevronDown /> : <FaChevronRight />}
           </div>
           {expandedSections.purchase && (
             <div className="sub-items">
               <NavLink to="/purchase/list" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-list"></i>
+                  <FaList />
                 </div>
                 <span>List Purchase</span>
               </NavLink>
               <NavLink to="/purchase/add" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-plus"></i>
+                  <FaPlus />
                 </div>
                 <span>Add Purchase</span>
               </NavLink>
               <NavLink to="/purchase/return" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-undo"></i>
+                  <FaUndo />
                 </div>
                 <span>Return Purchase</span>
               </NavLink>
               <NavLink to="/purchase/suppliers" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon">
-                  <i className="fas fa-truck"></i>
+                  <FaTruck />
                 </div>
                 <span>Suppliers</span>
               </NavLink>
             </div>
           )}
         </div>
+
+        {/* Other Items */}
         <NavLink to="/stock/transfer" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">
-            <i className="fas fa-exchange-alt"></i>
+            <FaExchangeAlt />
           </div>
           <span>Stock Transfer</span>
         </NavLink>
 
         <NavLink to="/discount" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">
-            <i className="fas fa-percent"></i>
+            <FaPercent />
           </div>
           <span>Discount</span>
         </NavLink>
 
         <NavLink to="/tax" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">
-            <i className="fas fa-file-invoice-dollar"></i>
+            <FaFileInvoiceDollar />
           </div>
           <span>Tax</span>
         </NavLink>
 
         <NavLink to="/location" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">
-            <i className="fas fa-map-marker-alt"></i>
+            <FaMapMarkerAlt />
           </div>
           <span>Location</span>
         </NavLink>
-        </nav>
+      </nav>
     </div>
   );
-} 
+}
