@@ -27,6 +27,19 @@ export const PurchaseReturnProvider = ({ children }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+const [completedPurchases, setCompletedPurchases] = useState([]);
+
+useEffect(() => {
+  const fetchCompletedPurchases = async () => {
+    try {
+      const res = await api.get("/PurchaseReturn/GetCompletedPurchases");
+      setCompletedPurchases(res.data || []);
+    } catch (err) {
+      console.error("❌ Failed to load completed purchases:", err);
+    }
+  };
+  fetchCompletedPurchases();
+}, []);
 
   // Fetch payment & refund statuses
   useEffect(() => {
@@ -44,7 +57,20 @@ export const PurchaseReturnProvider = ({ children }) => {
     };
     fetchStatuses();
   }, []);
-
+const getProductPrice = async (purchaseId, productId) => {
+  try {
+    const res = await api.get(
+      `/PurchaseReturn/GetProductPrice?purchaseId=${purchaseId}&productId=${productId}`
+    );
+    return {
+      unitPrice: res.data.purchasePriceAfterDiscount,
+      productName: res.data.productName // 👈 now available
+    };
+  } catch (err) {
+    console.error("❌ Failed to fetch product price:", err);
+    throw err;
+  }
+};
   // Fetch products based on search
   useEffect(() => {
     const fetchProducts = async () => {
@@ -191,6 +217,8 @@ const submitPurchaseReturn = async () => {
         paymentStatuses,
         refundStatuses,
         submitPurchaseReturn,
+         getProductPrice,
+         completedPurchases,
       }}
     >
       {children}

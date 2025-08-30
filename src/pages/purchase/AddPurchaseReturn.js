@@ -1,5 +1,5 @@
 // src/pages/purchase/AddPurchaseReturn.js
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePurchaseReturn } from "../../context/PurchaseReturnContext";
 import Topbar from "../../components/Topbar";
@@ -8,7 +8,8 @@ import "../../styles/purchase/Purchase.css";
 
 export default function AddPurchaseReturn() {
   const navigate = useNavigate();
-
+const [showRefundInfo, setShowRefundInfo] = useState(false); // 👈 new state
+const [showPurchaseIdInfo, setShowPurchaseIdInfo] = useState(false);
   const {
     formData,
     handleChange,
@@ -21,30 +22,58 @@ export default function AddPurchaseReturn() {
     paymentStatuses,
     refundStatuses,
     submitPurchaseReturn,
+    getProductPrice,
+    completedPurchases
+  
   } = usePurchaseReturn();
+const grandTotal = selectedProducts.reduce(
+  (sum, p) => sum + (p.total || 0),
+  0
+);
 
+// Calculate Payment Due
+const paymentDue = grandTotal - (Number(formData.amountReturned) || 0);
   // Add product with empty unit price and total for frontend input
-  const handleProductSelect = (product) => {
-    const exists = selectedProducts.some(
-      (p) => p.productId === (product.productId ?? product.id)
+const handleProductSelect = async (product) => {
+  const exists = selectedProducts.some(
+    (p) => p.productId === (product.productId ?? product.id)
+  );
+
+  if (exists) {
+    alert("This product has already been added");
+    return;
+  }
+
+  try {
+    // call backend API with both purchaseId and productId
+    const { unitPrice, productName } = await getProductPrice(
+      formData.purchaseId,
+      product.productId ?? product.id
     );
 
-    if (!exists) {
-      const newProduct = {
-        ...product,
-        productId: product.productId ?? product.id,
-        productName: product.productName || product.name || "",
-        unitPrice: 0, // ✅ user will enter manually
-        quantity: 1,
-        total: 0,
-      };
+    // if found → add to list
+    const newProduct = {
+      ...product,
+      productId: product.productId ?? product.id,
+      productName: productName || product.productName || product.name || "",
+      unitPrice: unitPrice,
+      quantity: 1,
+      total: unitPrice,
+    };
 
-      setSelectedProducts((prev) => [...prev, newProduct]);
-      setSearchQuery("");
+    setSelectedProducts((prev) => [...prev, newProduct]);
+    setSearchQuery("");
+
+  } catch (err) {
+    // ❌ product not under purchase record
+    if (err.response && err.response.status === 404) {
+      alert("⚠️ This product is not purchased under the selected Purchase Record.");
     } else {
-      alert("This product has already been added");
+      console.error("❌ Failed to fetch product price:", err);
+      alert("Could not fetch product purchase price.");
     }
-  };
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,87 +155,252 @@ export default function AddPurchaseReturn() {
         <div style={containerStyle}>
           <form onSubmit={handleSubmit}>
             {/* --- Form fields --- */}
-            <div style={formGridStyle}>
-              {[
-                { label: "Date", name: "date", type: "date" },
-                { label: "Purchase ID", name: "purchaseId", type: "text" },
-                { label: "Amount Returned", name: "amountReturned", type: "number" },
-                { label: "Payment Due", name: "paymentDue", type: "number" },
-              ].map((field) => (
-                <div key={field.name} style={formGroupStyle}>
-                  <label style={labelStyle}>{field.label}</label>
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    value={formData[field.name]}
-                    onChange={handleChange}
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-              ))}
+           {/* --- Form fields --- */}
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)", // ✅ Two fields in one row
+    gap: "30px",
+    marginBottom: "40px",
+  }}
+>
+  {/* Date */}
+  <div style={formGroupStyle}>
+    <label style={labelStyle}>Date</label>
+    <input
+      type="date"
+      name="date"
+      value={formData.date}
+      onChange={handleChange}
+      required
+      style={inputStyle}
+    />
+  </div>
 
-              {/* Payment Status */}
-              <div style={formGroupStyle}>
-                <label style={labelStyle}>Payment Status</label>
-                <select
-                  name="paymentStatus"
-                  value={formData.paymentStatus}
-                  onChange={handleChange}
-                  required
-                  style={inputStyle}
-                >
-                  <option value="">Select Status</option>
-                  {paymentStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
+  {/* Purchase ID */}
+  {/* Purchase ID with Info Popup */}
+<div style={formGroupStyle}>
+  <label htmlFor="purchaseId" style={labelStyle}>
+    Purchase ID{" "}
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* Info Icon */}
+      <span
+        onMouseEnter={() => setShowPurchaseIdInfo(true)}
+        onMouseLeave={() => setShowPurchaseIdInfo(false)}
+        style={{
+          marginLeft: "8px",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "18px",
+          height: "18px",
+          borderRadius: "50%",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: "12px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+          transition: "all 0.2s ease",
+        }}
+      >
+        ?
+      </span>
 
-              {/* Refund Status */}
-              <div style={formGroupStyle}>
-                <label style={labelStyle}>Refund Status</label>
-                <select
-                  name="refundStatus"
-                  value={formData.refundStatus}
-                  onChange={handleChange}
-                  required
-                  style={inputStyle}
-                >
-                  <option value="">Select Status</option>
-                  {refundStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {/* Popup */}
+      {showPurchaseIdInfo && (
+        <div
+          style={{
+            position: "absolute",
+            top: "28px",
+            left: "0",
+            zIndex: 10,
+            backgroundColor: "#fff",
+            color: "#333",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            border: "1px solid #ddd",
+            fontSize: "13px",
+            lineHeight: "1.4",
+            width: "250px",
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)",
+          }}
+        >
+        <div style={{ marginBottom: "6px" }}>
+  ⚠️ <b>Note:</b>
+</div>
+<div>Please select the <b>most recent Purchase ID</b>.</div>
+<div>This ensures correct product pricing.</div>
+<div>And also keeps stock adjustments accurate.</div>
 
-              {/* Reason for Refund */}
-              <div
-                style={{
-                  ...formGroupStyle,
-                  gridColumn: "span 3",
-                  marginTop: "10px",
-                }}
-              >
-                <label style={labelStyle}>Reason for Refund</label>
-                <textarea
-                  name="reasonForRefund"
-                  value={formData.reasonForRefund}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    ...inputStyle,
-                    height: "auto",
-                    minHeight: "120px",
-                    resize: "vertical",
-                  }}
-                />
-              </div>
-            </div>
+          {/* Tooltip Arrow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-6px",
+              left: "12px",
+              width: "12px",
+              height: "12px",
+              backgroundColor: "#fff",
+              borderLeft: "1px solid #ddd",
+              borderTop: "1px solid #ddd",
+              transform: "rotate(45deg)",
+            }}
+          />
+        </div>
+      )}
+    </span>
+  </label>
+
+  <select
+    id="purchaseId"
+    name="purchaseId"
+    value={formData.purchaseId}
+    onChange={handleChange}
+    required
+    style={inputStyle}
+  >
+    <option value="">Select Purchase</option>
+    {completedPurchases.map((purchase) => (
+      <option key={purchase.purchaseId} value={purchase.purchaseId}>
+        #{purchase.purchaseId} - {purchase.supplierName} (
+        {new Date(purchase.date).toLocaleDateString()})
+      </option>
+    ))}
+  </select>
+</div>
+
+  {/* Payment Status */}
+  <div style={formGroupStyle}>
+    <label style={labelStyle}>Payment Status</label>
+    <select
+      name="paymentStatus"
+      value={formData.paymentStatus}
+      onChange={handleChange}
+      required
+      style={inputStyle}
+    >
+      <option value="">Select Status</option>
+      {paymentStatuses.map((status) => (
+        <option key={status} value={status}>
+          {status}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* Refund Status */}
+   <div style={formGroupStyle}>
+    <label htmlFor="refundStatus" style={labelStyle}>
+      Refund Status{" "}
+      <span style={{ position: "relative", display: "inline-block" }}>
+        {/* Info Icon */}
+        <span
+          onMouseEnter={() => setShowRefundInfo(true)}
+          onMouseLeave={() => setShowRefundInfo(false)}
+          style={{
+            marginLeft: "8px",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "18px",
+            height: "18px",
+            borderRadius: "50%",
+            backgroundColor: "#007bff",
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "12px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+            transition: "all 0.2s ease"
+          }}
+        >
+          ?
+        </span>
+
+        {/* Popup */}
+        {showRefundInfo && (
+          <div
+            style={{
+              position: "absolute",
+              top: "28px",
+              left: "0",
+              zIndex: 10,
+              backgroundColor: "#fff",
+              color: "#333",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              border: "1px solid #ddd",
+              fontSize: "13px",
+              lineHeight: "1.4",
+              width: "350px",
+              boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+            }}
+          >
+             <div style={{ marginBottom: "6px" }}>
+            ⚠️ <b>Note:</b> Once the status is set to <b>Completed</b> or <b>Cancelled</b>,
+          </div>
+          <div>you will not be able to update it again.</div>
+            {/* Tooltip Arrow */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-6px",
+                left: "12px",
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#fff",
+                borderLeft: "1px solid #ddd",
+                borderTop: "1px solid #ddd",
+                transform: "rotate(45deg)"
+              }}
+            />
+          </div>
+        )}
+      </span>
+    </label>
+
+    <select
+      id="refundStatus"
+      name="refundStatus"
+      value={formData.refundStatus}
+      onChange={handleChange}
+      required
+      style={inputStyle}
+    >
+      <option value="">Select Status</option>
+      {refundStatuses.map((status) => (
+        <option key={status} value={status}>
+          {status}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* Reason for Refund - Full Width */}
+  <div
+    style={{
+      ...formGroupStyle,
+      gridColumn: "span 2", // ✅ take both columns
+      marginTop: "10px",
+    }}
+  >
+    <label style={labelStyle}>Reason for Refund</label>
+    <textarea
+      name="reasonForRefund"
+      value={formData.reasonForRefund}
+      onChange={handleChange}
+      required
+      style={{
+        ...inputStyle,
+        height: "auto",
+        minHeight: "120px",
+        resize: "vertical",
+      }}
+    />
+  </div>
+</div>
+
 
             {/* --- Product Search --- */}
             <div style={{ marginBottom: "40px" }}>
@@ -289,7 +483,7 @@ export default function AddPurchaseReturn() {
               >
                 <thead>
                   <tr style={{ backgroundColor: "#f8f9fa" }}>
-                    {["Product Name", "Unit Price", "Quantity Return", "Total", "Action"].map(
+                    {["Product Name","Quantity Return", "Unit Price", "Total", "Action"].map(
                       (header, index) => (
                         <th
                           key={header}
@@ -314,35 +508,7 @@ export default function AddPurchaseReturn() {
                       <tr key={product.productId}>
                         <td style={{ padding: "15px 20px" }}>{product.productName}</td>
 
-                        {/* Editable Unit Price */}
-                        <td style={{ padding: "15px 20px", textAlign: "center" }}>
-                          <input
-                            type="number"
-                            min="0"
-                            value={product.unitPrice || ""}
-                            onChange={(e) => {
-                              const newPrice = Number(e.target.value);
-                              setSelectedProducts((prev) =>
-                                prev.map((p) =>
-                                  p.productId === product.productId
-                                    ? {
-                                        ...p,
-                                        unitPrice: newPrice,
-                                        total: newPrice * (p.quantity || 0),
-                                      }
-                                    : p
-                                )
-                              );
-                            }}
-                            style={{
-                              ...inputStyle,
-                              width: "120px",
-                              textAlign: "center",
-                              height: "36px",
-                              margin: "0 auto",
-                            }}
-                          />
-                        </td>
+                     
 
                         {/* Editable Quantity */}
                         <td style={{ padding: "15px 20px", textAlign: "center" }}>
@@ -373,7 +539,35 @@ export default function AddPurchaseReturn() {
                             }}
                           />
                         </td>
-
+   {/* Editable Unit Price */}
+                        <td style={{ padding: "15px 20px", textAlign: "center" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={product.unitPrice || ""}
+                            onChange={(e) => {
+                              const newPrice = Number(e.target.value);
+                              setSelectedProducts((prev) =>
+                                prev.map((p) =>
+                                  p.productId === product.productId
+                                    ? {
+                                        ...p,
+                                        unitPrice: newPrice,
+                                        total: newPrice * (p.quantity || 0),
+                                      }
+                                    : p
+                                )
+                              );
+                            }}
+                            style={{
+                              ...inputStyle,
+                              width: "120px",
+                              textAlign: "center",
+                              height: "36px",
+                              margin: "0 auto",
+                            }}
+                          />
+                        </td>
                         {/* Editable Total */}
                         <td style={{ padding: "15px 20px", textAlign: "center" }}>
                           <input
@@ -437,7 +631,50 @@ export default function AddPurchaseReturn() {
                 </tbody>
               </table>
             </div>
+<div
+  style={{
+    ...formGridStyle,
+    marginTop: "20px",
+    borderTop: "1px solid #e0e0e0",
+    paddingTop: "20px",
+  }}
+>
+  {/* Grand Total (calculated only) */}
+  <div style={formGroupStyle}>
+    <label style={labelStyle}>Grand Total</label>
+    <input
+      type="number"
+      name="grandTotal"
+      value={grandTotal}
+      readOnly
+      style={{ ...inputStyle, backgroundColor: "#f8f9fa" }}
+    />
+  </div>
 
+  {/* Amount Returned (editable) */}
+  <div style={formGroupStyle}>
+    <label style={labelStyle}>Amount Returned</label>
+    <input
+      type="number"
+      name="amountReturned"
+      value={formData.amountReturned}
+      onChange={handleChange}
+      style={inputStyle}
+    />
+  </div>
+
+  {/* Payment Due (calculated only) */}
+  <div style={formGroupStyle}>
+    <label style={labelStyle}>Payment Due</label>
+    <input
+      type="number"
+      name="paymentDue"
+      value={paymentDue}
+      readOnly
+      style={{ ...inputStyle, backgroundColor: "#f8f9fa" }}
+    />
+  </div>
+</div>
             {/* --- Action Buttons --- */}
             <div
               style={{

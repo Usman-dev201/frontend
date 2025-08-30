@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
@@ -6,29 +6,34 @@ import { useProducts } from '../../context/ProductContext';
 import '../../styles/ListProduct.css';
 
 export default function ListProduct() {
-<<<<<<< HEAD
     const navigate = useNavigate();
   const { products, stocks = [], deleteProduct, loading ,getProductDiscounts} = useProducts();
-    const [showDropdown, setShowDropdown] = useState(null);
+   
 const [productDiscountsMap, setProductDiscountsMap] = useState({});
 
 useEffect(() => {
   if (products.length === 0) return;
 
-  products.forEach(async (product) => {
-    const discounts = await getProductDiscounts(product.productId);
+  const fetchDiscounts = async () => {
+    const discountsMap = {};
 
-    // Remove duplicate discount codes
-    const uniqueDiscounts = discounts.filter(
-      (d, index, self) => self.findIndex(x => x.code === d.code) === index
-    );
+    for (const product of products) {
+      const discounts = await getProductDiscounts(product.productId);
 
-    setProductDiscountsMap(prev => ({
-      ...prev,
-      [product.productId]: uniqueDiscounts
-    }));
-  });
+      // remove duplicate discount codes
+      const uniqueDiscounts = discounts.filter(
+        (d, index, self) => self.findIndex(x => x.code === d.code) === index
+      );
+
+      discountsMap[product.productId] = uniqueDiscounts;
+    }
+
+    setProductDiscountsMap(discountsMap); // ✅ one update
+  };
+
+  fetchDiscounts();
 }, [products, getProductDiscounts]);
+
 
 
    const maxDiscountCount = Math.max(
@@ -36,13 +41,8 @@ useEffect(() => {
   0
 );
 
- 
-  useEffect(() => {
-  
-=======
-  const navigate = useNavigate();
-  const { products, stocks = [], deleteProduct, loading } = useProducts();
->>>>>>> 089d8ee3452ab2462783a84ae987474853d76bd3
+
+
 
   // Format price to PKR
   const formatPrice = (price) => {
@@ -131,9 +131,9 @@ useEffect(() => {
                 <th>Marked Price</th>
                 <th>Selling Price</th>
                     {/* Dynamic Discount Code Columns */}
-    {Array.from({ length: maxDiscountCount }, (_, i) => (
-      <th key={`discount-${i}`}>Discount Code {i + 1}</th>
-    ))}
+  {Array.from({ length: maxDiscountCount }, (_, i) => (
+  <th key={`discount-header-${i}`}>Discount {i + 1}</th>
+))}
                 <th>Category</th>
                 <th>Brand</th>
                 <th>Barcode Type</th>
@@ -179,10 +179,11 @@ useEffect(() => {
                     <td>{formatPrice(stock?.purchasePrice)}</td>
                     <td>{formatPrice(stock?.markedPrice)}</td>
                     <td>{formatPrice(stock?.sellingPrice)}</td>
-<<<<<<< HEAD
+
                    {/* Dynamic Discount Code Cells */}
-       {Array.from({ length: maxDiscountCount }, (_, i) => {
-  const discounts = productDiscountsMap[product.productId] || [];
+   {/* Dynamic Discount Code Cells */}
+{Array.from({ length: maxDiscountCount }, (_, i) => {
+  const discounts = productDiscountsMap[product?.productId] || [];
   return (
     <td key={`discount-${i}`}>
       {discounts[i] ? (
@@ -194,6 +195,8 @@ useEffect(() => {
   );
 })}
 
+
+
                     <td>{product.category?.categoryName}</td>
                     <td>{product.brand?.brandName}</td>
                     <td>
@@ -201,20 +204,10 @@ useEffect(() => {
                         {product.barcode?.barcodeType || 'N/A'}
                       </span>
                     </td>
-=======
-                    <td>
-                      {product.discounts?.length > 0 ? (
-                        <span className="discount-badge">
-                          {product.discounts[0].code}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td>{product.category?.categoryName || '-'}</td>
-                    <td>{product.brand?.brandName || '-'}</td>
-                    <td>{product.barcode?.barcodeType || 'N/A'}</td>
->>>>>>> 089d8ee3452ab2462783a84ae987474853d76bd3
+
+                 
+                 
+
                     <td>
                       <span
                         className={`alert-badge ${
