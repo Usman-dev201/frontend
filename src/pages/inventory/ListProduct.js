@@ -1,49 +1,113 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/product/ListProduct.js
+import React, { useState, useEffect ,useCallback} from 'react';
+import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { useProducts } from '../../context/ProductContext';
 import '../../styles/ListProduct.css';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  flexRender,
+} from '@tanstack/react-table';
 
 export default function ListProduct() {
-    const navigate = useNavigate();
-  const { products, stocks = [], deleteProduct, loading ,getProductDiscounts} = useProducts();
-   
-const [productDiscountsMap, setProductDiscountsMap] = useState({});
+  const navigate = useNavigate();
+const { products, stocks = [], deleteProduct, loading, getProductDiscounts , discountCodes, addProductDiscount,fetchProducts} = useProducts();
 
-useEffect(() => {
-  if (products.length === 0) return;
+const [searchQuery, setSearchQuery] = useState("");
+const [displayedProducts, setDisplayedProducts] = useState(products);
+  const [productDiscountsMap, setProductDiscountsMap] = useState({});
 
-  const fetchDiscounts = async () => {
-    const discountsMap = {};
+  const [showDiscountPopup, setShowDiscountPopup] = useState(false);
+const [selectedProductId, setSelectedProductId] = useState(null);
+const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
 
-    for (const product of products) {
-      const discounts = await getProductDiscounts(product.productId);
+  useEffect(() => {
+  if (!searchQuery.trim()) {
+    setDisplayedProducts(products); // reset when no search
+  } else {
+    const query = searchQuery.toLowerCase();
+    const sorted = [...products].sort((a, b) => {
+      const aMatch = a.productName.toLowerCase().includes(query);
+      const bMatch = b.productName.toLowerCase().includes(query);
 
-      // remove duplicate discount codes
-      const uniqueDiscounts = discounts.filter(
-        (d, index, self) => self.findIndex(x => x.code === d.code) === index
-      );
+      // Matches go on top
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return 0;
+    });
+    setDisplayedProducts(sorted);
+  }
+}, [products, searchQuery]);
 
-      discountsMap[product.productId] = uniqueDiscounts;
-    }
+  
+  useEffect(() => {
+    if (products.length === 0) return;
 
-    setProductDiscountsMap(discountsMap); // ✅ one update
-  };
+    const fetchDiscounts = async () => {
+      const discountsMap = {};
 
-  fetchDiscounts();
-}, [products, getProductDiscounts]);
+      for (const product of products) {
+        const discounts = await getProductDiscounts(product.productId);
 
+        // remove duplicate discount codes
+        const uniqueDiscounts = discounts.filter(
+          (d, index, self) => self.findIndex(x => x.code === d.code) === index
+        );
 
+        discountsMap[product.productId] = uniqueDiscounts;
+      }
 
-   const maxDiscountCount = Math.max(
-  ...Object.values(productDiscountsMap).map(d => d.length),
-  0
-);
+      setProductDiscountsMap(discountsMap);
+    };
 
+    fetchDiscounts();
+  }, [products, getProductDiscounts]);
 
+  const maxDiscountCount = Math.max(
+    ...Object.values(productDiscountsMap).map(d => d.length),
+    0
+  );
+const handleDownloadExcel = () => {
+  const data = displayedProducts.map(product => {
+    const stock = stocks.find(s => s.productId === product.productId);
+    const discounts = productDiscountsMap[product.productId] || [];
 
+    // Flatten discounts into Discount 1, Discount 2, ...
+    const discountFields = {};
+    discounts.forEach((d, idx) => {
+      discountFields[`Discount ${idx + 1}`] = d.code;
+    });
 
+    return {
+      ID: product.productId,
+      Date: product.date || "N/A",
+      ImageUrl: product.imageUrl ? `https://localhost:7020${product.imageUrl}` : "N/A",
+      ProductName: product.productName,
+      ShortName: product.shortName,
+      Location: stock?.location?.locationName || "N/A",
+      SKU: product.sku,
+      CurrentStock: stock?.currentStock ?? 0,
+      PurchasePrice: stock?.purchasePrice ?? 0,
+      MarkedPrice: stock?.markedPrice ?? 0,
+      SellingPrice: stock?.sellingPrice ?? 0,
+      ...discountFields,
+      Category: product.category?.categoryName || "N/A",
+      Brand: product.brand?.brandName || "N/A",
+      Barcode: product.barcode?.barcodeType || "N/A",
+      QuantityAlert: product.quantityAlert,
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+
+  XLSX.writeFile(workbook, "Products.xlsx");
+};
   // Format price to PKR
   const formatPrice = (price) => {
     if (!price) return '0.00';
@@ -54,26 +118,146 @@ useEffect(() => {
   };
 
   // Navigate to Edit page
-  const handleEdit = (product) => {
-    navigate(`/product/Edit/${product.productId}`, { state: { product } });
-  };
+const handleEdit = useCallback((product) => {
+  navigate(`/product/Edit/${product.productId}`, { state: { product } });
+}, [navigate]);
 
   // Delete product
-  const handleDelete = async (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await deleteProduct(productId);
-      } catch (error) {
-        console.error('Failed to delete product:', error);
-        alert('Failed to delete product. Please try again.');
-      }
+const handleDelete = useCallback(async (productId) => {
+  if (window.confirm('Are you sure you want to delete this product?')) {
+    try {
+      await deleteProduct(productId);
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Failed to delete product. Please try again.');
     }
-  };
+  }
+}, [deleteProduct])
 
   // Get stock info for product
-  const getStockByProductId = (productId) => {
-    return stocks.find((stock) => stock.productId === productId);
-  };
+const getStockByProductId = useCallback((productId) => {
+  return stocks.find((stock) => stock.productId === productId);
+}, [stocks]);
+
+  // Define table columns
+  const columns = React.useMemo(() => [
+    { header: 'ID', accessorKey: 'productId' },
+    { header: 'Date', accessorKey: 'date' },
+    {
+      header: 'Image',
+      accessorKey: 'imageUrl',
+      cell: info => {
+        const url = info.getValue();
+        const name = info.row.original.productName;
+        return url ? (
+          <img src={`https://localhost:7020${url}`} alt={name} className="product-image" />
+        ) : (
+          <div className="no-image">No Image</div>
+        );
+      }
+    },
+    { header: 'Product Name', accessorKey: 'productName' },
+    { header: 'Short Name', accessorKey: 'shortName' },
+    {
+      header: 'Location',
+      accessorFn: row => getStockByProductId(row.productId)?.location?.locationName || 'N/A'
+    },
+        {
+      header: 'Current Stock',
+      cell: info => {
+        const product = info.row.original;
+        const stock = getStockByProductId(product.productId);
+        return (
+          <span
+            className={`stock-badge ${
+              stock?.currentStock <= 0
+                ? 'out-of-stock'
+                : stock?.currentStock <= product.quantityThreshold
+                ? 'low-stock'
+                : 'in-stock'
+            }`}
+          >
+            {stock?.currentStock ?? 0}
+          </span>
+        );
+      }
+    },
+    { header: 'SKU', accessorKey: 'sku' },
+
+    {
+      header: 'Purchase Price',
+      accessorFn: row => formatPrice(getStockByProductId(row.productId)?.purchasePrice)
+    },
+    {
+      header: 'Marked Price',
+      accessorFn: row => formatPrice(getStockByProductId(row.productId)?.markedPrice)
+    },
+    {
+      header: 'Selling Price',
+      accessorFn: row => formatPrice(getStockByProductId(row.productId)?.sellingPrice)
+    },
+
+    // Dynamic Discount Columns
+    ...Array.from({ length: maxDiscountCount }, (_, i) => ({
+      header: `Discount ${i + 1}`,
+      cell: info => {
+        const product = info.row.original;
+        const discounts = productDiscountsMap[product.productId] || [];
+        return discounts[i] ? (
+          <span className="discount-badge">{discounts[i].code}</span>
+        ) : 'N/A';
+      }
+    })),
+
+    { header: 'Category', accessorFn: row => row.category?.categoryName || 'N/A' },
+    { header: 'Brand', accessorFn: row => row.brand?.brandName || 'N/A' },
+    { header: 'Barcode Type', accessorFn: row => row.barcode?.barcodeType || 'N/A' },
+    {
+      header: 'Quantity Alert',
+      cell: info => {
+        const product = info.row.original;
+        const stock = getStockByProductId(product.productId);
+        return (
+          <span
+            className={`alert-badge ${
+              stock?.currentStock <= product.quantityAlert ? 'alert' : ''
+            }`}
+          >
+            {product.quantityAlert}
+          </span>
+        );
+      }
+    },
+    {
+      header: 'Actions',
+      cell: info => {
+        const product = info.row.original;
+        return (
+          <>
+            <button
+              className="edit-button action-btn"
+              onClick={() => handleEdit(product)}
+            >
+              <i className="fas fa-edit"></i> Edit
+            </button>
+            <button
+              className="delete-button action-btn"
+              onClick={() => handleDelete(product.productId)}
+            >
+              <i className="fas fa-trash"></i> Delete
+            </button>
+          </>
+        );
+      }
+    }
+  ], [productDiscountsMap, maxDiscountCount, getStockByProductId, handleEdit, handleDelete]);
+  // Create table instance
+ const table = useReactTable({
+  data: displayedProducts,
+  columns,
+  getCoreRowModel: getCoreRowModel(),
+  getPaginationRowModel: getPaginationRowModel(),
+});
 
   if (loading) {
     return (
@@ -102,145 +286,183 @@ useEffect(() => {
             >
               <i className="fas fa-boxes"></i> Stock List
             </button>
-             
           </div>
           <div className="header-actions">
+           <button
+  className="action-button add-button"
+ onClick={() => {
+  const productsWithoutDiscount = displayedProducts.filter(
+    p => !(productDiscountsMap[p.productId] && productDiscountsMap[p.productId].length > 0)
+  );
+
+  if (productsWithoutDiscount.length === 0) {
+    alert("All products already have discounts applied.");
+    return;
+  }
+
+  // If at least one product doesn't have discount, allow popup to open
+  setSelectedProductId(null); // <--- means apply globally
+  setShowDiscountPopup(true);
+}}
+
+>
+  <i className="fas fa-plus"></i> Apply Discounts
+</button>
             <button
               className="action-button add-button"
               onClick={() => navigate('/product/add')}
             >
               <i className="fas fa-plus"></i> Add Product
             </button>
+             <button
+    className="action-button download-button"
+    onClick={handleDownloadExcel}
+  >
+    <i className="fas fa-file-excel"></i> Download Excel
+  </button>
           </div>
         </div>
+      <div className="table-controls">
+  {/* Search Bar */}
+<div className="search-barr">
+  <input
+    type="text"
+    placeholder="Search products..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+  />
+</div>
+
+  {/* Page size dropdown */}
+  <div className="page-size-control">
+    <label htmlFor="pageSize">Show</label>
+    <select
+      id="pageSize"
+      value={table.getState().pagination.pageSize}
+      onChange={e => table.setPageSize(Number(e.target.value))}
+    >
+      {[5, 10, 25, 50, 100].map(size => (
+        <option key={size} value={size}>
+          {size}
+        </option>
+      ))}
+    </select>
+    <span>entries</span>
+  </div>
+</div>
 
         {/* Product Table */}
         <div className="products-table-container">
           <table className="products-table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Image</th>
-                <th>Product Name</th>
-                <th>Short Name</th>
-                <th>Location</th>
-                <th>SKU</th>
-                <th>Current Stock</th>
-                <th>Purchase Price</th>
-                <th>Marked Price</th>
-                <th>Selling Price</th>
-                    {/* Dynamic Discount Code Columns */}
-  {Array.from({ length: maxDiscountCount }, (_, i) => (
-  <th key={`discount-header-${i}`}>Discount {i + 1}</th>
-))}
-                <th>Category</th>
-                <th>Brand</th>
-                <th>Barcode Type</th>
-                <th>Quantity Alert</th>
-                <th>Actions</th>
-              </tr>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
             </thead>
             <tbody>
-              {products.map((product) => {
-                const stock = getStockByProductId(product.productId);
-                return (
-                  <tr key={product.productId}>
-                    <td>{product.productId}</td>
-                    <td>{product.date || new Date().toLocaleDateString()}</td>
-                   <td>
-  {product.imageUrl ? (
-    <img
-      src={`https://localhost:7020${product.imageUrl}`}   // ✅ prepend backend URL
-      alt={product.productName}
-      className="product-image"
-    />
-  ) : (
-    <div className="no-image">No Image</div>
-  )}
-</td>
-                    <td>{product.productName}</td>
-                    <td>{product.shortName || '-'}</td>
-                    <td>{stock?.location?.locationName || 'N/A'}</td>
-                    <td>{product.sku}</td>
-                    <td>
-                      <span
-                        className={`stock-badge ${
-                          stock?.currentStock <= 0
-                            ? 'out-of-stock'
-                            : stock?.currentStock <= product.quantityThreshold
-                            ? 'low-stock'
-                            : 'in-stock'
-                        }`}
-                      >
-                        {stock?.currentStock ?? 0}
-                      </span>
+              {table.getRowModel().rows.map(row => (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map(cell => (
+                    <td key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
-                    <td>{formatPrice(stock?.purchasePrice)}</td>
-                    <td>{formatPrice(stock?.markedPrice)}</td>
-                    <td>{formatPrice(stock?.sellingPrice)}</td>
-
-                   {/* Dynamic Discount Code Cells */}
-   {/* Dynamic Discount Code Cells */}
-{Array.from({ length: maxDiscountCount }, (_, i) => {
-  const discounts = productDiscountsMap[product?.productId] || [];
-  return (
-    <td key={`discount-${i}`}>
-      {discounts[i] ? (
-        <span className="discount-badge">{discounts[i].code}</span>
-      ) : (
-        'N/A'
-      )}
-    </td>
-  );
-})}
-
-
-
-                    <td>{product.category?.categoryName}</td>
-                    <td>{product.brand?.brandName}</td>
-                    <td>
-                      <span className="barcode-type-badge">
-                        {product.barcode?.barcodeType || 'N/A'}
-                      </span>
-                    </td>
-
-                 
-                 
-
-                    <td>
-                      <span
-                        className={`alert-badge ${
-                          stock?.currentStock <= product.quantityAlert
-                            ? 'alert'
-                            : ''
-                        }`}
-                      >
-                        {product.quantityAlert}
-                      </span>
-                    </td>
-                    <td>
-                      {/* Direct action buttons */}
-                      <button
-                        className="edit-button action-btn"
-                        onClick={() => handleEdit(product)}
-                      >
-                        <i className="fas fa-edit"></i> Edit
-                      </button>
-                      <button
-                        className="delete-button action-btn"
-                        onClick={() => handleDelete(product.productId)}
-                      >
-                        <i className="fas fa-trash"></i> Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                  ))}
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
+
+       {/* Pagination */}
+  <div className="pagination">
+    <button
+      onClick={() => table.previousPage()}
+      disabled={!table.getCanPreviousPage()}
+    >
+      Previous
+    </button>
+    <span>
+      Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+    </span>
+    <button
+      onClick={() => table.nextPage()}
+      disabled={!table.getCanNextPage()}
+    >
+      Next
+    </button>
+  </div>
+</div>
       </div>
+      {showDiscountPopup && (
+  <div className="popup-overlay">
+    <div className="popup-content">
+      <h3>Apply Discount</h3>
+      
+      <div className="form-group">
+        <label>Discount Code</label>
+        <select
+          value={selectedDiscountCode}
+          onChange={(e) => setSelectedDiscountCode(e.target.value)}
+        >
+          <option value="">-- Select Discount Code --</option>
+          {discountCodes.map(dc => (
+            <option key={dc.discountId} value={dc.discountCode}>
+              {dc.discountCode}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="popup-actions">
+        <button
+          className="save-button"
+          onClick={async () => {
+            if (!selectedDiscountCode) {
+              alert("Please select a discount code.");
+              return;
+            }
+            try {
+             if (selectedProductId) {
+  // Apply to specific product (if ever used)
+  await addProductDiscount(selectedProductId, [{ code: selectedDiscountCode }]);
+} else {
+  // No productId → apply globally to all products
+  await addProductDiscount(null, [{ code: selectedDiscountCode }]);
+}
+await fetchProducts(); // Refresh product list
+
+
+              alert("Discount applied successfully!");
+              setShowDiscountPopup(false);
+              setSelectedDiscountCode('');
+            } catch (error) {
+              console.error(error);
+              alert("Failed to apply discount.");
+            }
+          }}
+        >
+          Save
+        </button>
+
+        <button
+          className="cancel-button"
+          onClick={() => {
+            setShowDiscountPopup(false);
+            setSelectedDiscountCode('');
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

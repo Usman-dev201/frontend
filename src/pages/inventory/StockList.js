@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useMemo ,useEffect,useState} from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  flexRender,
+} from '@tanstack/react-table';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import { useProducts } from '../../context/ProductContext';
@@ -7,7 +13,26 @@ import '../../styles/StockList.css';
 
 export default function StockList() {
   const navigate = useNavigate();
- const { stocks = [], loading, error } = useProducts();
+  const { stocks = [], loading, error } = useProducts();
+  const [searchQuery, setSearchQuery] = useState("");
+const [displayedStocks, setDisplayedStocks] = useState(stocks);
+useEffect(() => {
+  if (!searchQuery.trim()) {
+    setDisplayedStocks(stocks); // no search → show all
+  } else {
+    const query = searchQuery.toLowerCase();
+    const sorted = [...stocks].sort((a, b) => {
+      const aMatch = a.product?.productName.toLowerCase().includes(query);
+      const bMatch = b.product?.productName.toLowerCase().includes(query);
+
+      // matches go to top
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return 0;
+    });
+    setDisplayedStocks(sorted);
+  }
+}, [searchQuery, stocks]);
   // Format price function to handle currency formatting
   const formatPrice = (price) => {
     if (!price) return 'Rs0.00';
@@ -16,9 +41,44 @@ export default function StockList() {
       currency: 'PKR'
     }).format(price);
   };
- if (loading) return <div>Loading stock data...</div>;
-  if (error) return <div>Error loading stock data: {error.message}</div>;
 
+  const columns = useMemo(() => [
+    { header: 'ID', accessorKey: 'productId' },
+    { header: 'Product Name', accessorFn: row => row.product?.productName },
+    { header: 'Location', accessorFn: row => row.location?.locationName },
+     { header: 'Current Stock', accessorKey: 'currentStock' },
+    { header: 'Purchase Price', accessorFn: row => formatPrice(row.purchasePrice) },
+    { header: 'Marked Price', accessorFn: row => formatPrice(row.markedPrice) },
+    { header: 'Selling Price', accessorFn: row => formatPrice(row.sellingPrice) },
+    { header: 'Stock Value (Purchase)', accessorFn: row => formatPrice(row.currentStockValueByPurPrice) },
+    { header: 'Stock Value (Selling)', accessorFn: row => formatPrice(row.currentStockValueBySelPrice) },
+    { header: 'Potential Profit', accessorFn: row => formatPrice(row.potentialProfit) },
+    { header: 'Total Units Sold', accessorFn: row => row.totalUnitSold || 0 },
+    { header: 'Total Units Transferred', accessorFn: row => row.totalUnitTransfered || 0 },
+    { header: 'Total Units Adjusted', accessorFn: row => row.totalUnitAdjust || 0 },
+    {
+      header: 'Stock Status',
+      accessorFn: row => row.status,
+      cell: info => {
+        const status = info.getValue();
+        return (
+          <span className={`stock-status ${status === 'LowStock' ? 'low-stock' : 'in-stock'}`}>
+            {status}
+          </span>
+        );
+      }
+    },
+  ], []);
+
+  const table = useReactTable({
+      data: displayedStocks,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  if (loading) return <div>Loading stock data...</div>;
+  if (error) return <div>Error loading stock data: {error.message}</div>;
 
   return (
     <div className="stock-list-page">
@@ -37,54 +97,85 @@ export default function StockList() {
             </button>
           </div>
         </div>
+      <div className="table-controls">
+  {/* Search Bar */}
+<div className="search-barr">
+  <input
+    type="text"
+    placeholder="Search products..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+  />
+</div>
+
+  {/* Page size dropdown */}
+  <div className="page-size-control">
+    <label htmlFor="pageSize">Show</label>
+    <select
+      id="pageSize"
+      value={table.getState().pagination.pageSize}
+      onChange={e => table.setPageSize(Number(e.target.value))}
+    >
+      {[5, 10, 25, 50, 100].map(size => (
+        <option key={size} value={size}>
+          {size}
+        </option>
+      ))}
+    </select>
+    <span>entries</span>
+  </div>
+</div>
 
         <div className="stock-table-container">
           <table className="stock-table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>Product Name</th>
-                <th>Location</th>
-                <th>Purchase Price</th>
-                <th>Marked Price</th>
-                <th>Selling Price</th>
-                 <th>Current Stock</th>
-                <th>Current Stock Value (Purchase)</th>
-                <th>Current Stock Value (Selling)</th>
-                <th>Potential Profit</th>
-                <th>Total Units Sold</th>
-                <th>Total Units Transferred</th>
-                <th>Total Units Adjusted</th>
-                <th>Stock Status</th>
-              </tr>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id}>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
             </thead>
             <tbody>
-               {stocks.map((stock) => (
-                <tr key={`${stock.productId}-${stock.locationId}`}>
-                  <td>{stock.productId}</td>
-                  <td>{stock.product?.productName}</td>
-                  <td>{stock.location?.locationName}</td>
-                  <td>{formatPrice(stock.purchasePrice)}</td>
-                  <td>{formatPrice(stock.markedPrice)}</td>
-                  <td>{formatPrice(stock.sellingPrice)}</td>
-                  <td>{stock.currentStock}</td>
-                  <td>{formatPrice(stock.currentStockValueByPurPrice)}</td>
-                  <td>{formatPrice(stock.currentStockValueBySelPrice)}</td>
-                  <td>{formatPrice(stock.potentialProfit)}</td>
-                  <td>{stock.totalUnitSold || 0}</td>
-                  <td>{stock.totalUnitTransfered || 0}</td>
-                  <td>{stock.totalUnitAdjust || 0}</td>
-                  <td>
-                    <span className={`stock-status ${stock.status === 'LowStock' ? 'low-stock' : 'in-stock'}`}>
-                      {stock.status}
-                    </span>
-                  </td>
+              {table.getRowModel().rows.map(row => (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map(cell => (
+                    <td key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
+
+       <div className="pagination-controls">
+  <button 
+    className="pagination-button" 
+    onClick={() => table.previousPage()} 
+    disabled={!table.getCanPreviousPage()}
+  >
+    Previous
+  </button>
+  <span className="pagination-info">
+    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+  </span>
+  <button 
+    className="pagination-button" 
+    onClick={() => table.nextPage()} 
+    disabled={!table.getCanNextPage()}
+  >
+    Next
+  </button>
+</div>
         </div>
       </div>
     </div>
   );
-} 
+}

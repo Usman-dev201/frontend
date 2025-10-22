@@ -18,13 +18,92 @@
   font-weight: 700;
   font-size: 1.8rem;
 }
+/* Dashboard Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between; /* ✅ Align title left, dropdown right */
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+/* Location Filter Styling */
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  padding: 0.6rem 1rem;
+  border-radius: var(--border-radius-md);
+ 
+}
+
+.filter-container label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.filter-container select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  font-size: 0.9rem;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-container select:hover {
+  background: #f3f4f6;
+  border-color: var(--primary-color);
+}
+
+.filter-container select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-container {
+    margin-top: 0.5rem;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-container select {
+    flex: 1;
+  }
+}
 
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(3, 1fr); /* ✅ Exactly 3 columns */
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 1024px) {
+  /* On tablets, show 2 per row */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  /* On small screens, show 1 per row */
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card {
@@ -123,6 +202,12 @@
   background: #fef3c7;
   color: #92400e;
 }
+.status-badge.lowstock {
+  background-color: #fdecea;   /* light red */
+  color: #d93025;              /* red */
+  border: 1px solid #d93025;
+}
+
 
 /* Quick Actions */
 .quick-actions {
@@ -167,4 +252,27 @@
     width: 100%;
     justify-content: center;
   }
+}
+.view-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-btn {
+  background: #e5e7eb;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+.toggle-btn:hover {
+  background: #93c5fd;
 }

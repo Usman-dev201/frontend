@@ -1,5 +1,5 @@
 // src/context/PurchaseContext.js
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect ,} from 'react';
 import api from '../api/axios';
 
 
@@ -22,6 +22,8 @@ const [discountTypes, setDiscountTypes] = useState([]);
 
   
 const [taxLocations, setTaxLocations] = useState([]);
+
+
 
 const fetchTaxLocations = async () => {
   try {
@@ -136,6 +138,7 @@ const fetchProducts = async (searchTerm = '') => {
 const updatePurchase = async (id, updatedData) => {
   try {
    const response = await api.put(`/PurchaseRecord/${id}`, updatedData);
+   
     // Refresh the purchases list to get updated data
     await fetchPurchases();
      return response.data;
@@ -144,6 +147,16 @@ const updatePurchase = async (id, updatedData) => {
     throw error; // Make sure to re-throw the error
   }
 };
+const updatePurchasePayment = async (id, paymentData) => {
+  try {
+    const response = await api.patch(`/PurchaseRecord/${id}/payment`, paymentData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error updating payment:", error);
+    throw error;
+  }
+};
+
   // Delete purchase
   const deletePurchase = async (id) => {
     try {
@@ -157,8 +170,9 @@ const updatePurchase = async (id, updatedData) => {
   // Add product purchase record
  const addProductPurchaseRecord = async (data) => {
   try {
+    const dataArray = Array.isArray(data) ? data : [data];
     // Ensure we're sending an array even for single products
-    const payload = data.map(item => ({
+    const payload = dataArray.map(item => ({
       purchaseId: item.purchaseId,
       productId: item.productId,
       mgfDate: item.mgfDate || null,
@@ -178,6 +192,16 @@ const updatePurchase = async (id, updatedData) => {
     throw error;
   }
 };
+const getPurchaseReturnsByPurchaseId = async (purchaseId) => {
+    try {
+        const response = await api.get(`/PurchaseReturn/byPurchase/${purchaseId}`);
+        return response.data; // List of purchase returns for this purchase
+    } catch (error) {
+        console.error("Error fetching purchase returns:", error);
+        return [];
+    }
+};
+
 const getProductPurchaseRecordsByPurchaseId = async (purchaseId) => {
   try {
     const res = await api.get(`/ProductPurchaseRecord/byPurchase/${purchaseId}`);
@@ -214,6 +238,7 @@ const getPurchaseDiscountsByPurchaseId = async (purchaseId) => {
 const updateProductPurchaseRecords = async (records) => {
   try {
     for (const record of records) {
+      
       await api.put(`/ProductPurchaseRecord/${record.lotId}`, record); 
     }
   } catch (error) {
@@ -233,11 +258,35 @@ const deleteProductPurchaseRecord = async (lotId) => {
 }
   const addProductPurchaseDiscount = async (data) => {
     try {
+      
+       console.log("📤 Adding ProductPurchaseDiscount payload:", data);
+       console.log('Payload being sent to addProductPurchaseDiscount:', data);
+
       const res = await api.post('/ProductPurchaseDiscount', data);
       return res.data;
     } catch (error) {
-      console.error('Error adding product purchase discount:', error);
-      throw error;
+     if (error.response?.data) {
+      console.error("Backend validation error details:", error.response.data);
+    }
+    console.error('Error adding product purchase discount:', error);
+    throw error;
+    }
+  };
+  const addProductDiscount = async (data) => {
+    try {
+      
+       console.log("📤 Adding ProductPurchaseDiscount payload:", data);
+       console.log('Payload being sent to addProductPurchaseDiscount:', data);
+
+     const res = await api.post('/ProductPurchaseDiscount', [data]);
+
+      return res.data;
+    } catch (error) {
+     if (error.response?.data) {
+      console.error("Backend validation error details:", error.response.data);
+    }
+    console.error('Error adding product purchase discount:', error);
+    throw error;
     }
   };
 const updateProductPurchaseDiscounts = async (discounts) => {
@@ -284,6 +333,29 @@ const updateProductPurchaseDiscounts = async (discounts) => {
       throw error;
     }
   };
+    const addPurchaseDiscounts = async (dataArray) => {
+  try {
+    console.log("📤 Adding PurchaseDiscounts payload:", dataArray);
+    
+    // Ensure we're sending an array
+    const payload = Array.isArray(dataArray) ? dataArray : [dataArray];
+    
+    const res = await api.post('/PurchaseDiscount', payload);
+    return res.data;
+  } catch (error) {
+    console.error('Error adding purchase discounts:', error);
+    
+    // Enhanced error logging
+    if (error.response?.data) {
+      console.error("Backend validation error details:", error.response.data);
+      if (error.response.data.errors) {
+        console.error("Validation errors:", error.response.data.errors);
+      }
+    }
+    
+    throw error;
+  }
+};
   const updatePurchaseDiscounts = async (discounts) => {
   try {
     // Only send if we have discounts
@@ -358,6 +430,20 @@ const updatePurchaseTaxes = async (taxes) => {
     }
   };
 
+ const addPurchaseTaxes = async (dataArray) => {
+    try {
+      console.log("📤 Adding PurchaseDiscounts payload:", dataArray);
+    
+    // Ensure we're sending an array
+    const payload = Array.isArray(dataArray) ? dataArray : [dataArray];
+      const res = await api.post('/PurchaseTax', payload);
+      return res.data;
+    } catch (error) {
+      console.error('Error adding purchase tax:', error);
+      throw error;
+    }
+  };
+
   // Delete purchase tax
   const deletePurchaseTax = async (id) => {
     try {
@@ -415,10 +501,13 @@ const addPurchase = async (purchaseData) => {
      fetchPurchaseDiscountTypes();
     fetchTaxNames();
     fetchTaxLocations();
+  
+    
     
   }, []);
    return (
     <PurchaseContext.Provider value={{
+       
       purchases,
       suppliers,
       locations,
@@ -452,7 +541,12 @@ const addPurchase = async (purchaseData) => {
   getPurchaseDiscountsByPurchaseId,
   updatePurchaseDiscounts,
   getPurchaseTaxRecordsByPurchaseId,
-  updatePurchaseTaxes
+  updatePurchaseTaxes,
+  addProductDiscount,
+  addPurchaseDiscounts,
+  addPurchaseTaxes,
+  updatePurchasePayment,
+  getPurchaseReturnsByPurchaseId
   
     }}>
       {children}

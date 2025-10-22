@@ -78,109 +78,94 @@ export default function Suppliers() {
                 address: ''
               });
             }}
-            style={{
-              padding: '8px 16px',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
+           style={{
+  minHeight: '52px',
+  padding: '12px 20px',
+  fontSize: '15px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px'
+}}
           >
             <i className="fas fa-plus"></i>
             Add Supplier
           </button>
         </div>
 
-        {showForm && (
-          <div className="form-container" style={{
-            backgroundColor: '#fff',
-            padding: '25px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            marginBottom: '30px'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px'
-            }}>
-              <h3 style={{ margin: 0, color: '#333' }}>
-                {isEditing ? 'Edit Supplier' : 'Add Supplier'}
-              </h3>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '20px',
-                marginBottom: '20px'
-              }}>
-                {/* Supplier Name */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="supplierName">Supplier Name</label>
-                  <input
-                    type="text"
-                    id="supplierName"
-                    name="supplierName"
-                    value={formData.supplierName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                {/* Email */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="email">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                {/* Phone */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="contactNo">Phone</label>
-                  <input
-                    type="tel"
-                    id="contactNo"
-                    name="contactNo"
-                    value={formData.contactNo}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                {/* Address */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label htmlFor="address">Address</label>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Submit and Cancel Buttons */}
-              <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end' }}>
-                <button type="submit" className="btn btn-success">
-                  <i className="fas fa-save"></i>
-                  {isEditing ? 'Update Supplier' : 'Save Supplier'}
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={handleCloseForm}>
-                  <i className="fas fa-times"></i>
-                  Cancel
-                </button>
-              </div>
-            </form>
+      {showForm && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <div className="modal-header">
+        <h3>{isEditing ? 'Edit Supplier' : 'Add Supplier'}</h3>
+        
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="modal-body">
+          {/* Supplier Name */}
+          <div className="form-group">
+            <label htmlFor="supplierName">Supplier Name</label>
+            <input
+              type="text"
+              id="supplierName"
+              name="supplierName"
+              value={formData.supplierName}
+              onChange={handleChange}
+              required
+            />
           </div>
-        )}
+          {/* Email */}
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          {/* Phone */}
+          <div className="form-group">
+            <label htmlFor="contactNo">Phone</label>
+            <input
+              type="tel"
+              id="contactNo"
+              name="contactNo"
+              value={formData.contactNo}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          {/* Address */}
+          <div className="form-group">
+            <label htmlFor="address">Address</label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
 
+        {/* Footer Buttons */}
+        <div className="modal-footer">
+          <button type="submit" className="btn btn-success">
+            <i className="fas fa-save"></i>
+            {isEditing ? 'Update Supplier' : 'Save Supplier'}
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={handleCloseForm}>
+            <i className="fas fa-times"></i>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
         {/* Supplier List Table */}
         <div className="table-container">
           <table className="data-table">

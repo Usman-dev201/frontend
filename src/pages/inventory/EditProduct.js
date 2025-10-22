@@ -17,7 +17,7 @@ export default function EditProduct() {
   const { categories } = useCategories();
   const { brands } = useBrands();
   const { barcodes } = useBarcode();
-const { discountCodes, discountTypes, addProductDiscount, getProductDiscounts, deleteProductDiscount } = useProducts();
+const { discountCodes, addProductDiscount, getProductDiscounts, fetchProducts , deleteProductDiscount } = useProducts();
 const [formData, setFormData] = useState({
   productName: '',
   shortName: '',
@@ -34,7 +34,7 @@ const [formData, setFormData] = useState({
    const [imagePreview, setImagePreview] = useState(null);
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
-  const [selectedDiscountType, setSelectedDiscountType] = useState('');
+
 
 
 
@@ -97,77 +97,54 @@ const handleImageChange = async (e) => {
 
 
 const handleDiscountCodeChange = (e) => {
-    const code = e.target.value;
-    if (code) {
-      setSelectedDiscountCode(code);
-      if (selectedDiscountType) {
-        addNewDiscount(code, selectedDiscountType);
-      }
-    }
-  };
+  const code = e.target.value;
+  if (code) {
+    setSelectedDiscountCode(code);
+    addNewDiscount(code);
+  }
+};
 
-  const handleDiscountTypeChange = (e) => {
-    const type = e.target.value;
-    if (type) {
-      setSelectedDiscountType(type);
-      if (selectedDiscountCode) {
-        addNewDiscount(selectedDiscountCode, type);
-      }
-    }
-  };
-const addNewDiscount = async (code, type) => {
+
+  
+const addNewDiscount = async (code) => {
   try {
     if (!state?.product?.productId) {
       alert("Invalid product ID.");
       return;
     }
 
-    // 1. Get selected discount from dropdown
+    // 1. Find the selected discount from the global list
     const selectedDiscount = discountCodes.find(dc => dc.discountCode === code);
     if (!selectedDiscount) {
       alert("Invalid discount code.");
       return;
     }
 
-    // 2. Fetch already applied discounts from backend
-    const existingDiscounts = await getProductDiscounts(state.product.productId);
-
-    // 3. Check if this discount already exists (by code + type)
-    const alreadyExists = existingDiscounts.some(
-      d => d.code === code 
-    );
-
+    // 2. Check if this discount already exists locally
+    const alreadyExists = discounts.some(d => d.code === code);
     if (alreadyExists) {
-      alert("This discount is already applied to the product.");
+      alert("This discount is already added.");
       return;
     }
 
-    // 4. If not exists → Add to local state
+    // 3. Add to local state immediately
     const newDiscount = {
       discountId: selectedDiscount.discountId,
-      code: code,
-      discountType: type,
-      discountAmount: 0,
-      discountPercentage: 0
+      code: selectedDiscount.discountCode
     };
 
     setDiscounts(prev => [...prev, newDiscount]);
 
-    // Reset selects
+    // 4. Reset dropdown after adding
     setSelectedDiscountCode('');
-    setSelectedDiscountType('');
   } catch (error) {
-    console.error("Error adding new discount:", error);
-    alert("Failed to check existing discounts.");
+    console.error("Error adding discount:", error);
+    alert("Failed to add discount.");
   }
 };
 
-  const handleDiscountValueChange = (index, field, value) => {
-    const updatedDiscounts = [...discounts];
-    updatedDiscounts[index][field] = value;
-    setDiscounts(updatedDiscounts);
-  };
 
+ 
   const handleRemoveDiscount = async (discountToRemove) => {
   try {
     console.log("Trying to delete:", discountToRemove);
@@ -441,18 +418,7 @@ const handleSubmit = async (e) => {
   ))}
 </select>
 
-<select 
-  value={selectedDiscountType}
-  onChange={handleDiscountTypeChange}
-  className="discount-select"
->
-  <option value="">Select Discount Type</option>
-  {discountTypes.map(type => (
-    <option key={type} value={type}>
-      {type}
-    </option>
-  ))}
-</select>
+
                 </div>
               </div>
 
@@ -462,9 +428,7 @@ const handleSubmit = async (e) => {
                     <tr>
                     
                       <th>Discount Code</th>
-                      <th>Discount Type</th>
-                      <th>Discount Amount</th>
-                      <th>Discount Percentage</th>
+                    
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -473,28 +437,7 @@ const handleSubmit = async (e) => {
                       <tr key={index}>
                     
                         <td>{discount.code}</td>
-                        <td>{discount.discountType}</td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            value={discount.discountAmount}
-                            onChange={(e) => handleDiscountValueChange(index, 'discountAmount', e.target.value)}
-                            placeholder="Enter amount"
-                            className="table-input"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={discount.discountPercentage}
-                            onChange={(e) => handleDiscountValueChange(index, 'discountPercentage', e.target.value)}
-                            placeholder="Enter %"
-                            className="table-input"
-                          />
-                        </td>
+                     
                         <td>
                           <button 
                             type="button"
@@ -529,6 +472,7 @@ const handleSubmit = async (e) => {
           // 🔑 refresh from backend so each discount has productDiscountId
       const savedDiscounts = await getProductDiscounts(state.product.productId);
       setDiscounts(savedDiscounts);
+      await fetchProducts();
       alert("Discounts applied successfully!");
       navigate('/product/list');
     } catch (error) {

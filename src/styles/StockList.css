@@ -167,3 +167,32 @@
 .stock-table td:last-child {
   text-align: center;
 } 
+.pagination-controls {
+  display: flex;
+  justify-content: flex-end; /* move to right side */
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.pagination-button {
+        background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+}
+
+
+.pagination-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

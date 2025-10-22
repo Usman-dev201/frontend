@@ -15,17 +15,21 @@ export default function AddStockTransfer() {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-
+const [showStatusInfo, setShowStatusInfo] = useState(false);
+const [showFromInfo, setShowFromInfo] = useState(false);
+const [showToInfo, setShowToInfo] = useState(false);
   const [newTransfer, setNewTransfer] = useState({
-    date: '',
+    date: new Date().toISOString().split("T")[0],
     fromLocation: '',
     fromLocationName: '',
     toLocation: '',
     toLocationName: '',
-    status: '',
-    shippingCharges: '',
+    status: 'Pending', // default to Pending
+    shippingCharges: 0,
     additionalNotes: ''
   });
+// 🔹 Compute grand total dynamically
+const grandTotal = selectedProducts.reduce((sum, p) => sum + p.totalAmount, 0) + (parseFloat(newTransfer.shippingCharges) || 0);
 
   // 🔹 Fetch statuses
   useEffect(() => {
@@ -75,18 +79,41 @@ export default function AddStockTransfer() {
   }, [searchQuery]);
 
   // 🔹 Product handlers
-  const handleProductSelect = (product) => {
-    if (!product) return;
-    const id = product.productId ?? product.id;
-    if (selectedProducts.some(p => p.id === id)) return;
+const handleProductSelect = async (product) => {
+  if (!product) return;
+
+  if (!newTransfer.fromLocation) {
+    alert("Please select a From Location first.");
+    return;
+  }
+
+  const id = product.productId ?? product.id;
+  if (selectedProducts.some(p => p.id === id)) return;
+
+  try {
+    const res = await api.get(
+      `/StockTransfer/GetPurchasePrice?productId=${id}&locationId=${newTransfer.fromLocation}`
+    );
+
+    const purchasePrice = res.data?.purchasePrice || 0;
 
     setSelectedProducts(prev => [
       ...prev,
-      { id, name: product.productName || product.name || '', quantity: 1, unitPrice: 0, totalAmount: 0 }
+      {
+        id,
+        name: product.productName || product.name || '',
+        quantity: 1,
+        unitPrice: purchasePrice, // ✅ auto-filled
+        totalAmount: purchasePrice,
+      }
     ]);
-    setSearchQuery('');
-    setProducts([]);
-  };
+  } catch (err) {
+    console.error("Error fetching purchase price:", err);
+  }
+
+  setSearchQuery('');
+  setProducts([]);
+};
 
   const handleDeleteProduct = (productId) => {
     setSelectedProducts(prev => prev.filter(p => p.id !== productId));
@@ -102,15 +129,6 @@ export default function AddStockTransfer() {
     );
   };
 
-  const handleUnitPriceChange = (productId, value) => {
-    setSelectedProducts(prev =>
-      prev.map(p =>
-        p.id === productId
-          ? { ...p, unitPrice: parseFloat(value) || 0, totalAmount: p.quantity * (parseFloat(value) || 0) }
-          : p
-      )
-    );
-  };
 
   // 🔹 Save transfer
   const handleAddTransfer = async (e) => {
@@ -126,6 +144,41 @@ export default function AddStockTransfer() {
     }
 
     try {
+       // 🔹 Check LowStock for all selected products
+    let lowStockWarnings = [];
+
+    for (const p of selectedProducts) {
+      const stockRes = await api.get(
+        `/Stock/GetStockInfo?productId=${p.id}&locationId=${newTransfer.fromLocation}`
+      );
+
+      const { currentStock, quantityAlert } = stockRes.data;
+
+      const updatedStock = currentStock - p.quantity; // simulate new stock
+// ❌ If trying to transfer more than available stock → block immediately
+if (p.quantity > updatedStock) {
+  alert(
+
+    `Insufficient Stock ⚠️
+❌ Cannot transfer ${p.quantity} units of ${p.name}. Only ${currentStock} units available in stock.`
+  );
+  return; // stop saving, stay on same page
+}
+      if (updatedStock <= quantityAlert) {
+        lowStockWarnings.push(
+          `⚠️ ${p.name}: Current stock = ${currentStock}, Transfer = ${p.quantity}, Remaining = ${updatedStock}, Alert Level = ${quantityAlert}`
+        );
+      }
+    }
+
+    if (lowStockWarnings.length > 0) {
+      alert("Low Stock Warning:\n\n" + lowStockWarnings.join("\n"));
+      // ⚠️ If you want to STOP saving transfer when low stock:
+     
+      // If you only want to WARN but still allow save, remove the return.
+    }
+
+
       // 🔹 Parent transfer payload (keep unchanged)
       const details = selectedProducts.map((p) => ({
         productId: p.id,
@@ -202,105 +255,287 @@ export default function AddStockTransfer() {
 
         {/* Form */}
         <form onSubmit={handleAddTransfer} className="add-transfer-form">
-          <div className="form-fields">
-            {/* Date */}
-            <div className="form-group">
-              <label>Date</label>
-              <input
-                type="date"
-                value={newTransfer.date}
-                onChange={(e) => setNewTransfer({ ...newTransfer, date: e.target.value })}
-                className="transfer-input"
-                required
-              />
-            </div>
+         <div className="form-fields">
+  {/* Row 1: Date + Status */}
+  <div className="form-row">
+    <div className="form-group">
+      <label>Date</label>
+    <input
+  type="date"
+  value={newTransfer.date}
+  onChange={(e) => setNewTransfer({ ...newTransfer, date: e.target.value })}
+  className="transfer-input date-input"
+  required
+/>
+    </div>
 
-            {/* From Location */}
-            <div className="form-group">
-              <label>From Location</label>
-              <select
-                value={newTransfer.fromLocation}
-                onChange={(e) => {
-                  const selected = fromLocations.find(l => l.id === parseInt(e.target.value));
-                  setNewTransfer({ 
-                    ...newTransfer, 
-                    fromLocation: selected.id,
-                    fromLocationName: selected.name
-                  });
-                }}
-                className="transfer-select"
-                required
-              >
-                <option value="">Select From Location</option>
-                {fromLocations.map(loc => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
-                ))}
-              </select>
-            </div>
+   <div className="form-group">
+  <label style={{ display: "flex", alignItems: "center" }}>
+    Status
+    <span
+      onMouseEnter={() => setShowStatusInfo(true)}
+      onMouseLeave={() => setShowStatusInfo(false)}
+      style={{
+        marginLeft: "8px",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "18px",
+        height: "18px",
+        borderRadius: "50%",
+        backgroundColor: "#007bff",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: "12px",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+        transition: "all 0.2s ease"
+      }}
+    >
+      ?
+    </span>
 
-            {/* To Location */}
-            <div className="form-group">
-              <label>To Location</label>
-              <select
-                value={newTransfer.toLocation}
-                onChange={(e) => {
-                  const selected = toLocations.find(l => l.id === parseInt(e.target.value));
-                  setNewTransfer({ 
-                    ...newTransfer, 
-                    toLocation: selected.id,
-                    toLocationName: selected.name
-                  });
-                }}
-                className="transfer-select"
-                required
-              >
-                <option value="">Select To Location</option>
-                {toLocations.map(loc => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
-                ))}
-              </select>
-            </div>
+    {/* Popup */}
+    {showStatusInfo && (
+      <div
+        style={{
+          position: "absolute",
+          top: "28px",
+          left: "0",
+          zIndex: 10,
+          backgroundColor: "#fff",
+          color: "#333",
+          padding: "10px 14px",
+          borderRadius: "6px",
+          border: "1px solid #ddd",
+          fontSize: "13px",
+          lineHeight: "1.4",
+          width: "260px",
+          boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+        }}
+      >
+        <div style={{ marginBottom: "6px" }}>
+          ⚠️ <b>Note:</b> Once the status is set to 
+          <div><b>Completed</b> or <b>Cancelled</b>,</div>
+        </div>
+        <div>you will not be able to update it again.</div>
+        {/* Tooltip Arrow */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-6px",
+            left: "12px",
+            width: "12px",
+            height: "12px",
+            backgroundColor: "#fff",
+            borderLeft: "1px solid #ddd",
+            borderTop: "1px solid #ddd",
+            transform: "rotate(45deg)"
+          }}
+        />
+      </div>
+    )}
+  </label>
 
-            {/* Status */}
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                value={newTransfer.status}
-                onChange={(e) => setNewTransfer({ ...newTransfer, status: e.target.value })}
-                className="transfer-select"
-                required
-              >
-                <option value="">Select Status</option>
-                {statuses.map((s, i) => <option key={i} value={s}>{s}</option>)}
-              </select>
-            </div>
+  <select
+    value={newTransfer.status}
+    onChange={(e) => setNewTransfer({ ...newTransfer, status: e.target.value })}
+    className="transfer-select"
+    required
+  >
+    <option value="">Select Status</option>
+    {statuses.map((s, i) => (
+      <option key={i} value={s}>{s}</option>
+    ))}
+  </select>
+</div>
+</div>
 
-            {/* Shipping Charges */}
-            <div className="form-group">
-              <label>Shipping Charges</label>
-              <input
-                type="number"
-                value={newTransfer.shippingCharges}
-                onChange={(e) => setNewTransfer({ ...newTransfer, shippingCharges: e.target.value })}
-                className="transfer-input"
-                required
-              />
-            </div>
+  {/* Row 2: From + To Location */}
+  <div className="form-row">
+    <div className="form-group" style={{ position: "relative" }}>
+  <label style={{ display: "flex", alignItems: "center" }}>
+    From Location
+    <span
+      onMouseEnter={() => setShowFromInfo(true)}
+      onMouseLeave={() => setShowFromInfo(false)}
+      style={{
+        marginLeft: "8px",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "18px",
+        height: "18px",
+        borderRadius: "50%",
+        backgroundColor: "#007bff",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: "12px",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.15)"
+      }}
+    >
+      ?
+    </span>
 
-            {/* Additional Notes */}
-            <div className="form-group">
-              <label>Additional Notes</label>
-              <textarea
-                value={newTransfer.additionalNotes}
-                onChange={(e) => setNewTransfer({ ...newTransfer, additionalNotes: e.target.value })}
-                className="transfer-textarea"
-              />
-            </div>
-          </div>
+    {showFromInfo && (
+      <div
+        style={{
+          position: "absolute",
+          top: "28px",
+          left: "0",
+          zIndex: 10,
+          backgroundColor: "#fff",
+          color: "#333",
+          padding: "10px 14px",
+          borderRadius: "6px",
+          border: "1px solid #ddd",
+          fontSize: "13px",
+          lineHeight: "1.4",
+          width: "260px",
+          boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+        }}
+      >
+        <b>From Location:</b> Select the location where stock will be transferred <u>from</u>.  
+        Products and purchase price will be fetched based on this location.
+        <div
+          style={{
+            position: "absolute",
+            top: "-6px",
+            left: "12px",
+            width: "12px",
+            height: "12px",
+            backgroundColor: "#fff",
+            borderLeft: "1px solid #ddd",
+            borderTop: "1px solid #ddd",
+            transform: "rotate(45deg)"
+          }}
+        />
+      </div>
+    )}
+  </label>
+
+  <select
+    value={newTransfer.fromLocation}
+    onChange={(e) => {
+      const selected = fromLocations.find(l => l.id === parseInt(e.target.value));
+      setNewTransfer({
+        ...newTransfer,
+        fromLocation: selected.id,
+        fromLocationName: selected.name
+      });
+    }}
+    className="transfer-select"
+    required
+  >
+    <option value="">Select From Location</option>
+    {fromLocations.map(loc => (
+      <option key={loc.id} value={loc.id}>{loc.name}</option>
+    ))}
+  </select>
+</div>
+
+
+   <div className="form-group" style={{ position: "relative" }}>
+  <label style={{ display: "flex", alignItems: "center" }}>
+    To Location
+    <span
+      onMouseEnter={() => setShowToInfo(true)}
+      onMouseLeave={() => setShowToInfo(false)}
+      style={{
+        marginLeft: "8px",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "18px",
+        height: "18px",
+        borderRadius: "50%",
+        backgroundColor: "#007bff",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: "12px",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.15)"
+      }}
+    >
+      ?
+    </span>
+
+    {showToInfo && (
+      <div
+        style={{
+          position: "absolute",
+          top: "28px",
+          left: "0",
+          zIndex: 10,
+          backgroundColor: "#fff",
+          color: "#333",
+          padding: "10px 14px",
+          borderRadius: "6px",
+          border: "1px solid #ddd",
+          fontSize: "13px",
+          lineHeight: "1.4",
+          width: "260px",
+          boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
+        }}
+      >
+        <b>To Location:</b> Select the location where stock will be transferred <u>to</u>.  
+        The stock will be added at this location once transfer is <b>Completed</b>.
+        <div
+          style={{
+            position: "absolute",
+            top: "-6px",
+            left: "12px",
+            width: "12px",
+            height: "12px",
+            backgroundColor: "#fff",
+            borderLeft: "1px solid #ddd",
+            borderTop: "1px solid #ddd",
+            transform: "rotate(45deg)"
+          }}
+        />
+      </div>
+    )}
+  </label>
+
+  <select
+    value={newTransfer.toLocation}
+    onChange={(e) => {
+      const selected = toLocations.find(l => l.id === parseInt(e.target.value));
+      setNewTransfer({
+        ...newTransfer,
+        toLocation: selected.id,
+        toLocationName: selected.name
+      });
+    }}
+    className="transfer-select"
+    required
+  >
+    <option value="">Select To Location</option>
+    {toLocations.map(loc => (
+      <option key={loc.id} value={loc.id}>{loc.name}</option>
+    ))}
+  </select>
+</div>
+
+  </div>
+
+  {/* Additional Notes (full width) */}
+  <div className="form-group full-width">
+    <label>Additional Notes</label>
+    <textarea
+      value={newTransfer.additionalNotes}
+      onChange={(e) => setNewTransfer({ ...newTransfer, additionalNotes: e.target.value })}
+      className="transfer-textarea"
+    />
+  </div>
+</div>
 
           {/* Product Search */}
           <div className="product-section">
+                <h3>Search Products</h3>
             <div className="search-bar-container">
+          
               <input
                 type="text"
                 placeholder="Search products by name or ID..."
@@ -333,7 +568,7 @@ export default function AddStockTransfer() {
 
             {/* Selected Products Table */}
             <div className="product-list-container">
-              <table className="product-table">
+              <table className="discount-table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -359,16 +594,9 @@ export default function AddStockTransfer() {
                         />
                       </td>
                       <td>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={p.unitPrice}
-                          onChange={(e) => handleUnitPriceChange(p.id, e.target.value)}
-                          className="price-input"
-                        />
+                       <td>{p.unitPrice.toFixed(2)}</td>
                       </td>
-                      <td>PKR{p.totalAmount.toFixed(2)}</td>
+                      <td>{p.totalAmount.toFixed(2)}</td>
                       <td>
                         <button type="button" className="delete-btn" onClick={() => handleDeleteProduct(p.id)}>Delete</button>
                       </td>
@@ -378,6 +606,30 @@ export default function AddStockTransfer() {
               </table>
             </div>
           </div>
+{/* Totals Section */}
+<div className="transfer-summary">
+  <div className="summary-field">
+    <label>Shipping Charges</label>
+    <input
+      type="number"
+      value={newTransfer.shippingCharges}
+      onChange={(e) =>
+        setNewTransfer({ ...newTransfer, shippingCharges: e.target.value })
+      }
+      className="summary-input"
+    />
+  </div>
+
+  <div className="summary-field">
+    <label>Grand Total</label>
+    <input
+      type="text"
+      value={grandTotal.toFixed(2)}
+      className="summary-input"
+      readOnly
+    />
+  </div>
+</div>
 
           {/* Buttons */}
           <div className="form-buttons">

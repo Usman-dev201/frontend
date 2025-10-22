@@ -18,7 +18,8 @@ const {
   loading, 
   setLoading, 
   discountCodes, 
-  discountTypes, 
+fetchProducts,
+getProductDiscounts,
   addProductDiscount   // ⬅️ add this
 } = useProducts();
     const { categories } = useCategories()
@@ -27,7 +28,7 @@ const {
   const [imagePreview, setImagePreview] = useState(null);
   const [discounts, setDiscounts] = useState([]);
   const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
-  const [selectedDiscountType, setSelectedDiscountType] = useState('');
+
 const [currentProductId, setCurrentProductId] = useState(null);
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -40,44 +41,32 @@ const [currentProductId, setCurrentProductId] = useState(null);
     }
   };
 
-  const handleDiscountCodeChange = (e) => {
-    const code = e.target.value;
-    if (code) {
-      setSelectedDiscountCode(code);
-      if (selectedDiscountType) {
-        addNewDiscount(code, selectedDiscountType);
-      }
-    }
-  };
+ const handleDiscountCodeChange = (e) => {
+  const code = e.target.value;
+  if (code) {
+    setSelectedDiscountCode(code);
+    addNewDiscount(code); // ✅ Add directly to the table
+  }
+};
 
-  const handleDiscountTypeChange = (e) => {
-    const type = e.target.value;
-    if (type) {
-      setSelectedDiscountType(type);
-      if (selectedDiscountCode) {
-        addNewDiscount(selectedDiscountCode, type);
-      }
-    }
-  };
 
-  const addNewDiscount = (code, type) => {
-    const newDiscount = {
-      code: code,
-      discountType: type,
-      discountAmount: '',
-      discountPercentage: ''
-    };
+ 
+  const addNewDiscount = (code) => {
+  
+ const newDiscount = {
+  code: code
+};
+  // Avoid duplicates
+  setDiscounts(prev => {
+    if (prev.some(d => d.code === code)) return prev;
+    return [...prev, newDiscount];
+  });
 
-    setDiscounts([...discounts, newDiscount]);
-    setSelectedDiscountCode('');
-    setSelectedDiscountType('');
-  };
+  setSelectedDiscountCode('');
+};
 
-  const handleDiscountValueChange = (index, field, value) => {
-    const updatedDiscounts = [...discounts];
-    updatedDiscounts[index][field] = value;
-    setDiscounts(updatedDiscounts);
-  };
+
+ 
 
   const handleRemoveDiscount = (discountToRemove) => {
     setDiscounts(discounts.filter(discount => 
@@ -305,31 +294,26 @@ const [currentProductId, setCurrentProductId] = useState(null);
               </div>
               <div className="discount-controls">
                 <div className="discount-dropdowns">
-                  <select 
+               <select 
   value={selectedDiscountCode}
   onChange={handleDiscountCodeChange}
   className="discount-select"
 >
   <option value="">Select Discount Code</option>
-  {discountCodes.map((discount, idx) => (
-    <option key={idx} value={discount.discountCode}>
-      {discount.discountCode}
-    </option>
-  ))}
+  {discountCodes.map((discount, idx) => {
+    const label = discount.discountPercentage
+      ? `${discount.discountCode} (${discount.status} - ${discount.discountPercentage}%)`
+      : `${discount.discountCode} (${discount.status} - Rs.${discount.discountAmount})`;
+    
+    return (
+      <option key={idx} value={discount.discountCode}>
+        {label}
+      </option>
+    );
+  })}
 </select>
 
-<select 
-  value={selectedDiscountType}
-  onChange={handleDiscountTypeChange}
-  className="discount-select"
->
-  <option value="">Select Discount Type</option>
-  {discountTypes.map((type, idx) => (
-    <option key={idx} value={type}>
-      {type}
-    </option>
-  ))}
-</select>
+
                 </div>
               </div>
 
@@ -339,9 +323,7 @@ const [currentProductId, setCurrentProductId] = useState(null);
                     <tr>
                   
                       <th>Discount Code</th>
-                      <th>Discount Type</th>
-                      <th>Discount Amount</th>
-                      <th>Discount Percentage</th>
+                      
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -350,28 +332,7 @@ const [currentProductId, setCurrentProductId] = useState(null);
                       <tr key={index}>
                       
                         <td>{discount.code}</td>
-                        <td>{discount.discountType}</td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            value={discount.discountAmount}
-                            onChange={(e) => handleDiscountValueChange(index, 'discountAmount', e.target.value)}
-                            placeholder="Enter amount"
-                            className="table-input"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={discount.discountPercentage}
-                            onChange={(e) => handleDiscountValueChange(index, 'discountPercentage', e.target.value)}
-                            placeholder="Enter %"
-                            className="table-input"
-                          />
-                        </td>
+                    
                         <td>
                           <button 
                             type="button"
@@ -403,6 +364,10 @@ const [currentProductId, setCurrentProductId] = useState(null);
     }
     try {
       await addProductDiscount(currentProductId, discounts);
+      const savedDiscounts = await getProductDiscounts(currentProductId);
+      setDiscounts(savedDiscounts);
+      setCurrentProductId(null); // Reset after applying
+      await fetchProducts();
       alert("Discounts applied successfully!");
       navigate('/product/list');
     } catch (error) {

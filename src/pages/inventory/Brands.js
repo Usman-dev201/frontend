@@ -77,31 +77,43 @@ export default function Brands() {
           </div>
         </div>
 
-        {showAddForm && (
-          <div className="form-section">
-            <h3>Add New Brand</h3>
-            <form onSubmit={handleSubmit} className="add-brand-form">
-              <div className="form-group">
-                <label htmlFor="brandName">Brand Name</label>
-                <input
-                  type="text"
-                  id="brandName"
-                  name="brandName"
-                  value={newBrand.brandName}
-                  onChange={(e) => setNewBrand({ brandName: e.target.value })}
-                  placeholder="Enter brand name"
-                  required
-                />
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="submit-button">
-                  <i className="fas fa-save"></i>
-                  Add Brand
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+    {/* Add Brand Modal */}
+{showAddForm && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h3>Add New Brand</h3>
+      <form onSubmit={handleSubmit} className="add-brand-form">
+        <div className="form-group">
+          <label htmlFor="brandName">Brand Name</label>
+          <input
+            type="text"
+            id="brandName"
+            name="brandName"
+            value={newBrand.brandName}
+            onChange={(e) => setNewBrand({ brandName: e.target.value })}
+            placeholder="Enter brand name"
+            required
+          />
+        </div>
+        <div className="form-actions">
+          <button type="submit" className="submit-button">
+            <i className="fas fa-save"></i>
+            Add Brand
+          </button>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={() => setShowAddForm(false)}
+          >
+            <i className="fas fa-times"></i>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
 
         <div className="products-table-container">
           <table className="products-table">

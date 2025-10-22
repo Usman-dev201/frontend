@@ -42,7 +42,17 @@ export function ProductProvider({ children }) {
     }
   };
 
-
+const searchProducts = async (query) => {
+  setLoading(true);
+  try {
+    const res = await api.get(`/Product/search`, { params: { term: query } }); 
+    setProducts(res.data);
+  } catch (error) {
+    console.error('Error searching products:', error);
+  } finally {
+    setLoading(false);
+  }
+};
   const fetchProducts = async () => {
   setLoading(true);
   try {
@@ -66,13 +76,9 @@ useEffect(() => {
 }, []);
 const addProductDiscount = async (productId, discounts) => {
   try {
-    // Map frontend discount objects to backend payload
     const payload = discounts.map(d => ({
       productId,
-      discountId: discountCodes.find(dc => dc.discountCode === d.code)?.discountId || 0,
-      discountType: d.discountType,
-      discountAmount: Number(d.discountAmount) || 0,
-      discountPercentage: Number(d.discountPercentage) || 0,
+      discountId: discountCodes.find(dc => dc.discountCode === d.code)?.discountId || 0
     }));
 
     const response = await api.post('/ProductDiscount', payload);
@@ -82,6 +88,7 @@ const addProductDiscount = async (productId, discounts) => {
     throw error;
   }
 };
+
 
   const applyProductDiscount = async (productId, newDiscount) => {
   try {
@@ -182,23 +189,28 @@ const deleteProductDiscount = async (productDiscountId) => {
 const getProductDiscounts = async (productId) => {
   try {
     const res = await api.get(`/ProductDiscount/byProduct/${productId}`);
+    
     return res.data.map(d => ({
-       productDiscountId: d.productDiscountId, 
+      productDiscountId: d.productDiscountId,
+      productId: d.productId,
       discountId: d.discountId,
-      code: d.discountCode || d.discount?.discountCode || '',
-      discountType: d.discountType,
-      discountAmount: d.discountAmount,
-      discountPercentage: d.discountPercentage
+      code: d.discountCode || '',
+      discountType: d.discountType || '',
+      discountAmount: d.discountAmount || 0,
+      discountPercentage: d.discountPercentage || 0,
+      status: d.status || ''
     }));
+    
   } catch (error) {
     if (error.response?.status === 404) {
       console.warn(`No discounts found for product ${productId}`);
-      return [];  // 👈 return empty instead of error
+      return [];
     }
     console.error(`Error fetching discounts for product ${productId}:`, error);
     return [];
   }
 };
+
   const value = {
     products,
      stocks,
@@ -208,6 +220,7 @@ const getProductDiscounts = async (productId) => {
     deleteProduct,
     updateProduct,
      fetchProducts,
+      searchProducts, 
       discountCodes,       // ✅ expose to context
     discountTypes ,
     addProductDiscount,

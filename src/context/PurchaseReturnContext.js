@@ -6,12 +6,12 @@ export const usePurchaseReturn = () => useContext(PurchaseReturnContext);
 
 export const PurchaseReturnProvider = ({ children }) => {
   const [formData, setFormData] = useState({
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     purchaseId: "",
     amountReturned: "",
     paymentDue: "",
-    paymentStatus: "",
-    refundStatus: "",
+    paymentStatus: "Unpaid",
+    refundStatus: "Pending",
     reasonForRefund: "",
   });
 
@@ -21,7 +21,44 @@ export const PurchaseReturnProvider = ({ children }) => {
 
   const [paymentStatuses, setPaymentStatuses] = useState([]);
   const [refundStatuses, setRefundStatuses] = useState([]);
+const [lowStockAlerts, setLowStockAlerts] = useState([]);
+const [productStatusMap, setProductStatusMap] = useState({});
 
+const fetchLowStockAlerts = async () => {
+  try {
+    const res = await api.get("/Stock/low-stock-alerts");
+    setLowStockAlerts(res.data || []);
+    return res.data || []; // Add this line to return the data
+  } catch (err) {
+    console.error("❌ Failed to fetch low stock alerts:", err);
+    return []; // Return empty array even on error
+  }
+};
+
+useEffect(() => {
+  fetchLowStockAlerts();
+}, []);
+
+const fetchProductStatus = async (productId) => {
+  try {
+    const res = await api.get(`/Stock/status/${productId}`); // updated endpoint
+    setProductStatusMap((prev) => ({ ...prev, [productId]: res.data }));
+    return res.data;
+  } catch (err) {
+    console.error(`❌ Failed to fetch status for product ${productId}:`, err);
+    return null;
+  }
+};
+const checkAvailableQuantity = async (purchaseId, productId) => {
+  try {
+    const response = await api.get(`/PurchaseReturn/availableQuantity?purchaseId=${purchaseId}&productId=${productId}`);
+    // Make sure the response structure matches what your backend returns
+    return response.data.availableQuantity; // This should return the number
+  } catch (error) {
+    console.error("Error checking available quantity:", error);
+    return null;
+  }
+};
   // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -64,7 +101,8 @@ const getProductPrice = async (purchaseId, productId) => {
     );
     return {
       unitPrice: res.data.purchasePriceAfterDiscount,
-      productName: res.data.productName // 👈 now available
+      productName: res.data.productName ,
+      quantityPurchased: res.data.quantityPurchased// 👈 now available
     };
   } catch (err) {
     console.error("❌ Failed to fetch product price:", err);
@@ -199,10 +237,24 @@ const submitPurchaseReturn = async () => {
 }
 };
 
+const  updateReturnPayment = async (id, paymentData) => {
+  try {
+    const response = await api.patch(`/PurchaseReturn/${id}/payment`, paymentData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error updating payment:", error);
+    throw error;
+  }
+};
 
   return (
     <PurchaseReturnContext.Provider
       value={{
+          lowStockAlerts,                // 👈 new
+    fetchProductStatus,            // 👈 new
+    productStatusMap,    
+       fetchLowStockAlerts,      // 👈 new
+   // 👈 new helper
         formData,
         handleChange,
         searchQuery,
@@ -219,6 +271,8 @@ const submitPurchaseReturn = async () => {
         submitPurchaseReturn,
          getProductPrice,
          completedPurchases,
+         checkAvailableQuantity,
+          updateReturnPayment
       }}
     >
       {children}

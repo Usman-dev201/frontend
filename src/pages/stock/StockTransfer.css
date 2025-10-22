@@ -688,4 +688,135 @@
   cursor: default;
   font-style: italic;
 }
+/* Summary row wrapper */
+.transfer-summary {
+  display: flex;
+  justify-content: flex-start;   /* keep fields in one row */
+  align-items: center;
+  gap: 200px;                     /* reduce giant spacing */
+  margin-top: 20px;
+}
 
+/* Individual field container */
+.summary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 400px;                  /* increased field length */
+  flex-shrink: 0;                /* prevent shrinking */
+}
+
+/* Label styling */
+.summary-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* Input styling */
+.summary-input {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #4a5568;
+  width: 100%;                   /* fill full width of .summary-field */
+}
+
+.summary-input:focus {
+  border-color: #4299e1;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+.form-group.full-width {
+  grid-column: 1 / -1; /* span full row */
+  width: 100%;
+}
+
+.transfer-textarea {
+  width: 400%;
+  min-height: 80px;
+  resize: vertical;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #4a5568;
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* space between rows */
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 equal columns */
+  gap: 20px; /* space between fields in the same row */
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1; /* span across both columns */
+  width: 100%;
+}
+.date-input {
+  -webkit-appearance: none; /* remove browser default */
+  -moz-appearance: none;
+  appearance: none;
+
+  background-color: #f0f9ff;
+  border: 1px solid #38bdf8;
+  font-weight: 600;
+  color: #0c4a6e;
+
+  padding: 2px 6px;      /* smaller padding */
+  font-size: 13px;
+  border-radius: 6px;
+  height: 28px !important;   /* force smaller height */
+  line-height: 1.2;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  padding: 0;
+  margin: 0;
+  height: 16px;  /* shrink the calendar icon */
+  width: 16px;
+}
+/* Common badge style */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* ✅ Pending = Blue */
+.status-Pending {
+      background-color: #fefcbf;
+    color: #975a16;
+    border: 1px solid #f6e05e;
+}
+
+/* ✅ Completed = Green */
+.status-Completed {
+  background-color: #e6ffed;
+  color: #0f7a2e;
+  border: 1px solid #a6f0b6;
+}
+
+/* ✅ Cancelled = Red */
+.status-Cancelled {
+  background-color: #ffe6e6;
+  color: #b30000;
+  border: 1px solid #ffb3b3;
+}

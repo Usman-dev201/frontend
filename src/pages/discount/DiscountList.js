@@ -2,74 +2,128 @@ import React, { useState } from 'react';
 import Topbar from '../../components/Topbar';
 import Sidebar from '../../components/Sidebar';
 import './Discount.css';
-import { useDiscount } from '../../context/DiscountContext'; // adjust path as needed
+import { useDiscount } from '../../context/DiscountContext';
 
 export default function DiscountList() {
   const {
     discounts,
-    statuses,
+     fetchDiscounts, 
     addDiscount,
     editDiscount,
     deleteDiscount,
+    discountTypes,
     loading,
     error,
   } = useDiscount();
 
-  const [showAddForm, setShowAddForm] = useState(false);
- const [newDiscount, setNewDiscount] = useState({
-  discountCode: '',
-  status: 'Active'
-});
-  const [editingDiscount, setEditingDiscount] = useState(null);
-  const [editForm, setEditForm] = useState({
-    id: '',
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [formData, setFormData] = useState({
+    discountId: '',
     discountCode: '',
-    status: ''
+    status: 'Active',
+    startDate: '',
+    endDate: '',
+    discountType: '',
+    discountAmount: '',
+    discountPercentage: '',
   });
 
- const handleAddDiscount = async (e) => {
-  e.preventDefault();
-  if (!newDiscount.discountCode.trim()) return;
-
-  try {
-    await addDiscount(newDiscount);
-    setNewDiscount({ discountCode: '', status: 'Active' });
-    setShowAddForm(false);
-  } catch (err) {
-    alert('Error adding discount.');
-  }
-};
- const handleEdit = (discount) => {
-  setEditingDiscount(discount.discountId);
-  setEditForm({
-    id: discount.discountId,
-    discountCode: discount.discountCode,
-    status: discount.status
-  });
-};
- const handleSaveEdit = async () => {
-  if (!editForm.discountCode.trim()) return;
-
-  try {
-    await editDiscount(editForm.id, {
-      discountCode: editForm.discountCode,
-      status: editForm.status.charAt(0).toUpperCase() + editForm.status.slice(1).toLowerCase()
+  // Open modal for adding
+  const handleAddClick = () => {
+    setIsEditing(false);
+    setFormData({
+      discountId: '',
+      discountCode: '',
+      status: 'Active',
+      startDate: '',
+      endDate: '',
+      discountType: '',
+      discountAmount: '',
+      discountPercentage: '',
     });
-    setEditingDiscount(null);
-  } catch (err) {
-    alert('Error saving changes: ' + (err.response?.data?.message || err.message));
+    setShowModal(true);
+  };
+
+  // Open modal for editing
+  const handleEditClick = (discount) => {
+    setIsEditing(true);
+    setFormData({
+      discountId: discount.discountId,
+      discountCode: discount.discountCode || '',
+      status: discount.status || 'Active',
+      startDate: discount.startDate || '',
+      endDate: discount.endDate || '',
+      discountType: discount.discountType || '',
+      discountAmount: discount.discountAmount || '',
+      discountPercentage: discount.discountPercentage || '',
+    });
+    setShowModal(true);
+  };
+
+ const handleDelete = async (discount) => {
+  // ✅ Prevent deleting Active discounts
+  if (discount.status === 'Active') {
+    alert('⚠️ Cannot delete this discount because its status is Active.');
+    return;
+  }
+
+  if (window.confirm('Are you sure you want to delete this discount?')) {
+    try {
+      await deleteDiscount(discount.discountId);
+      alert('✅ Discount deleted successfully!');
+
+      // Refresh list after deletion
+      if (typeof fetchDiscounts === 'function') {
+        await fetchDiscounts();
+      }
+    } catch (err) {
+      console.error('Error deleting discount:', err);
+      alert('❌ Error deleting discount. Please try again.');
+    }
   }
 };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this discount?')) {
-      try {
-        await deleteDiscount(id);
-      } catch (err) {
-        alert('Error deleting discount.');
-      }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const formattedData = {
+      ...formData,
+      discountAmount: Number(formData.discountAmount) || 0,
+      discountPercentage: Number(formData.discountPercentage) || 0,
+    };
+
+    if (isEditing) {
+      await editDiscount(formData.discountId, formattedData);
+      alert('✅ Discount updated successfully!');
+    } else {
+      await addDiscount(formattedData);
+      alert('✅ Discount added successfully!');
     }
-  };
+
+    // Refresh list after update/add
+    if (typeof fetchDiscounts === 'function') {
+      await fetchDiscounts();
+    }
+
+    setShowModal(false);
+    setFormData({
+      discountId: '',
+      discountCode: '',
+      status: 'Active',
+      startDate: '',
+      endDate: '',
+      discountType: '',
+      discountAmount: '',
+      discountPercentage: '',
+    });
+  } catch (err) {
+    console.error('Error saving discount:', err);
+    alert('❌ Failed to save discount. Please check your input.');
+  }
+};
+
 
   return (
     <div className="dashboard">
@@ -79,64 +133,126 @@ export default function DiscountList() {
         <div className="discount-list-container">
           <div className="discount-list-header">
             <h2>Discounts</h2>
-            <button 
-              className="add-discount-btn"
-              onClick={() => setShowAddForm(true)}
-            >
+            <button className="add-discount-btn" onClick={handleAddClick}>
               <i className="fas fa-plus"></i> Add Discount
             </button>
           </div>
 
-          {showAddForm && (
-            <div className="add-discount-form-container">
-              <form onSubmit={handleAddDiscount} className="add-discount-form">
-                <div className="form-fields">
+          {/* Add/Edit Discount Modal */}
+          {showModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>{isEditing ? 'Edit Discount' : 'Add New Discount'}</h3>
+                <form onSubmit={handleSubmit} className="add-discount-form">
                   <div className="form-group">
                     <label htmlFor="discountCode">Discount Code</label>
-                <input
-  type="text"
-  id="discountCode"
-  value={newDiscount.discountCode}
-  onChange={(e) => setNewDiscount({ ...newDiscount, discountCode: e.target.value })}
-  placeholder="Enter discount code"
-  className="discount-code-input"
-  required
-/>
+                    <input
+                      type="text"
+                      id="discountCode"
+                      value={formData.discountCode}
+                      onChange={(e) =>
+                        setFormData({ ...formData, discountCode: e.target.value })
+                      }
+                      placeholder="Enter discount code"
+                      required
+                      autoFocus
+                    />
                   </div>
+
                   <div className="form-group">
-                    <label htmlFor="discountStatus">Status</label>
-                   <select
-  id="discountStatus"
-  value={newDiscount.status}
-  onChange={(e) => setNewDiscount({ ...newDiscount, status: e.target.value })}
-  className="discount-select"
-  required
->
-  {(statuses.length ? statuses : ['Active', 'Expired']).map(status => (
-    <option key={status} value={status}>{status}</option>
-  ))}
-</select>
+                    <label htmlFor="startDate">Start Date</label>
+                    <input
+                      type="date"
+                      id="startDate"
+                      value={formData.startDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startDate: e.target.value })
+                      }
+                      required
+                    />
                   </div>
-                </div>
-                <div className="form-buttons">
-                  <button type="submit" className="submit-btn">
-                    <i className="fas fa-check"></i> Save
-                  </button>
-                  <button 
-                    type="button" 
-                    className="cancel-btn"
-                    onClick={() => {
-                      setShowAddForm(false);
-                      setNewDiscount({ code: '', status: 'active' });
-                    }}
-                  >
-                    <i className="fas fa-times"></i> Cancel
-                  </button>
-                </div>
-              </form>
+
+                  <div className="form-group">
+                    <label htmlFor="endDate">End Date</label>
+                    <input
+                      type="date"
+                      id="endDate"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endDate: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="discountType">Discount Type</label>
+                    <select
+                      id="discountType"
+                      value={formData.discountType}
+                      onChange={(e) =>
+                        setFormData({ ...formData, discountType: e.target.value })
+                      }
+                      required
+                    >
+                      <option value="">Select Type</option>
+                      {(discountTypes.length ? discountTypes : ['Percentage', 'Fixed']).map(
+                        (type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="discountAmount">Discount Amount</label>
+                    <input
+                      type="number"
+                      id="discountAmount"
+                      value={formData.discountAmount}
+                      onChange={(e) =>
+                        setFormData({ ...formData, discountAmount: e.target.value })
+                      }
+                      placeholder="Enter discount amount"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="discountPercentage">Discount Percentage</label>
+                    <input
+                      type="number"
+                      id="discountPercentage"
+                      value={formData.discountPercentage}
+                      onChange={(e) =>
+                        setFormData({ ...formData, discountPercentage: e.target.value })
+                      }
+                      placeholder="Enter discount percentage"
+                    />
+                  </div>
+
+                 
+
+                  <div className="form-actions">
+                    <button type="submit" className="submit-btn">
+                      <i className="fas fa-check"></i>{' '}
+                      {isEditing ? 'Update' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      className="cancel-btn"
+                      onClick={() => setShowModal(false)}
+                    >
+                      <i className="fas fa-times"></i> Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
+          {/* Discount Table */}
           {loading ? (
             <p>Loading discounts...</p>
           ) : error ? (
@@ -148,10 +264,12 @@ export default function DiscountList() {
                   <tr>
                     <th>ID</th>
                     <th>Discount Code</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Percentage</th>
                     <th>Status</th>
-                     <th>Discount Type</th>
-      <th>Discount Percentage</th>
-      <th>Discount Amount</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -159,77 +277,33 @@ export default function DiscountList() {
                   {discounts.map((discount) => (
                     <tr key={discount.discountId}>
                       <td>{discount.discountId}</td>
+                      <td>{discount.discountCode}</td>
+                      <td>{discount.startDate || '-'}</td>
+                      <td>{discount.endDate || '-'}</td>
+                      <td>{discount.discountType || '-'}</td>
+                      <td>{discount.discountAmount || '-'}</td>
+                      <td>{discount.discountPercentage || '-'}</td>
                       <td>
-                        {editingDiscount === discount.discountId? (
-                        <input
-  type="text"
-  value={editForm.discountCode}
-  onChange={(e) => setEditForm({ ...editForm, discountCode: e.target.value })}
-  className="edit-input"
-/>
-                        ) : (
-                          discount.discountCode || discount.code
-                        )}
+                        <span className={`status-badge status-${discount.status}`}>
+                          {discount.status}
+                        </span>
                       </td>
-                     <td>
-  {editingDiscount === discount.discountId ? (
-    <select
-      value={editForm.status}
-      onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-      className="discount-select"
-    >
-      {(statuses.length ? statuses : ['Active', 'Expired']).map(status => (
-        <option key={status} value={status}>
-          {status}
-        </option>
-      ))}
-    </select>
-  ) : (
-    <span className={`status-badge status-${discount.status}`}>
-      {discount.status}
-    </span>
-  )}
-</td>
-<td>{discount.discountType || '-'}</td>
-<td>{discount.discountPercentage != null ? discount.discountPercentage : '-'}</td>
-<td>{discount.discountAmount != null ? discount.discountAmount : '-'}</td>
                       <td>
                         <div className="action-buttons-container">
-                          {editingDiscount === discount.discountId ? (
-                            <>
-                              <button
-                                type="button"
-                                className="action-btn save-btn"
-                                onClick={handleSaveEdit}
-                              >
-                                <i className="fas fa-save"></i> Save
-                              </button>
-                              <button
-                                type="button"
-                                className="action-btn cancel-btn"
-                                onClick={() => setEditingDiscount(null)}
-                              >
-                                <i className="fas fa-times"></i> Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="action-btn edit-btn"
-                                onClick={() => handleEdit(discount)}
-                              >
-                                <i className="fas fa-edit"></i> Edit
-                              </button>
-                              <button
-                                type="button"
-                                className="action-btn delete-btn"
-                                onClick={() => handleDelete(discount.discountId)}
-                              >
-                                <i className="fas fa-trash"></i> Delete
-                              </button>
-                            </>
-                          )}
+                          <button
+                            type="button"
+                            className="action-btn edit-btn"
+                            onClick={() => handleEditClick(discount)}
+                          >
+                            <i className="fas fa-edit"></i> Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="action-btn delete-btn"
+                            onClick={() => handleDelete(discount)}
+                          >
+                            <i className="fas fa-trash"></i> Delete
+                          </button>
                         </div>
                       </td>
                     </tr>

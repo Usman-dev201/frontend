@@ -23,7 +23,8 @@ const [showPurchaseIdInfo, setShowPurchaseIdInfo] = useState(false);
     refundStatuses,
     submitPurchaseReturn,
     getProductPrice,
-    completedPurchases
+    completedPurchases,
+    checkAvailableQuantity
   
   } = usePurchaseReturn();
 const grandTotal = selectedProducts.reduce(
@@ -32,7 +33,36 @@ const grandTotal = selectedProducts.reduce(
 );
 
 // Calculate Payment Due
-const paymentDue = grandTotal - (Number(formData.amountReturned) || 0);
+// ✅ Find selected purchase details
+const selectedPurchase = completedPurchases.find(
+  (p) => p.purchaseId === Number(formData.purchaseId)
+);
+
+let paymentDue = 0;
+
+if (selectedPurchase) {
+  const totalPurchase = selectedPurchase.grandTotal || 0;
+  const paidAtPurchase = selectedPurchase.amountPaid || 0;
+  const totalReturnValue = grandTotal;
+  const refundedAmount = Number(formData.amountReturned) || 0;
+
+  if (paidAtPurchase >= totalPurchase) {
+    // Fully paid → supplier owes refund
+    paymentDue = totalReturnValue - refundedAmount;
+  } else {
+    // Partially paid
+    const remainingPayable = totalPurchase - paidAtPurchase;
+
+    if (totalReturnValue <= remainingPayable) {
+      // Just reduce payable — no refund owed
+      paymentDue = 0;
+    } else {
+      // Excess return value becomes refund due
+      paymentDue = totalReturnValue - remainingPayable - refundedAmount;
+    }
+  }
+}
+
   // Add product with empty unit price and total for frontend input
 const handleProductSelect = async (product) => {
   const exists = selectedProducts.some(
@@ -46,7 +76,7 @@ const handleProductSelect = async (product) => {
 
   try {
     // call backend API with both purchaseId and productId
-    const { unitPrice, productName } = await getProductPrice(
+    const { unitPrice, productName ,quantityPurchased} = await getProductPrice(
       formData.purchaseId,
       product.productId ?? product.id
     );
@@ -59,6 +89,7 @@ const handleProductSelect = async (product) => {
       unitPrice: unitPrice,
       quantity: 1,
       total: unitPrice,
+      quantityPurchased
     };
 
     setSelectedProducts((prev) => [...prev, newProduct]);
@@ -74,7 +105,9 @@ const handleProductSelect = async (product) => {
     }
   }
 };
-
+const hasInvalidQty = selectedProducts.some(
+  (p) => p.quantity > p.quantityPurchased
+);
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -181,7 +214,7 @@ const handleProductSelect = async (product) => {
   {/* Purchase ID with Info Popup */}
 <div style={formGroupStyle}>
   <label htmlFor="purchaseId" style={labelStyle}>
-    Purchase ID{" "}
+    Reference Purchase ID{" "}
     <span style={{ position: "relative", display: "inline-block" }}>
       {/* Info Icon */}
       <span
@@ -333,12 +366,13 @@ const handleProductSelect = async (product) => {
               border: "1px solid #ddd",
               fontSize: "13px",
               lineHeight: "1.4",
-              width: "350px",
+              width: "250px",
               boxShadow: "0 6px 14px rgba(0,0,0,0.15)"
             }}
           >
              <div style={{ marginBottom: "6px" }}>
-            ⚠️ <b>Note:</b> Once the status is set to <b>Completed</b> or <b>Cancelled</b>,
+            ⚠️ <b>Note:</b> Once the status is set to 
+            <div><b>Completed</b> or <b>Cancelled</b>,</div>
           </div>
           <div>you will not be able to update it again.</div>
             {/* Tooltip Arrow */}
@@ -424,7 +458,7 @@ const handleProductSelect = async (product) => {
                   style={{
                     ...inputStyle,
                     paddingLeft: "45px",
-                    width: "100%",
+                    width: "290%",
                     backgroundColor: "#f8f9fa",
                   }}
                 />
@@ -516,8 +550,19 @@ const handleProductSelect = async (product) => {
                             type="number"
                             min="0"
                             value={product.quantity || ""}
-                            onChange={(e) => {
+                          onChange={async (e) => {
                               const newQty = Number(e.target.value);
+
+                               if (newQty > product.quantityPurchased) {
+      alert(`⚠️  Cannot return  ${newQty} units for  ${product.productName}.Only ${product.quantityPurchased} were purchased in this batch .`);
+      return;
+    }
+   const availableQty = await checkAvailableQuantity(formData.purchaseId, product.productId);
+  
+  if (availableQty !== null && newQty > availableQty) {
+    alert(`⚠️ Cannot return ${newQty} units for ${product.productName}. Only ${availableQty} units available for return (considering previous returns).`);
+    return;
+  }
                               setSelectedProducts((prev) =>
                                 prev.map((p) =>
                                   p.productId === product.productId
@@ -538,61 +583,42 @@ const handleProductSelect = async (product) => {
                               margin: "0 auto",
                             }}
                           />
+                          
                         </td>
    {/* Editable Unit Price */}
-                        <td style={{ padding: "15px 20px", textAlign: "center" }}>
-                          <input
-                            type="number"
-                            min="0"
-                            value={product.unitPrice || ""}
-                            onChange={(e) => {
-                              const newPrice = Number(e.target.value);
-                              setSelectedProducts((prev) =>
-                                prev.map((p) =>
-                                  p.productId === product.productId
-                                    ? {
-                                        ...p,
-                                        unitPrice: newPrice,
-                                        total: newPrice * (p.quantity || 0),
-                                      }
-                                    : p
-                                )
-                              );
-                            }}
-                            style={{
-                              ...inputStyle,
-                              width: "120px",
-                              textAlign: "center",
-                              height: "36px",
-                              margin: "0 auto",
-                            }}
-                          />
-                        </td>
+                   <td style={{ padding: "15px 20px", textAlign: "center" }}>
+  <input
+    type="number"
+    value={product.unitPrice || ""}
+    readOnly
+    style={{
+      ...inputStyle,
+      width: "120px",
+      textAlign: "center",
+      height: "36px",
+      margin: "0 auto",
+      backgroundColor: "#f9f9f9", // gray background
+      cursor: "not-allowed",      // show as locked
+    }}
+  />
+</td>
                         {/* Editable Total */}
-                        <td style={{ padding: "15px 20px", textAlign: "center" }}>
-                          <input
-                            type="number"
-                            min="0"
-                            value={product.total || ""}
-                            onChange={(e) => {
-                              const newTotal = Number(e.target.value);
-                              setSelectedProducts((prev) =>
-                                prev.map((p) =>
-                                  p.productId === product.productId
-                                    ? { ...p, total: newTotal }
-                                    : p
-                                )
-                              );
-                            }}
-                            style={{
-                              ...inputStyle,
-                              width: "140px",
-                              textAlign: "center",
-                              height: "36px",
-                              margin: "0 auto",
-                            }}
-                          />
-                        </td>
+                       <td style={{ padding: "15px 20px", textAlign: "center" }}>
+  <input
+    type="number"
+    value={product.unitPrice * product.quantity || 0}
+    readOnly
+    style={{
+      ...inputStyle,
+      width: "120px",
+      textAlign: "center",
+      height: "36px",
+      margin: "0 auto",
+      backgroundColor: "#f9f9f9", // gray to show locked
+      cursor: "not-allowed",
+    }}
+  />
+</td>
 
                         {/* Delete */}
                         <td style={{ padding: "15px 20px", textAlign: "center" }}>
@@ -662,18 +688,37 @@ const handleProductSelect = async (product) => {
       style={inputStyle}
     />
   </div>
+{/* Payment Due (calculated only) */}
+<div style={formGroupStyle}>
+  <label style={labelStyle}>Payment Due</label>
+  <input
+    type="number"
+    name="paymentDue"
+    value={paymentDue}
+    readOnly
+    style={{ ...inputStyle, backgroundColor: "#f8f9fa" }}
+  />
 
-  {/* Payment Due (calculated only) */}
-  <div style={formGroupStyle}>
-    <label style={labelStyle}>Payment Due</label>
-    <input
-      type="number"
-      name="paymentDue"
-      value={paymentDue}
-      readOnly
-      style={{ ...inputStyle, backgroundColor: "#f8f9fa" }}
-    />
-  </div>
+  {/* ✅ Safe + numeric comparison + dynamic color */}
+  {selectedPurchase && (
+    <small
+      style={{
+        color: paymentDue > 0 ? "green" : "#6c757d",
+        display: "block",
+        marginTop: "4px",
+        fontWeight: 500,
+      }}
+    >
+      {Number(selectedPurchase.amountPaid) === 0
+        ? "This purchase was unpaid — refund does not apply; it will just reduce the outstanding balance."
+        : Number(selectedPurchase.amountPaid) < Number(selectedPurchase.grandTotal)
+        ? "This purchase was partially paid — refund applies only if the return exceeds unpaid balance."
+        : "This purchase was fully paid — refund due from supplier."}
+    </small>
+  )}
+</div>
+
+  
 </div>
             {/* --- Action Buttons --- */}
             <div
@@ -685,6 +730,7 @@ const handleProductSelect = async (product) => {
             >
               <button
                 type="submit"
+                disabled={hasInvalidQty}
                 style={{
                   padding: "12px 24px",
                   borderRadius: "6px",

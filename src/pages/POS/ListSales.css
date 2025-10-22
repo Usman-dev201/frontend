@@ -1,0 +1,303 @@
+.sales-page {
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  padding: 20px;
+  margin-left: 250px; /* Sidebar width */
+  margin-top: 60px;   /* Topbar height */
+}
+
+.sales-container {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 25px;
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+.sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.sales-header h2 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.sales-table-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.sales-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1200px; /* bigger table for many columns */
+}
+
+.sales-table th {
+  background: #f8fafc;
+  color: #2d3748;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.7px;
+  padding: 16px 24px;
+  border-bottom: 2px solid #edf2f7;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.sales-table td {
+  padding: 16px 24px;
+  font-size: 14px;
+  color: #4a5568;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: middle;
+}
+
+.sales-table tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #718096;
+}
+
+/* Optional controls section (search, filters, etc.) */
+.table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-size-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sales-header h2 {
+  margin: 0;
+}
+
+.sales-header .btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.sales-header .btn {
+ background-color: #4299e1;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    font-size: 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 46px;
+}
+
+.sales-header .btn:hover {
+  background-color: #3182ce;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(66, 153, 225, 0.25);
+}
+.actions-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-edit {
+  padding: 20px 30px;     /* ⬆️ increased padding for more height */
+  border-radius: 8px;
+  font-size: 15px;      /* slightly larger text */
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  background-color:  #4299e1;;
+   color: #fff;
+}
+
+
+
+
+
+.btn-delete {
+  background-color: #e53e3e; /* red */
+  color: #fff;
+   padding: 20px 30px;  
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-delete:hover {
+  background-color: #c53030;
+}
+
+
+/* 🔹 Generic badge style */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 80px;
+}
+
+/* 🔹 Payment Method Styling */
+.status-cash {
+  background-color: #e6f9ed;   /* light green */
+  color: #0f9d58;              /* green */
+  border: 1px solid #0f9d58;
+}
+
+.status-credit {
+  background-color: #e3f2fd;   /* light blue */
+  color: #1a73e8;              /* blue */
+  border: 1px solid #1a73e8;
+}
+
+.status-debit {
+  background-color: #fff3e0;   /* light orange */
+  color: #f57c00;              /* orange */
+  border: 1px solid #f57c00;
+}
+
+.status-mobile {
+  background-color: #f3e5f5;   /* light purple */
+  color: #8e24aa;              /* purple */
+  border: 1px solid #8e24aa;
+}
+
+/* 🔹 Fallback */
+.status-default {
+  background-color: #f5f5f5;
+  color: #555;
+  border: 1px solid #ccc;
+}
+/* 🔹 Shipping Status Styling */
+.status-pending {
+  background-color: #fff3cd;   /* light yellow */
+  color: #856404;              /* dark yellow/brown */
+  border: 1px solid #ffeeba;
+}
+
+.status-shipped {
+  background-color: #e0f7fa;   /* light cyan */
+  color: #006064;              /* teal */
+  border: 1px solid #006064;
+}
+
+.status-delivered {
+  background-color: #e6f9ed;   /* light green */
+  color: #0f9d58;              /* green */
+  border: 1px solid #0f9d58;
+}
+
+.status-cancelled {
+  background-color: #fdecea;   /* light red */
+  color: #d93025;              /* red */
+  border: 1px solid #d93025;
+}
+
+.status-partial {
+  background-color: #fffde7;  /* pale yellow */
+  color: #f9a825;             /* dark yellow */
+  border: 1px solid #f9a825;
+}
+
+.edit-options-dropdown {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 180px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeInDropdown 0.2s ease-in-out;
+}
+
+/* Dropdown Items */
+.edit-options-dropdown .dropdown-item {
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Hover Effects */
+.edit-options-dropdown .dropdown-item:hover {
+  background-color: #f3f4f6;
+  color: #2563eb;
+  padding-left: 18px;
+}
+
+/* Optional Icon Styling */
+.edit-options-dropdown .dropdown-item svg {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  transition: color 0.2s ease-in-out;
+}
+
+.edit-options-dropdown .dropdown-item:hover svg {
+  color: #2563eb;
+}
+
+/* Animation */
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

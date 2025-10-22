@@ -84,29 +84,39 @@ export default function Categories() {
         </div>
 
         {showAddForm && (
-          <div className="form-section">
-            <h3>Add New Category</h3>
-            <form onSubmit={handleSubmit} className="add-category-form">
-              <div className="form-group">
-                <label htmlFor="categoryName">Category Name</label>
-                <input
-                  type="text"
-                  id="categoryName"
-                  value={newCategory.categoryName}
-                  onChange={(e) => setNewCategory({ categoryName: e.target.value })}
-                  placeholder="Enter category name"
-                  required
-                />
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="submit-button">
-                  <i className="fas fa-save"></i>
-                  Add Category
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h3>Add New Category</h3>
+      <form onSubmit={handleSubmit} className="add-category-form">
+        <div className="form-group">
+          <label htmlFor="categoryName">Category Name</label>
+          <input
+            type="text"
+            id="categoryName"
+            value={newCategory.categoryName}
+            onChange={(e) => setNewCategory({ categoryName: e.target.value })}
+            placeholder="Enter category name"
+            required
+          />
+        </div>
+        <div className="form-actions">
+          <button type="submit" className="submit-button">
+            <i className="fas fa-save"></i>
+            Add Category
+          </button>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={() => setShowAddForm(false)}
+          >
+            <i className="fas fa-times"></i>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
         <div className="products-table-container">
           <table className="products-table">

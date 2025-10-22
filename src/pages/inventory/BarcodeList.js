@@ -57,36 +57,42 @@ export default function BarcodeList() {
             </button>
           </div>
 
-          {showAddForm && (
-            <div className="add-form">
-              <form onSubmit={handleAddBarcode}>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Enter Barcode Type"
-                    value={newBarcodeType}
-                    onChange={(e) => setNewBarcodeType(e.target.value)}
-                    className="form-control"
-                  />
-                </div>
-                <div className="form-actions">
-                  <button type="submit" className="save-button">
-                    <i className="fas fa-check"></i> Save
-                  </button>
-                  <button 
-                    type="button" 
-                    className="cancel-button"
-                    onClick={() => {
-                      setShowAddForm(false);
-                      setNewBarcodeType('');
-                    }}
-                  >
-                    <i className="fas fa-times"></i> Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+        {/* Add Barcode Modal */}
+{showAddForm && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h3>Add New Barcode</h3>
+      <form onSubmit={handleAddBarcode}>
+        <div className="form-group">
+          <input
+            type="text"
+            placeholder="Enter Barcode Type"
+            value={newBarcodeType}
+            onChange={(e) => setNewBarcodeType(e.target.value)}
+            className="form-control"
+            autoFocus
+          />
+        </div>
+        <div className="form-actions">
+          <button type="submit" className="save-button">
+            <i className="fas fa-check"></i> Save
+          </button>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={() => {
+              setShowAddForm(false);
+              setNewBarcodeType('');
+            }}
+          >
+            <i className="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
 
           <div className="table-container">
             <table className="data-table">
