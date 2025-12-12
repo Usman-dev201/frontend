@@ -5,8 +5,12 @@ import {
   FaUserFriends, FaUserShield, FaBox, FaList, FaPlus, FaTags,
   FaTrademark, FaBarcode, FaShoppingCart, FaUndo, FaTruck,
   FaExchangeAlt, FaPercent, FaFileInvoiceDollar, FaMapMarkerAlt,
-  FaCashRegister, FaUser,FaHandshake, FaBullhorn, FaComments
+  FaCashRegister, FaUser,FaHandshake, FaBullhorn, FaComments,FaFileInvoice
 } from "react-icons/fa";
+
+import { FaChartLine } from "react-icons/fa";
+import { FaChartBar } from "react-icons/fa";
+
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -14,7 +18,7 @@ const [expandedSections, setExpandedSections] = useState(() => {
   const saved = localStorage.getItem("expandedSections");
   return saved
     ? JSON.parse(saved)
-    : { users: false, inventory: false, purchase: false, pos: false, crm: false, expense: false };
+    : { users: false, inventory: false, purchase: false, pos: false, crm: false, expense: false ,accounting: false,reports: false , ecommerce: false};
 });
 
 
@@ -220,10 +224,19 @@ const toggleSection = (section) => {
                 <div className="nav-icon"><FaBullhorn /></div>
                 <span>Marketing Campaigns</span>
               </NavLink>
-              <NavLink to="/crm/feedbacks" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+              <NavLink to="/crm/customerfeedbacks" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 <div className="nav-icon"><FaComments /></div>
                 <span>Customer Feedbacks</span>
               </NavLink>
+               <NavLink 
+        to="/crm/feedbackcategory" 
+        className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+      >
+        <div className="nav-icon">
+          <FaTags />
+        </div>
+        <span>Feedback Category</span>
+      </NavLink>
             </div>
           )}
         </div>
@@ -271,12 +284,238 @@ const toggleSection = (section) => {
     </div>
   )}
 </div>
+{/* Accounting Section */}
+<div className="nav-section">
+  <div
+    className="section-header"
+    onClick={() => toggleSection("accounting")}
+  >
+    <div className="nav-icon">
+      <FaCashRegister /> {/* You can change icon if you prefer */}
+    </div>
+    <span>Accounting</span>
+    {expandedSections.accounting ? <FaChevronDown /> : <FaChevronRight />}
+  </div>
+
+  {expandedSections.accounting && (
+    <div className="sub-items">
+      <NavLink
+        to="/accounting/accounts"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaUserShield /> {/* You can change to FaFileInvoiceDollar or FaListAlt */}
+        </div>
+        <span>Accounts</span>
+      </NavLink>
+
+      <NavLink
+        to="/accounting/assets"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaBox /> {/* Or FaCubes for assets */}
+        </div>
+        <span>Assets</span>
+      </NavLink>
+        <NavLink
+        to="/accounting/liabilities"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaFileInvoiceDollar /> {/* You can change icon if needed */}
+        </div>
+        <span>Liabilities</span>
+      </NavLink>
+        <NavLink
+        to="/accounting/revenue"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+<FaChartLine />
+        </div>
+        <span>Revenue</span>
+      </NavLink>
+
+      {/* 🔥 NEW — Expense */}
+      <NavLink
+        to="/accounting/expense"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaFileInvoiceDollar /> {/* Or FaMoneyCheckAlt */}
+        </div>
+        <span>Expense</span>
+      </NavLink>
+    </div>
+  )}
+</div>
+{/* Reports Section */}
+<div className="nav-section">
+  <div
+    className="section-header"
+    onClick={() => toggleSection("reports")}
+  >
+    <div className="nav-icon">
+      <FaChartBar />  {/* Icon for reports */}
+    </div>
+    <span>Reports</span>
+    {expandedSections.reports ? <FaChevronDown /> : <FaChevronRight />}
+  </div>
+
+  {expandedSections.reports && (
+    <div className="sub-items">
+
+      <NavLink
+        to="/reports/balance-sheet"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon"><FaFileInvoiceDollar /></div>
+        <span>Balance Sheet & Income Statment</span>
+      </NavLink>
+
+  <NavLink
+  to="/reports/cash-flow"
+  className={({ isActive }) =>
+    isActive ? "nav-item active" : "nav-item"
+  }
+>
+  <div className="nav-icon"><FaExchangeAlt /></div>
+  <span>Cash Flow</span>
+</NavLink>
+  <NavLink
+        to="/reports/cogs"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon"><FaFileInvoice /></div>
+        <span>COGS Report</span>
+      </NavLink>
+  <NavLink
+        to="/reports/accounts-receivable"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon"><FaUserFriends /></div>
+        <span>Accounts Receivable</span>
+      </NavLink>
+
+      {/* 🔸 NEW — Account Payable */}
+      <NavLink
+        to="/reports/accounts-payable"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon"><FaTruck /></div>
+        <span>Accounts Payable</span>
+      </NavLink>
+    </div>
+  )}
+</div>
+{/* E-Commerce Section */}
+<div className="nav-section">
+  <div
+    className="section-header"
+    onClick={() => toggleSection("ecommerce")}
+  >
+    <div className="nav-icon">
+      <FaShoppingCart /> {/* You can change to another icon if preferred */}
+    </div>
+    <span>E-Commerce</span>
+    {expandedSections.ecommerce ? <FaChevronDown /> : <FaChevronRight />}
+  </div>
+
+  {expandedSections.ecommerce && (
+    <div className="sub-items">
+      <NavLink
+        to="/ecommerce/shippingaddresses"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaMapMarkerAlt />
+        </div>
+        <span>Shipping Addresses</span>
+      </NavLink>
+
+      <NavLink
+        to="/ecommerce/orders"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaFileInvoice />
+        </div>
+        <span>Orders</span>
+      </NavLink>
+        <NavLink
+        to="/ecommerce/shipments"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaTruck />
+        </div>
+        <span>List Shipments</span>
+      </NavLink>
+       {/* 🔹 NEW — Payments */}
+      <NavLink
+        to="/ecommerce/payments"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaCashRegister />
+        </div>
+        <span>Payments</span>
+      </NavLink>
+         <NavLink
+        to="/ecommerce/reviews"
+        className={({ isActive }) =>
+          isActive ? "nav-item active" : "nav-item"
+        }
+      >
+        <div className="nav-icon">
+          <FaComments />
+        </div>
+        <span>Reviews</span>
+      </NavLink>
+    </div>
+  )}
+</div>
+
         <NavLink to="/discount" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">
             <FaPercent />
           </div>
           <span>Discount</span>
         </NavLink>
+<NavLink to="/taxpayable" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+  <div className="nav-icon">
+    <FaFileInvoiceDollar />
+  </div>
+  <span>Tax Payable</span>
+</NavLink>
+
 
         <NavLink to="/tax" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <div className="nav-icon">

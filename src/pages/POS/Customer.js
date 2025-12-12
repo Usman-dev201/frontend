@@ -24,6 +24,7 @@ export default function Customers() {
     address: "",
     gender: "",
     registerationDate: new Date().toISOString().split("T")[0],
+    dateOfBirth: new Date().toISOString().split("T")[0],  
     shippingAddress: "",
     creditLimit: 0,
   });
@@ -98,6 +99,7 @@ const handleSubmit = async (e) => {
       address: "",
       gender: "",
       registerationDate: new Date().toISOString().split("T")[0],
+      dateOfBirth: new Date().toISOString().split("T")[0], 
       shippingAddress: "",
       creditLimit: 0,
     });
@@ -118,6 +120,8 @@ const columns = useMemo(() => [
   { header: 'Address', accessorKey: 'address' },
   { header: 'Gender', accessorKey: 'gender' },
   { header: 'Registration Date', accessorKey: 'registerationDate' },
+  { header: 'Date of Birth', accessorKey: 'dateOfBirth' },   // ✅ Add here
+
   { header: 'Shipping Address', accessorKey: 'shippingAddress' },
   { header: 'Credit Limit', accessorKey: 'creditLimit' },
   { header: 'Total Orders', accessorKey: 'totalOrders' },
@@ -261,11 +265,11 @@ const table = useReactTable({
 
       {/* ✅ Add Customer Popup */}
       {showForm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="cusmodal-overlay">
+          <div className="cusmodal-content">
             <h3>{editingCustomerId ? "Edit Customer" : "Add Customer"}</h3>
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
+              <div className="cusform-group">
                 <label>Customer Name</label>
                 <input
                   type="text"
@@ -275,7 +279,7 @@ const table = useReactTable({
                   required
                 />
               </div>
-              <div className="form-group">
+              <div className="cusform-group">
                 <label>Email</label>
                 <input
                   type="email"
@@ -285,7 +289,7 @@ const table = useReactTable({
                   required
                 />
               </div>
-              <div className="form-group">
+              <div className="cusform-group">
                 <label>Phone</label>
                 <input
                   type="tel"
@@ -295,7 +299,7 @@ const table = useReactTable({
                   required
                 />
               </div>
-              <div className="form-group">
+              <div className="cusform-group">
                 <label>Address</label>
                 <input
                   type="text"
@@ -304,7 +308,7 @@ const table = useReactTable({
                   onChange={handleChange}
                 />
               </div>
-            <div className="form-group">
+            <div className="cusform-group">
   <label>Gender</label>
   <select
     name="gender"
@@ -320,7 +324,18 @@ const table = useReactTable({
     ))}
   </select>
 </div>
-              <div className="form-group">
+<div className="cusform-group">
+  <label>Date of Birth</label>
+  <input
+    type="date"
+    name="dateOfBirth"
+    value={formData.dateOfBirth}
+    onChange={handleChange}
+    required
+  />
+</div>
+
+              <div className="cusform-group">
                 <label>Registration Date</label>
                 <input
                   type="date"
@@ -329,7 +344,7 @@ const table = useReactTable({
                   onChange={handleChange}
                 />
               </div>
-              <div className="form-group">
+              <div className="cusform-group">
                 <label>Shipping Address</label>
                 <input
                   type="text"
@@ -338,7 +353,7 @@ const table = useReactTable({
                   onChange={handleChange}
                 />
               </div>
-              <div className="form-group">
+              <div className="cusform-group">
                 <label>Credit Limit</label>
                 <input
                   type="number"
@@ -348,7 +363,7 @@ const table = useReactTable({
                 />
               </div>
 
-              <div className="modal-footer">
+              <div className="cusmodal-footer">
                 <button type="submit" className="btn btn-success">
                   Save Customer
                 </button>

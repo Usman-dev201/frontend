@@ -255,10 +255,10 @@ if (p.quantity > updatedStock) {
 
         {/* Form */}
         <form onSubmit={handleAddTransfer} className="add-transfer-form">
-         <div className="form-fields">
+         <div className="stockform-fields">
   {/* Row 1: Date + Status */}
-  <div className="form-row">
-    <div className="form-group">
+  <div className="stockform-row">
+    <div className="stockform-group">
       <label>Date</label>
     <input
   type="date"
@@ -269,7 +269,7 @@ if (p.quantity > updatedStock) {
 />
     </div>
 
-   <div className="form-group">
+   <div className="stockform-group">
   <label style={{ display: "flex", alignItems: "center" }}>
     Status
     <span
@@ -352,8 +352,8 @@ if (p.quantity > updatedStock) {
 </div>
 
   {/* Row 2: From + To Location */}
-  <div className="form-row">
-    <div className="form-group" style={{ position: "relative" }}>
+  <div className="stockform-row">
+    <div className="stockform-group" style={{ position: "relative" }}>
   <label style={{ display: "flex", alignItems: "center" }}>
     From Location
     <span
@@ -436,7 +436,7 @@ if (p.quantity > updatedStock) {
 </div>
 
 
-   <div className="form-group" style={{ position: "relative" }}>
+   <div className="stockform-group" style={{ position: "relative" }}>
   <label style={{ display: "flex", alignItems: "center" }}>
     To Location
     <span

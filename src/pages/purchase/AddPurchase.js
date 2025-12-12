@@ -378,122 +378,123 @@ const handleDiscountFieldChange = (id, field, value) => {
 };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError(null);
 
-    try {
-      // Validate form
-      if (!formData.supplierId || !formData.locationId) {
-        throw new Error('Please select supplier and location');
-      }
+  try {
+    /** 1. Validate Form */
+    if (!formData.supplierId || !formData.locationId) {
+      throw new Error("Please select supplier and location");
+    }
+    if (selectedProducts.length === 0) {
+      throw new Error("Please add at least one product");
+    }
 
-      if (selectedProducts.length === 0) {
-        throw new Error('Please add at least one product');
-      }
-  for (const product of selectedProducts) {
+    for (const product of selectedProducts) {
       if (
         !product.productName ||
         !product.quantityPurchased ||
         !product.purchasePriceBeforeDiscount ||
         !product.purchasePriceAfterDiscount ||
         !product.totalAmount ||
-        product.profitMargin === "" || 
+        product.profitMargin === "" ||
         product.unitSellingPrice === "" ||
         !product.mfgDate ||
         !product.expDate
       ) {
-        throw new Error(`Please complete all fields for product: ${product.productName || 'Unnamed Product'}`);
+        throw new Error(
+          `Please complete all fields for product: ${product.productName || "Unnamed Product"}`
+        );
       }
     }
-      // 1. Create Purchase Record
-      const purchaseData = {
-        supplierId: parseInt(formData.supplierId),
-        locationId: parseInt(formData.locationId),
-        date: formData.date,
-        amountPaid: parseFloat(formData.amountPaid || 0),
-        purchaseStatus: formData.purchaseStatus,
-        paymentStatus: formData.paymentStatus,
-      };
 
-      const createdPurchase = await addPurchase(purchaseData);
+    /** 2. Create PurchaseRecord */
+    const purchasePayload = {
+      supplierId: Number(formData.supplierId),
+      locationId: Number(formData.locationId),
+      date: new Date(formData.date).toISOString().split("T")[0],
+      amountPaid: Number(formData.amountPaid || 0),
+      purchaseStatus: formData.purchaseStatus,
+      paymentStatus: formData.paymentStatus,
+    };
 
-      // 2. Add Product Purchase Records
-      const productsToSubmit = selectedProducts.map(product => ({
+    const createdPurchase = await addPurchase(purchasePayload);
+
+    if (!createdPurchase || !createdPurchase.purchaseId) {
+      throw new Error("PurchaseRecord was not created correctly on backend.");
+    }
+
+    /** 3. Add Product Purchase Records */
+    const productsPayload = selectedProducts.map((p) => ({
+      purchaseId: createdPurchase.purchaseId,
+      productId: p.productId,
+      mgfDate: p.mfgDate,
+      expiryDate: p.expDate,
+      quantityPurchased: Number(p.quantityPurchased),
+      purchasePriceBeforeDiscount: Number(p.purchasePriceBeforeDiscount),
+      purchasePriceAfterDiscount: Number(p.purchasePriceAfterDiscount),
+      totalAmount: Number(p.totalAmount),
+      profitMargin: Number(p.profitMargin),
+      unitSellingPrice: Number(p.unitSellingPrice)
+    }));
+
+    const productRecords = await addProductPurchaseRecord(productsPayload);
+
+    if (!Array.isArray(productRecords) || productRecords.length === 0) {
+      throw new Error("ProductPurchaseRecord did not save in backend.");
+    }
+
+    /** 4. Product Purchase Discounts (Always Hit Backend If List > 0) */
+    if (discountList.length > 0) {
+      const discountPayload = discountList.map((d) => {
+        const matchedLot =
+          productRecords.find((pr) => pr.productId === d.productId)?.loTId;
+
+        return {
+          loTId: matchedLot,
+          discountId: d.discountId,
+          discountType: d.discountType,
+          discountAmount: Number(d.discountAmount || 0),
+          discountPercentage: Number(d.discountPercentage || 0),
+        };
+      });
+
+      await addProductPurchaseDiscount(discountPayload);
+    }
+
+    /** 5. Purchase Discounts */
+    if (purchaseDiscountList.length > 0) {
+      const purchaseDiscPayload = purchaseDiscountList.map((d) => ({
         purchaseId: createdPurchase.purchaseId,
-        productId: product.productId,
-        mgfDate: product.mfgDate || null,
-        expiryDate: product.expDate || null,
-        quantityPurchased: parseInt(product.quantityPurchased) || 0,
-        purchasePriceBeforeDiscount: parseFloat(product.purchasePriceBeforeDiscount || 0),
-        purchasePriceAfterDiscount: parseFloat(product.purchasePriceAfterDiscount || 0),
-        totalAmount: parseFloat(product.totalAmount || 0),
-        profitMargin: parseFloat(product.profitMargin || 0),
-        unitSellingPrice: parseFloat(product.unitSellingPrice || 0)     
+        discountType: d.discountType,
+        discountAmount: Number(d.discountAmount || 0),
+        discountPercentage: Number(d.discountPercentage || 0),
       }));
 
-      const productRecords = await addProductPurchaseRecord(productsToSubmit);
-
-      // 3. Add Product Discounts
-      if (discountList.length > 0) {
-        const productDiscountsToSubmit = discountList.map(discount => {
-          const product = selectedProducts.find(p => p.productId === discount.productId);
-          const discountCode = discountCodes.find(d => d.discountCode === discount.discountCode);
-          
-          return {
-            loTId: product?.loTId || productRecords.find(p => p.productId === discount.productId)?.loTId,
-            discountId: discountCode?.discountId,
-            discountType: discount.discountType,
-            discountAmount: parseFloat(discount.discountAmount) || 0,
-            discountPercentage: parseFloat(discount.discountPercentage) || 0
-          };
-        }).filter(item => item.loTId);
-
-        if (productDiscountsToSubmit.length > 0) {
-          await addProductPurchaseDiscount(productDiscountsToSubmit);
-        }
-      }
-
-      // 4. Add Purchase Discounts
-    // 4. Add Purchase Discounts
-if (purchaseDiscountList.length > 0) {
-  const purchaseDiscountsToSubmit = purchaseDiscountList.map(discount => {
-    // For purchase-level discounts, we don't need discount codes
-    // Just submit the discount details directly
-    return {
-      purchaseId: createdPurchase.purchaseId,
-      discountType: discount.discountType,
-      discountAmount: parseFloat(discount.discountAmount) || 0,
-      discountPercentage: parseFloat(discount.discountPercentage) || 0
-    };
-  }).filter(discount => 
-    discount.discountType && // Ensure discount type is selected
-    (discount.discountAmount > 0 || discount.discountPercentage > 0) // Ensure some discount value is provided
-  );
-
-  if (purchaseDiscountsToSubmit.length > 0) {
-    await addPurchaseDiscount(purchaseDiscountsToSubmit);
-  }
-}
-      // 5. Add Purchase Taxes
-      if (taxList.length > 0) {
-        const taxesToSubmit = taxList.map(tax => ({
-          purchaseId: createdPurchase.purchaseId,
-          taxLocationId: tax.taxLocationId
-        }));
-
-        await addPurchaseTax(taxesToSubmit);
-      }
-
-      alert('Purchase created successfully!');
-     navigate('/purchase/list', { state: { refresh: true } });
-    } catch (error) {
-      console.error('Error submitting purchase:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to create purchase');
-    } finally {
-      setIsSubmitting(false);
+      await addPurchaseDiscount(purchaseDiscPayload);
     }
-  };
+
+    /** 6. Purchase Taxes */
+    if (taxList.length > 0) {
+      const taxPayload = taxList.map((t) => ({
+        purchaseId: createdPurchase.purchaseId,
+        taxLocationId: t.taxLocationId,
+      }));
+
+      await addPurchaseTax(taxPayload);
+    }
+
+    alert("Purchase created successfully!");
+    navigate("/purchase/list", { state: { refresh: true } });
+  } catch (err) {
+    console.error("ERROR DURING PURCHASE SUBMISSION:", err);
+    setError(err.response?.data?.message || err.message || "Failed to create purchase");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   // Style constants
   const tableHeaderStyle = {
@@ -1356,50 +1357,77 @@ if (purchaseDiscountList.length > 0) {
     {/* Tax dropdown always visible */}
 <div style={formRowStyle}>
   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-    <select
-      name="taxLocationId"
-      value={currentTax.taxLocationId}
-      onChange={(e) => {
-        const selectedTaxLocationId = e.target.value;
-        const taxLocation = taxLocations.find(
-          tl => tl.taxLocationId.toString() === selectedTaxLocationId
-        );
+   <select
+  name="taxLocationId"
+  value={currentTax.taxLocationId}
+  onChange={(e) => {
+    const selectedTaxLocationId = e.target.value;
+    const taxLocation = taxLocations.find(
+      tl => tl.taxLocationId.toString() === selectedTaxLocationId
+    );
 
-        if (taxLocation) {
-          const newTax = {
-            id: Date.now().toString(),
-            taxLocationId: taxLocation.taxLocationId.toString(),
-            taxId: taxLocation.taxId.toString(),
-            taxName: getTaxNameById(taxLocation.taxId),
-            taxPercentage: taxLocation.taxPercentage
-          };
+    if (taxLocation) {
+      const newTax = {
+        id: Date.now().toString(),
+        taxLocationId: taxLocation.taxLocationId.toString(),
+        taxId: taxLocation.taxId.toString(),
+        taxName: getTaxNameById(taxLocation.taxId),
+        taxPercentage: taxLocation.taxPercentage,
+        effectiveDate: taxLocation.effectiveDate // Keep this for reference
+      };
 
-          const isDuplicate = taxList.some(
-            t => t.taxLocationId === newTax.taxLocationId
-          );
+      const isDuplicate = taxList.some(
+        t => t.taxLocationId === newTax.taxLocationId
+      );
 
-          if (!isDuplicate) {
-            setTaxList(prev => [...prev, newTax]);
-          }
+      if (!isDuplicate) {
+        setTaxList(prev => [...prev, newTax]);
+      }
 
-          setCurrentTax({
-            taxLocationId: '',
-            taxId: '',
-            taxName: ''
-          });
+      setCurrentTax({
+        taxLocationId: '',
+        taxId: '',
+        taxName: ''
+      });
+    }
+  }}
+  style={selectStyle}
+>
+  <option value="">Select Tax</option>
+  {(() => {
+    // Filter tax locations for the selected location
+    const locationTaxes = taxLocations.filter(tl => 
+      tl.locationId.toString() === formData.locationId
+    );
+    
+    // Group by taxId and get the one with latest effectiveDate
+    const latestTaxes = locationTaxes.reduce((acc, current) => {
+      const existing = acc.find(t => t.taxId === current.taxId);
+      
+      if (!existing) {
+        acc.push(current);
+      } else {
+        // Compare effective dates
+        const currentDate = new Date(current.effectiveDate);
+        const existingDate = new Date(existing.effectiveDate);
+        
+        if (currentDate > existingDate) {
+          // Replace with newer tax
+          const index = acc.indexOf(existing);
+          acc[index] = current;
         }
-      }}
-      style={selectStyle}
-    >
-      <option value="">Select Tax</option>
-      {taxLocations
-        .filter(tl => tl.locationId.toString() === formData.locationId)
-        .map(tl => (
-          <option key={tl.taxLocationId} value={tl.taxLocationId}>
-            {getTaxNameById(tl.taxId)} ({tl.taxPercentage}%)
-          </option>
-      ))}
-    </select>
+      }
+      
+      return acc;
+    }, []);
+    
+    return latestTaxes.map(tl => (
+      <option key={tl.taxLocationId} value={tl.taxLocationId}>
+        {getTaxNameById(tl.taxId)} ({tl.taxPercentage}%) - Effective: {tl.effectiveDate}
+      </option>
+    ));
+  })()}
+</select>
 
     {/* Tooltip Icon */}
     <span

@@ -37,11 +37,7 @@
   transition: all 0.2s ease;
 }
 
-.add-discount-btn:hover {
-  background: #43a047;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+
 
 .error-message {
   background-color: #ff6b6b;
@@ -274,13 +270,13 @@
   gap: 20px;
 }
 
-.form-fields {
+.disform-fields {
   display: flex;
   gap: 20px;
   max-width: 100%;
 }
 
-.form-group {
+.disform-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -288,7 +284,7 @@
   max-width: calc(50% - 10px); /* Subtracting half of the gap */
 }
 
-.form-group label {
+.disform-group label {
   font-size: 13px;
   font-weight: 500;
   color: #2c3e50;
@@ -314,7 +310,7 @@
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
-.form-buttons {
+.disform-buttons {
   display: flex;
   gap: 12px;
   justify-content: flex-end;

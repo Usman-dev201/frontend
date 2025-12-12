@@ -61,6 +61,7 @@ const [originalExchangeData, setOriginalExchangeData] = useState(null);
 const [shownDiscountAlert, setShownDiscountAlert] = useState(false);
 const [shownLoyaltyAlert, setShownLoyaltyAlert] = useState(false);
 const [shownTaxAlert, setShownTaxAlert] = useState(false);
+const [shownCouponAlert, setShownCouponAlert] = useState(false);
 
   // ✅ FETCH EXISTING SALE EXCHANGE DATA
  // ✅ FETCH EXISTING SALE EXCHANGE DATA
@@ -124,6 +125,12 @@ useEffect(() => {
 //     fetchSaleAdjustments(formData.salesId);
 //   }
 // }, [formData.salesId, fetchSaleAdjustments]);
+const [paymentStatusInfo, setPaymentStatusInfo] = useState({
+  originalSaleTotal: 0,
+  amountPaid: 0,
+  paymentStatus: "",
+  remainingBalance: 0
+});
 // Only lock if the ORIGINAL data (from database) has Approved/Cancelled status
 const isExchangeLocked = originalExchangeData && 
   ["Approved", "Cancelled"].includes(originalExchangeData.exchangeStatus);
@@ -418,6 +425,8 @@ useEffect(() => {
 
     const originalSaleProducts = saleAdjustments.originalSaleProducts || [];
     const originalSaleTotal = saleAdjustments.originalSaleTotal || 0;
+ const originalAmountPaid = saleAdjustments.amountPaid || 0;
+    const originalPaymentDue = saleAdjustments.originalPaymentDue || 0;
 
     // 🟢 Compute returned quantities (matching backend logic)
     const returnedQuantities = productsInTable.map(p => ({
@@ -436,6 +445,8 @@ useEffect(() => {
 
     let refundAmount = 0;
     let paymentDue = 0;
+        let refundMessage = "";
+
 
     // 🟢 CASE A: Full return + no new products (apply all original discounts, taxes, and loyalty)
     if (allOriginalsReturned && noNewProducts) {
@@ -447,7 +458,6 @@ useEffect(() => {
           totalDiscount += originalSaleTotal * (d.discountPercentage / 100); // Use original sale total, not totalOriginal
       });
 
- 
 if (saleAdjustments.discounts.length > 0 && !shownDiscountAlert) {
   const applied = saleAdjustments.discounts.map(d => 
     d.discountType === "Fixed" 
@@ -457,6 +467,24 @@ if (saleAdjustments.discounts.length > 0 && !shownDiscountAlert) {
   alert(`💸 Sales Discounts applied: ${applied}`);
   setShownDiscountAlert(true);
 }
+saleAdjustments.discountCoupons.forEach(dc => {
+  if (dc.discountType === "Fixed") 
+    totalDiscount += dc.discountAmount; 
+  else if (dc.discountType === "Percentage") 
+    totalDiscount += originalSaleTotal * (dc.discountPercentage / 100);
+});
+
+// Show alert ONCE
+if (saleAdjustments.discountCoupons.length > 0 && !shownCouponAlert) {
+  const appliedCoupons = saleAdjustments.discountCoupons.map(dc =>
+    dc.discountType === "Fixed"
+      ? `Fixed - ${dc.discountAmount}`
+      : `Percentage - ${dc.discountPercentage}%`
+  ).join(", ");
+  alert(`🎟️ Discount Coupons applied: ${appliedCoupons}`);
+  setShownCouponAlert(true);
+}
+
       const totalLoyaltyDiscount = saleAdjustments.loyalty.reduce((sum, l) => sum + l.loyaltyDiscount, 0);
 
 if (totalLoyaltyDiscount > 0 && !shownLoyaltyAlert) {
@@ -469,53 +497,6 @@ if (totalLoyaltyDiscount > 0 && !shownLoyaltyAlert) {
         const taxPercentage = tax.taxPercentage || 0;
         totalTax += originalSaleTotal * (taxPercentage / 100); // Use original sale total
       }
-
- if (saleAdjustments.taxes.length > 0 && !shownTaxAlert) {
-  const appliedTaxes = saleAdjustments.taxes.map(
-    t => `${t.taxPercentage}%`
-  ).join(", ");
-  alert(`⚖️ Sales Taxes applied: ${appliedTaxes}`);
-  setShownTaxAlert(true);
-}
-      refundAmount = totalOriginal - totalDiscount - totalLoyaltyDiscount + totalTax;
-      paymentDue = 0;
-    }
-    // 🟢 CASE B: Full return + new products (apply all original discounts, taxes, and loyalty discounts)
-    else if (allOriginalsReturned && !noNewProducts) {
-      const refundPortion = totalOriginal;   // refund all originals
-      const baseAmount = totalExchanged;     // subtotal of new products
-
-      let totalDiscount = 0;
-      saleAdjustments.discounts.forEach(d => {
-        if (d.discountType === "Fixed") 
-          totalDiscount += d.discountAmount;
-        else if (d.discountType === "Percentage")
-          totalDiscount += baseAmount * (d.discountPercentage / 100); // Use baseAmount for percentage discounts
-      });
- 
- 
-if (saleAdjustments.discounts.length > 0 && !shownDiscountAlert) {
-  const applied = saleAdjustments.discounts.map(d => 
-    d.discountType === "Fixed" 
-      ? `Fixed - ${d.discountAmount}` 
-      : `Percentage - ${d.discountPercentage}%`
-  ).join(", ");
-  alert(`💸 Sales Discounts applied: ${applied}`);
-  setShownDiscountAlert(true);
-}
-
-      const totalLoyaltyDiscount = saleAdjustments.loyalty.reduce((sum, l) => sum + l.loyaltyDiscount, 0);
-   if (totalLoyaltyDiscount > 0 && !shownLoyaltyAlert) {
-  alert(`🎁 Loyalty Discount applied: ${totalLoyaltyDiscount.toFixed(2)}`);
-  setShownLoyaltyAlert(true);
-}
-     
-
-      let totalTax = 0;
-      for (const tax of saleAdjustments.taxes) {
-        const taxPercentage = tax.taxPercentage || 0;
-        totalTax += baseAmount * (taxPercentage / 100); // Use baseAmount for taxes
-      }
 if (saleAdjustments.taxes.length > 0 && !shownTaxAlert) {
   const appliedTaxes = saleAdjustments.taxes.map(
     t => `${t.taxPercentage}%`
@@ -524,25 +505,155 @@ if (saleAdjustments.taxes.length > 0 && !shownTaxAlert) {
   setShownTaxAlert(true);
 }
 
-      const netNewPurchase = baseAmount + totalTax - totalDiscount - totalLoyaltyDiscount;
-
-      if (refundPortion > netNewPurchase) {
-        refundAmount = refundPortion - netNewPurchase;
-        paymentDue = 0;
-      } else {
-        paymentDue = netNewPurchase - refundPortion;
+         const adjustedRefundAmount = totalOriginal - totalDiscount - totalLoyaltyDiscount + totalTax;
+      
+      // 🟢 REFUND LOGIC BASED ON ORIGINAL PAYMENT STATUS
+      if (originalAmountPaid <= 0) {
+        // Sale was unpaid - no refund, just reduce outstanding balance
         refundAmount = 0;
+        refundMessage = "This sale was unpaid — refund does not apply; it will just reduce the outstanding balance.";
+      } else if (originalPaymentDue > 0) {
+        // Sale was partially paid - refund only if return exceeds unpaid balance
+        const potentialRefund = Math.max(0, adjustedRefundAmount - originalPaymentDue);
+        refundAmount = potentialRefund;
+        refundMessage = potentialRefund > 0 
+          ? `This sale was partially paid — refund of $${potentialRefund.toFixed(2)} applies (return exceeds unpaid balance).`
+          : "This sale was partially paid — refund applies only if the return exceeds unpaid balance.";
+      } else {
+        // Sale was fully paid - full refund due
+        refundAmount = adjustedRefundAmount;
+        refundMessage = "This sale was fully paid — refund due from customer.";
       }
+      
+      paymentDue = 0;
+
     }
+  // 🟢 CASE B: Full return + new products (apply discounts, taxes, loyalty to BOTH sides)
+else if (allOriginalsReturned && !noNewProducts) {
+  const refundPortion = totalOriginal;   // refund all originals
+  const baseAmount = totalExchanged;     // subtotal of new products
+
+  // 🧭 Helper to apply all adjustments (discounts, taxes, loyalty)
+  const applyAdjustments = (amount) => {
+    let totalDiscount = 0;
+    saleAdjustments.discounts.forEach(d => {
+      if (d.discountType === "Fixed")
+        totalDiscount += d.discountAmount;
+      else if (d.discountType === "Percentage")
+        totalDiscount += amount * (d.discountPercentage / 100);
+    });
+  saleAdjustments.discountCoupons.forEach(dc => {
+    if (dc.discountType === "Fixed") totalDiscount += dc.discountAmount;
+    else if (dc.discountType === "Percentage") totalDiscount += amount * (dc.discountPercentage / 100);
+  });
+
+    let totalTax = 0;
+    saleAdjustments.taxes.forEach(t => {
+      const taxPercentage = t.taxPercentage || 0;
+      totalTax += amount * (taxPercentage / 100);
+    });
+
+    const totalLoyaltyDiscount = saleAdjustments.loyalty.reduce(
+      (sum, l) => sum + l.loyaltyDiscount,
+      0
+    );
+
+    // Apply all adjustments together
+    return amount + totalTax - totalDiscount - totalLoyaltyDiscount;
+  };
+
+  // 🧾 Apply adjustments to both refund and new purchase sides
+   const refundAdjusted = applyAdjustments(refundPortion);
+      const newPurchaseAdjusted = applyAdjustments(baseAmount);
+
+    
+  // 🔔 Show alerts once
+  if (saleAdjustments.discounts.length > 0 && !shownDiscountAlert) {
+    const applied = saleAdjustments.discounts.map(d =>
+      d.discountType === "Fixed"
+        ? `Fixed - ${d.discountAmount}`
+        : `Percentage - ${d.discountPercentage}%`
+    ).join(", ");
+    alert(`💸 Sales Discounts applied: ${applied}`);
+    setShownDiscountAlert(true);
+  }
+if (saleAdjustments.discountCoupons.length > 0 && !shownCouponAlert) {
+  const appliedCoupons = saleAdjustments.discountCoupons.map(dc =>
+    dc.discountType === "Fixed"
+      ? `Fixed - ${dc.discountAmount}`
+      : `Percentage - ${dc.discountPercentage}%`
+  ).join(", ");
+  alert(`🎟️ Discount Coupons applied: ${appliedCoupons}`);
+  setShownCouponAlert(true);
+}
+
+  if (saleAdjustments.loyalty.length > 0 && !shownLoyaltyAlert) {
+    const totalLoyalty = saleAdjustments.loyalty
+      .reduce((sum, l) => sum + l.loyaltyDiscount, 0);
+    alert(`🎁 Loyalty Discount applied: ${totalLoyalty.toFixed(2)}`);
+    setShownLoyaltyAlert(true);
+  }
+
+  if (saleAdjustments.taxes.length > 0 && !shownTaxAlert) {
+    const appliedTaxes = saleAdjustments.taxes
+      .map(t => `${t.taxPercentage}%`)
+      .join(", ");
+    alert(`⚖️ Sales Taxes applied: ${appliedTaxes}`);
+    setShownTaxAlert(true);
+  }
+
+  // 🧮 Compute refund/payment due
+  let refundAmount = 0;
+  let paymentDue = 0;
+  if (refundAdjusted > newPurchaseAdjusted) {
+    refundAmount = refundAdjusted - newPurchaseAdjusted;
+  } else if (newPurchaseAdjusted > refundAdjusted) {
+    paymentDue = newPurchaseAdjusted - refundAdjusted;
+  }
+ 
+  // ✅ Update formData here
+  setFormData(prev => ({
+    ...prev,
+    grandTotal: refundAdjusted.toFixed(2),        // refund side total with discounts/taxes
+    amountExchanged: newPurchaseAdjusted.toFixed(2), // new products side total
+    paymentDue: paymentDue.toFixed(2),
+    refundAmount: refundAmount.toFixed(2),
+
+  }));
+
+  return; // 🚀 stop here so the fallback setFormData below doesn't overwrite this
+}
     // 🟢 CASE C: Partial return with no new products → don't apply discounts/taxes/loyalty
     else if (!allOriginalsReturned && noNewProducts) {
-      refundAmount = totalOriginal > totalExchanged ? totalOriginal - totalExchanged : 0;
-      paymentDue = totalExchanged > totalOriginal ? totalExchanged - totalOriginal : 0;
+     const netDifference = totalOriginal - totalExchanged;
+      
+      if (netDifference > 0) {
+        // Refund scenario
+        if (originalAmountPaid <= 0) {
+          refundAmount = 0;
+          refundMessage = "This sale was unpaid — refund does not apply; it will just reduce the outstanding balance.";
+        } else if (originalPaymentDue > 0) {
+          const potentialRefund = Math.max(0, netDifference - originalPaymentDue);
+          refundAmount = potentialRefund;
+          refundMessage = potentialRefund > 0 
+            ? `This sale was partially paid — refund of $${potentialRefund.toFixed(2)} applies (return exceeds unpaid balance).`
+            : "This sale was partially paid — refund applies only if return exceeds unpaid balance.";
+        } else {
+          refundAmount = netDifference;
+          refundMessage = "This purchase was fully paid — refund due from customer.";
+        }
+        paymentDue = 0;
+      } else {
+        // Payment due scenario
+        refundAmount = 0;
+        paymentDue = Math.abs(netDifference);
+        refundMessage = "Additional payment required for exchange.";
+      }
     }
     // 🟢 CASE D: Partial return + new products (normal calc)
     else {
       refundAmount = totalOriginal > totalExchanged ? totalOriginal - totalExchanged : 0;
-      paymentDue = totalExchanged > totalOriginal ? totalExchanged - totalOriginal : 0;
+  paymentDue = totalExchanged > totalOriginal ? totalExchanged - totalOriginal : 0;
     }
 
     // Safety checks (matching backend)
@@ -554,14 +665,29 @@ if (saleAdjustments.taxes.length > 0 && !shownTaxAlert) {
       grandTotal: totalOriginal,
       amountExchanged: totalExchanged,
       refundAmount,
-      paymentDue
+      paymentDue,
+      refundMessage
+
     }));
+
   };
 
   calculateFinancials();
   
-}, [productsInTable, saleAdjustments,shownDiscountAlert,shownLoyaltyAlert,shownTaxAlert]);
+}, [productsInTable, saleAdjustments,shownDiscountAlert,shownLoyaltyAlert,shownTaxAlert, shownCouponAlert]);
+useEffect(() => {
+  if (!productsInTable || productsInTable.length === 0) return;
 
+  // your calculations...
+  const newPaymentStatusInfo = {
+    originalSaleTotal: saleAdjustments.originalSaleTotal || 0,
+    amountPaid: saleAdjustments.amountPaid || 0,
+    paymentStatus: formData.paymentDue > 0 ? "Partial" : "Paid",
+    remainingBalance: parseFloat(formData.paymentDue) || 0
+  };
+
+  setPaymentStatusInfo(newPaymentStatusInfo);
+}, [productsInTable, saleAdjustments, formData.paymentDue]);
 const handleDeleteProduct = async (index) => {
   const productToDelete = productsInTable[index];
   
@@ -772,9 +898,9 @@ return (
 
           {loading && <p>Loading...</p>}
 
-          <form className="sale-exchange-form" onSubmit={handleSubmit}>
+          <form className="sale-exchange-exsaleform" onSubmit={handleSubmit}>
             {/* Date Field */}
-            <div className="form-group">
+            <div className="exsaleform-group">
               <label htmlFor="exchangeDate">Exchange Date</label>
               <input
                 type="date"
@@ -782,18 +908,20 @@ return (
                 name="exchangeDate"
                 value={formData.date}
                 onChange={handleChange}
+                  className="exsaleform-input"
                 required
               />
             </div>
 
            {/* Sales ID Dropdown */}
-<div className="form-group">
+<div className="exsaleform-group">
   <label htmlFor="salesId">Parent Sales ID</label>
   <select
     id="salesId"
     name="salesId"
     value={formData.salesId}
     onChange={handleSalesChange}
+      className="exsaleform-input"
     required
   >
     <option value="">Select Sales ID</option>
@@ -809,7 +937,7 @@ return (
 
 
             {/* Exchange Status Dropdown */}
-             <div className="form-group">
+             <div className="exsaleform-group">
         <label>
   Exchange Status{" "}
   <span
@@ -832,6 +960,7 @@ return (
             name="exchangeStatus"
              value={formData.exchangeStatus}
                onChange={handleChange}
+                 className="exsaleform-input"
                  disabled={isExchangeLocked}
              required
             >
@@ -845,13 +974,14 @@ return (
             </div>
 
             {/* Payment Status Dropdown */}
-            <div className="form-group">
+            <div className="exsaleform-group">
               <label htmlFor="paymentStatus">Payment Status</label>
             <select
             id="paymentStatus"
              name="paymentStatus"
             value={formData.paymentStatus}
              onChange={handleChange}
+               className="exsaleform-input"
              required
             >
              <option value="">Select Payment Status</option>
@@ -865,13 +995,14 @@ return (
             </div>
 
             {/* Exchange Type Dropdown */}
-            <div className="form-group">
+            <div className="exsaleform-group">
               <label htmlFor="exchangeType">Exchange Type</label>
              <select
               id="exchangeType"
               name="exchangeType"
               value={formData.exchangeType}
              onChange={handleChange}
+               className="exsaleform-input"
              required
               >
                <option value="">Select Exchange Type</option>
@@ -884,13 +1015,14 @@ return (
             </div>
 
             {/* Refund Status Dropdown */}
-            <div className="form-group">
+            <div className="exsaleform-group">
               <label htmlFor="refundStatus">Refund Status</label>
              <select
               id="refundStatus"
               name="refundStatus"
               value={formData.refundStatus}
             onChange={handleChange}
+              className="exsaleform-input"
             required
             >
             <option value="">Select Refund Status</option>
@@ -902,7 +1034,7 @@ return (
               </select>
             </div>
             {/* Exchange Reason TextArea */}
-            <div className="form-group">
+            <div className="exsaleform-group">
              <label htmlFor="exchangeReason">Exchange Reason</label>
             <textarea
              id="exchangeReason"
@@ -910,7 +1042,7 @@ return (
                value={formData.exchangeReason}
                 onChange={handleChange}
               placeholder="Enter reason for exchange"
-                className="form-input"
+                className="exsaleform-input"
                rows="4"   // 🔹 Controls height
               required
              />
@@ -943,93 +1075,113 @@ return (
   </div>
 
  {/* 🔹 Selected Products Table (always visible) */}
-<table className="product-table">
-  <thead>
-    <tr>
-      <th>Original Product</th>
-      <th>Original Quantity</th>
-      <th>Original Unit Price</th>
-      <th>Exchange Product</th>
-      <th>Exchange Quantity</th>
-      <th>Exchange Unit Price</th>
-      <th>Price Difference</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-  {productsInTable.length > 0 ? (
-    productsInTable.map((p, idx) => (
-      <tr key={idx}>
-        <td>{p.originalProductName}</td>
-        <td>
-          <input
-            type="number"
-            min="1"
-            value={p.originalQuantity}
-            onChange={(e) => handleQuantityChange(idx, "originalQuantity", e.target.value)}
-            className="table-input"
-          />
-        </td>
-        <td>{p.originalProductName ? p.originalUnitPrice?.toFixed(2) : "-"}</td>
-        <td>{p.exchangeProductName || "-"}</td>
-        <td>
-          <input
-            type="number"
-            min="0"
-            value={p.exchangeQuantity}
-            onChange={(e) => handleQuantityChange(idx, "exchangeQuantity", e.target.value)}
-            className="table-input"
-          />
-        </td>
-        <td>{p.exchangeProductName ? p.exchangeUnitPrice?.toFixed(2) : "-"}</td>
-        <td>{p.priceDifference}</td>
-        <td>
-          <button
-            type="button"
-            onClick={() => handleDeleteProduct(idx)}
-            className="exchange-delete-btn"
-            title="Delete"
-          >
-            <FaTrash className="trash-icon" />
-          </button>
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan="8" style={{ textAlign: "center", color: "#888" }}>
-        No products added yet
-      </td>
-    </tr>
-  )}
-</tbody>
-
-</table>
-
+  <div className="table-responsive">
+    <table className="product-table">
+      <thead>
+        <tr>
+          <th>Original Product</th>
+          <th>Original Quantity</th>
+          <th>Original Unit Price</th>
+          <th>Exchange Product</th>
+          <th>Exchange Quantity</th>
+          <th>Exchange Unit Price</th>
+          <th>Price Difference</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {productsInTable.length > 0 ? (
+          productsInTable.map((p, idx) => (
+            <tr key={idx}>
+              <td>{p.originalProductName}</td>
+              <td>
+                <input
+                  type="number"
+                  min="1"
+                  value={p.originalQuantity}
+                  onChange={(e) =>
+                    handleQuantityChange(idx, "originalQuantity", e.target.value)
+                  }
+                  className="table-input"
+                />
+              </td>
+              <td>{p.originalProductName ? p.originalUnitPrice?.toFixed(2) : "-"}</td>
+              <td>{p.exchangeProductName || "-"}</td>
+              <td>
+                <input
+                  type="number"
+                  min="0"
+                  value={p.exchangeQuantity}
+                  onChange={(e) =>
+                    handleQuantityChange(idx, "exchangeQuantity", e.target.value)
+                  }
+                  className="table-input"
+                />
+              </td>
+              <td>{p.exchangeProductName ? p.exchangeUnitPrice?.toFixed(2) : "-"}</td>
+              <td>{p.priceDifference?.toFixed(2) || "-"}</td>
+              <td>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProduct(idx)}
+                  className="exchange-delete-btn"
+                  title="Delete"
+                >
+                  <FaTrash className="trash-icon" />
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="8" style={{ textAlign: "center", color: "#888" }}>
+              No products added yet
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
 </div>
 {/* 🔹 New Box for Financial Fields */}
 <div className="sale-exchange-box">
   <h3>Financial Details</h3>
   <div className="sale-exchange-form">
- {/* Grand Total */}
+  {/* Grand Total */}
 <div className="form-group">
   <label>
-  Grand Total {" "}
-  <span
-    className="exchange-info-icon"
-    onMouseEnter={() => setShowGrandTotalInfo(true)}
-    onMouseLeave={() => setShowGrandTotalInfo(false)}
-  >
-    ?
-  </span>
+    Grand Total {" "}
+    <span
+      className="exchange-info-icon"
+      onMouseEnter={() => setShowGrandTotalInfo(true)}
+      onMouseLeave={() => setShowGrandTotalInfo(false)}
+    >
+      ?
+    </span>
 
-  {showGrandTotalInfo && (
-    <div className="exchange-info-popup">
-      ⚠️ <b>Note:</b> Total of  <b>Original</b>  <b>Products</b>
-    
-    </div>
-  )}
-</label>
+    {showGrandTotalInfo && (
+      <div className="exchange-info-popup">
+        ⚠️ <b>Note:</b> Total of <b>Original Products</b>
+        <br />
+        {paymentStatusInfo.paymentStatus && (
+          <>
+            <br />
+            <b>Original Sale Payment Status:</b> {paymentStatusInfo.paymentStatus}
+            <br />
+            <b>Original Sale Total:</b> ${paymentStatusInfo.originalSaleTotal?.toFixed(2)}
+            <br />
+            <b>Amount Paid:</b> ${paymentStatusInfo.amountPaid?.toFixed(2)}
+            {paymentStatusInfo.paymentStatus === "Partially Paid" && (
+              <>
+                <br />
+                <b>Remaining Balance:</b> ${paymentStatusInfo.remainingBalance?.toFixed(2)}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    )}
+  </label>
   <input
     type="number"
     step="0.01"
@@ -1039,26 +1191,48 @@ return (
     readOnly
     className="form-input"
   />
+  {paymentStatusInfo.paymentStatus && (
+    <div className={`payment-status-badge ${paymentStatusInfo.paymentStatus.toLowerCase().replace(' ', '-')}`}>
+      Original Sale: {paymentStatusInfo.paymentStatus}
+    </div>
+  )}
 </div>
 
 {/* Amount Exchanged */}
 <div className="form-group">
   <label>
-  Exchange Status{" "}
-  <span
-    className="exchange-info-icon"
-    onMouseEnter={() => setShowAmountExchangeInfo(true)}
-    onMouseLeave={() => setShowAmountExchangeInfo(false)}
-  >
-    ?
-  </span>
+    Exchange Amount{" "}
+    <span
+      className="exchange-info-icon"
+      onMouseEnter={() => setShowAmountExchangeInfo(true)}
+      onMouseLeave={() => setShowAmountExchangeInfo(false)}
+    >
+      ?
+    </span>
 
-  {showAmountExchangeInfo && (
-    <div className="exchange-info-popup">
-      ⚠️ <b>Note:</b> Total of  <b>New</b>  <b>Products</b>
-    </div>
-  )}
-</label>
+    {showAmountExchangeInfo && (
+      <div className="exchange-info-popup">
+        ⚠️ <b>Note:</b> Total of <b>New Products</b>
+        <br />
+        {paymentStatusInfo.paymentStatus && (
+          <>
+            <br />
+            <b>Refund Calculation:</b>
+            <br />
+            Based on {paymentStatusInfo.paymentStatus.toLowerCase()} original sale
+            <br />
+            <b>Available for Refund:</b> ${paymentStatusInfo.amountPaid?.toFixed(2)}
+            {paymentStatusInfo.paymentStatus === "Partially Paid" && (
+              <>
+                <br />
+                <i>Note: Refund limited to amount paid during original sale</i>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    )}
+  </label>
   <input
     type="number"
     step="0.01"
@@ -1066,12 +1240,20 @@ return (
     name="amountExchanged"
     value={formData.amountExchanged || ""}
     readOnly
-    className="form-input"
+    className="exsaleform-input"
   />
+  {paymentStatusInfo.paymentStatus && (
+    <div className="payment-details">
+      <small>
+        Based on {paymentStatusInfo.paymentStatus.toLowerCase()} original sale 
+        (Paid: ${paymentStatusInfo.amountPaid?.toFixed(2)})
+      </small>
+    </div>
+  )}
 </div>
 
 {/* Payment Due */}
-<div className="form-group">
+<div className="exsaleform-group">
   <label htmlFor="paymentDue">Payment Due</label>
   <input
     type="number"
@@ -1085,7 +1267,7 @@ return (
 </div>
 
 {/* Refund Amount */}
-<div className="form-group">
+<div className="exsaleform-group">
   <label htmlFor="refundAmount">Refund Amount</label>
   <input
     type="number"
@@ -1094,13 +1276,27 @@ return (
     name="refundAmount"
     value={formData.refundAmount || ""}
     readOnly
-    className="form-input"
+    className="exsaleform-input"
   />
+  {formData.refundMessage && (
+    <div className="refund-message" style={{
+      fontSize: "12px",
+      color: "#666",
+      marginTop: "5px",
+      fontStyle: "italic",
+      padding: "5px",
+      backgroundColor: "#f8f9fa",
+      borderRadius: "4px",
+      borderLeft: "3px solid #007bff"
+    }}>
+      💡 {formData.refundMessage}
+    </div>
+  )}
 </div>
   </div>
 </div>
             {/* Submit Button */}
-            <div className="form-actions">
+            <div className="exsaleform-actions">
   <button 
     type="submit" 
     className="btn-add-exchange"

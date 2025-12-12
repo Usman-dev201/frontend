@@ -532,14 +532,40 @@
   color: white;
 }
 
-.form-group {
-  margin-top: 10px;
+/* Circular Refresh Button */
+.refresh-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.3s ease;
 }
 
-.form-group select {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+/* Hover effect */
+.refresh-circle:hover {
+  background-color: #138496;
+  transform: scale(1.1);
+}
+
+/* Spinner animation when refreshing */
+.refresh-circle.refreshing i {
+  animation: spin 0.6s linear infinite;
+}
+
+/* Refresh icon size */
+.refresh-circle i {
+  font-size: 18px;
+}
+
+/* Spin keyframes */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

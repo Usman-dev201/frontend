@@ -83,7 +83,7 @@ export default function Brands() {
     <div className="modal-content">
       <h3>Add New Brand</h3>
       <form onSubmit={handleSubmit} className="add-brand-form">
-        <div className="form-group">
+        <div className="brandform-group">
           <label htmlFor="brandName">Brand Name</label>
           <input
             type="text"
@@ -95,7 +95,7 @@ export default function Brands() {
             required
           />
         </div>
-        <div className="form-actions">
+        <div className="brandform-actions">
           <button type="submit" className="submit-button">
             <i className="fas fa-save"></i>
             Add Brand

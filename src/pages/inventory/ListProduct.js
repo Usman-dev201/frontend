@@ -25,6 +25,23 @@ const [displayedProducts, setDisplayedProducts] = useState(products);
 const [selectedProductId, setSelectedProductId] = useState(null);
 const [selectedDiscountCode, setSelectedDiscountCode] = useState('');
 
+const [isRefreshing, setIsRefreshing] = useState(false);
+
+const handleRefresh = useCallback(async () => {
+  setIsRefreshing(true);
+  try {
+    if (fetchProducts) {
+      await fetchProducts();
+    }
+    // If you have other data to refresh (like stocks, discounts)
+    // you might want to call those functions here too
+  } catch (error) {
+    console.error("Failed to refresh:", error);
+  } finally {
+    setIsRefreshing(false);
+  }
+}, [fetchProducts]);
+
   useEffect(() => {
   if (!searchQuery.trim()) {
     setDisplayedProducts(products); // reset when no search
@@ -228,28 +245,29 @@ const getStockByProductId = useCallback((productId) => {
         );
       }
     },
-    {
-      header: 'Actions',
-      cell: info => {
-        const product = info.row.original;
-        return (
-          <>
-            <button
-              className="edit-button action-btn"
-              onClick={() => handleEdit(product)}
-            >
-              <i className="fas fa-edit"></i> Edit
-            </button>
-            <button
-              className="delete-button action-btn"
-              onClick={() => handleDelete(product.productId)}
-            >
-              <i className="fas fa-trash"></i> Delete
-            </button>
-          </>
-        );
-      }
-    }
+   {
+  header: 'Actions',
+  cell: info => {
+    const product = info.row.original;
+    return (
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button
+          className="btn btn-primary"
+          onClick={() => handleEdit(product)}
+        >
+          <i className="fas fa-edit"></i> Edit
+        </button>
+        <button
+          className="btn btn-danger"
+          onClick={() => handleDelete(product.productId)}
+        >
+          <i className="fas fa-trash"></i> Delete
+        </button>
+      </div>
+    );
+  }
+}
+
   ], [productDiscountsMap, maxDiscountCount, getStockByProductId, handleEdit, handleDelete]);
   // Create table instance
  const table = useReactTable({
@@ -286,6 +304,16 @@ const getStockByProductId = useCallback((productId) => {
             >
               <i className="fas fa-boxes"></i> Stock List
             </button>
+    <button
+  className={`refresh-circle ${isRefreshing ? 'refreshing' : ''}`}
+  onClick={handleRefresh}
+  disabled={isRefreshing}
+  title="Refresh"
+>
+  ↻
+</button>
+
+
           </div>
           <div className="header-actions">
            <button

@@ -88,7 +88,7 @@ export default function Categories() {
     <div className="modal-content">
       <h3>Add New Category</h3>
       <form onSubmit={handleSubmit} className="add-category-form">
-        <div className="form-group">
+        <div className="catform-group">
           <label htmlFor="categoryName">Category Name</label>
           <input
             type="text"
@@ -99,7 +99,7 @@ export default function Categories() {
             required
           />
         </div>
-        <div className="form-actions">
+        <div className="catform-actions">
           <button type="submit" className="submit-button">
             <i className="fas fa-save"></i>
             Add Category

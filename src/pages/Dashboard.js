@@ -12,7 +12,7 @@ import { useProducts } from '../context/ProductContext';
 import { usePurchase } from '../context/PurchaseContext';
 import api from '../api/axios';
 import '../styles/Dashboard.css';
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Dashboard() {
@@ -34,26 +34,38 @@ export default function Dashboard() {
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [discounts, setDiscounts] = useState([]);
 const [loadingDiscounts, setLoadingDiscounts] = useState(true);
+const [expenses, setExpenses] = useState([]);
+const [loadingExpenses, setLoadingExpenses] = useState(true);
+
+
+const [alerts, setAlerts] = useState([]);
+const [showAlerts, setShowAlerts] = useState(false);
+const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
+
+
 
 
   // ✅ Fetch all data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [locRes, returnRes, salesRes, saleReturnRes, stockRes, discountRes] = await Promise.all([
+        const [locRes, returnRes, salesRes, saleReturnRes, stockRes, discountRes,expenseRes] = await Promise.all([
           api.get("/Location"),
           api.get("/PurchaseReturn"),
           api.get("/SalesRecord"),
           api.get("/SaleExchange"),
           api.get("/Stock"),
-            api.get("/Discount")
+            api.get("/Discount"),
+              api.get("/ExpenseRecord")
         ]);
         setLocations(locRes.data || []);
+        
         setReturns(returnRes.data || []);
         setSales(salesRes.data || []);
         setSaleReturns(saleReturnRes.data || []);
         setStocks(stockRes.data || []);
          setDiscounts(discountRes.data || []);
+             setExpenses(expenseRes.data || []); 
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
       } finally {
@@ -63,48 +75,86 @@ const [loadingDiscounts, setLoadingDiscounts] = useState(true);
         setLoadingSaleReturns(false);
         setLoadingStocks(false);
           setLoadingDiscounts(false); 
+           setLoadingExpenses(false);
       }
     };
     fetchData();
   }, []);
-useEffect(() => {
-  if (loadingDiscounts || discounts.length === 0) return;
 
-  const today = new Date();
-  const alertThresholdDays = 3; // 🔥 You can customize this
-
-  const upcomingExpiries = discounts.filter(discount => {
-    if (!discount.endDate) return false;
-
-    const endDate = new Date(discount.endDate);
-    const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-
-    return discount.status === "Active" && diffDays > 0 && diffDays <= alertThresholdDays;
-  });
-
-  if (upcomingExpiries.length > 0) {
-upcomingExpiries.forEach(d =>
-  toast.warning(`⚠️ Discount "${d.discountCode}" will expire on ${d.endDate}`)
-);
-
-   
-  }
-}, [discounts, loadingDiscounts]);
+// Low Stock Alerts
 useEffect(() => {
   if (loadingStocks || stocks.length === 0) return;
-
-  // Filter low stock products
   const lowStockItems = stocks.filter(stock => stock.status === "LowStock");
-
   if (lowStockItems.length > 0) {
-    lowStockItems.forEach(stock => {
+    const newAlerts = lowStockItems.map(stock => {
       const productName = stock.product?.productName || "Unknown Product";
       const locationName = stock.location?.locationName || "Unknown Location";
-
-      toast.error(`🚨 Low stock alert: "${productName}" at ${locationName}`);
+      return `🚨 Low stock: "${productName}" at ${locationName}`;
     });
+    setAlerts(prev => [...prev, ...newAlerts]);
+    setShowAlerts(true);
   }
 }, [stocks, loadingStocks]);
+
+// Discount Expiry Alerts
+useEffect(() => {
+  if (loadingDiscounts || discounts.length === 0) return;
+  const today = new Date();
+  const alertThresholdDays = 3;
+  const upcomingExpiries = discounts.filter(discount => {
+    if (!discount.endDate) return false;
+    const endDate = new Date(discount.endDate);
+    const diffDays = Math.ceil((endDate - today) / (1000*60*60*24));
+    return discount.status === "Active" && diffDays > 0 && diffDays <= alertThresholdDays;
+  });
+  if (upcomingExpiries.length > 0) {
+    const newAlerts = upcomingExpiries.map(d => ` Discount "${d.discountCode}" expires on ${d.endDate}`);
+    setAlerts(prev => [...prev, ...newAlerts]);
+    setShowAlerts(true);
+  }
+}, [discounts, loadingDiscounts]);
+
+useEffect(() => {
+  const fetchPendingOrders = async () => {
+    try {
+      const res = await api.get("/Order/pending-shipping-alerts");
+      const pendingOrders = res.data || [];
+      if (pendingOrders.length > 0) {
+        const newAlerts = pendingOrders.map(
+          order => `🚨 Order #${order.orderId} pending shipment `
+        );
+        setAlerts(prev => [...prev, ...newAlerts]);
+        setShowAlerts(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch pending orders:", err);
+    }
+  };
+  fetchPendingOrders();
+}, []);
+
+
+useEffect(() => {
+  const fetchPendingReviews = async () => {
+    try {
+      const res = await api.get("/Review/pending-review-alerts");
+      const pendingReviews = res.data || [];
+      if (pendingReviews.length > 0) {
+        const newAlerts = pendingReviews.map(
+          r => `💬 Review #${r.reviewId} for "${r.productName}" by ${r.userFullName} has no reply`
+        );
+        setAlerts(prev => [...prev, ...newAlerts]);
+        setShowAlerts(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch pending review alerts:", err);
+    }
+  };
+
+  fetchPendingReviews();
+}, []);
+
+
 
   // ✅ Filter data by Location
   const filteredPurchases = useMemo(() => {
@@ -140,31 +190,34 @@ useEffect(() => {
 
   // ✅ Totals Calculation
   const totalProducts = productsLoading ? null : filteredProducts.length;
-  const completedPurchases = filteredPurchases.filter(p => p.purchaseStatus === "Completed");
-  const totalPurchases = purchasesLoading ? null : completedPurchases.length;
+ const completedPurchases = filteredPurchases.filter(p => p.purchaseStatus === "Completed");
+
+// 🔢 Total Purchase Amount (GrandTotal of Completed Purchases)
+const totalPurchaseAmount = purchasesLoading
+  ? null
+  : completedPurchases.reduce((sum, p) => sum + (p.grandTotal || 0), 0);
+
+// 🔙 Approved Purchase Return Amount
+const approvedPurchaseReturn = filteredReturns.filter(r => r.refundStatus === "Approved");
+const totalApprovedPurchaseReturnAmount = loadingReturns
+  ? null
+  : approvedPurchaseReturn.reduce((sum, r) => sum + (r.amountReturned  || 0), 0);
+
+// 🆕 Real Total Purchases = Purchases - Purchase Returns
+const totalPurchases = purchasesLoading
+  ? null
+  : (totalPurchaseAmount - totalApprovedPurchaseReturnAmount);
+
   const totalPurchaseDue = purchasesLoading
     ? null
     : filteredPurchases.reduce((sum, p) => sum + (p.paymentDue || 0), 0);
 
-  const approvedPurchaseReturns = filteredReturns.filter(r => r.refundStatus === "Approved");
-  const totalPurchaseReturns = loadingReturns ? null : approvedPurchaseReturns.length;
-// ✅ Expense Calculation (Filtered by Location)
-const totalExpense = useMemo(() => {
-  if (loadingReturns || purchasesLoading) return null;
+ const approvedPurchaseReturns = filteredReturns.filter(r => r.refundStatus === "Approved");
 
-  // ✅ Filter Completed Purchases by selected Location
-  const completedPurchaseTotal = filteredPurchases
-    .filter(p => p.purchaseStatus === "Completed")
-    .reduce((sum, p) => sum + (p.grandTotal || 0), 0);
+const totalPurchaseReturns = loadingReturns
+  ? null
+  : approvedPurchaseReturns.reduce((sum, r) => sum + (r.amountReturned || 0), 0);
 
-  // ✅ Filter Approved Purchase Returns by selected Location
-  const approvedReturnTotal = filteredReturns
-    .filter(r => r.refundStatus === "Approved")
-    .reduce((sum, r) => sum + (r.grandTotal || 0), 0);
-
-  // ✅ Net Expense = Purchases - Returns
-  return completedPurchaseTotal - approvedReturnTotal;
-}, [filteredPurchases, filteredReturns, purchasesLoading, loadingReturns]);
 
   const completedSales = filteredSales.filter(s => s.transactionStatus === "Completed");
   const totalSales = loadingSales
@@ -177,6 +230,23 @@ const totalExpense = useMemo(() => {
     : approvedSaleReturns.reduce((sum, r) => sum + (r.refundAmount || 0), 0);
 
   const outOfStockProducts = filteredStocks.filter(stock => stock.status === "LowStock");
+const filteredExpenses = useMemo(() => {
+  if (selectedLocation === "All") return expenses;
+  return expenses.filter(exp => exp.locationId === parseInt(selectedLocation));
+}, [expenses, selectedLocation]);
+
+
+const totalExpensePaid = loadingExpenses
+  ? null
+  : filteredExpenses
+      .filter(exp => exp.paymentStatus === "Paid") // ✅ Paid
+      .reduce((sum, exp) => sum + (exp.grandTotal || 0), 0);
+
+const totalExpenseDue = loadingExpenses
+  ? null
+  : filteredExpenses
+      .filter(exp => exp.paymentStatus !== "Paid") // ✅ Unpaid/Partial
+      .reduce((sum, exp) => sum + (exp.paymentDue || 0), 0);
 
   // 🧮 Dynamic Sales Graph (Daily / Weekly / Monthly)
   const salesGraphData = useMemo(() => {
@@ -266,14 +336,11 @@ const totalExpense = useMemo(() => {
     { title: 'Total Purchase Due', value: purchasesLoading ? "Loading..." : `Rs ${totalPurchaseDue.toFixed(2)}`, icon: <FaMoneyBillWave /> },
     { title: 'Total Purchase Returns', value: loadingReturns ? "Loading..." : totalPurchaseReturns, icon: <FaUndo /> },
     { title: 'Total Sales', value: loadingSales ? "Loading..." : `Rs ${totalSales.toFixed(2)}`, icon: <FaFileAlt /> },
-    { 
-  title: 'Total Expense',
-  value: (purchasesLoading || loadingReturns) 
-    ? "Loading..." 
-    : `Rs ${totalExpense.toFixed(2)}`,
-  icon: <FaMoneyBillWave />
-},
+    
     { title: 'Total Sale Returns', value: loadingSaleReturns ? "Loading..." : `Rs ${totalSaleReturns.toFixed(2)}`, icon: <FaUndo /> },
+
+  { title: 'Total Expenses', value: loadingExpenses ? "Loading..." : `Rs ${totalExpensePaid.toFixed(2)}`, icon: <FaMoneyBillWave /> },
+  { title: 'Expense Due', value: loadingExpenses ? "Loading..." : `Rs ${totalExpenseDue.toFixed(2)}`, icon: <FaExclamationTriangle /> },
   ];
 
   return (
@@ -388,6 +455,33 @@ const totalExpense = useMemo(() => {
           )}
         </div>
       </div>
+      
+    {/* Alert Popup */}
+  {showAlerts && alerts.length > 0 && currentAlertIndex < alerts.length && (
+  <div className="alert-popup-overlay">
+    <div className="alert-popup">
+      <h3 className="alert-popup-title">⚠️ Alert</h3>
+      <p className="alert-popup-item">{alerts[currentAlertIndex]}</p>
+<button
+  className="alert-popup-close"
+  onClick={() => {
+    if (currentAlertIndex + 1 < alerts.length) {
+      setCurrentAlertIndex(currentAlertIndex + 1); // show next alert
+    } else {
+      setShowAlerts(false); // no more alerts
+      setCurrentAlertIndex(0); // reset index
+      // ❌ Don't clear alerts here; let them remain in state
+    }
+  }}
+>
+  Close
+</button>
+
+
+    </div>
+  </div>
+)}
+
        <ToastContainer position="top-right" autoClose={5000} />
     </div>
   );

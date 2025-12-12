@@ -63,7 +63,7 @@ export default function BarcodeList() {
     <div className="modal-content">
       <h3>Add New Barcode</h3>
       <form onSubmit={handleAddBarcode}>
-        <div className="form-group">
+        <div className="barcodeform-group">
           <input
             type="text"
             placeholder="Enter Barcode Type"
@@ -73,7 +73,7 @@ export default function BarcodeList() {
             autoFocus
           />
         </div>
-        <div className="form-actions">
+        <div className="barcodeform-actions">
           <button type="submit" className="save-button">
             <i className="fas fa-check"></i> Save
           </button>

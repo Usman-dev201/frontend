@@ -1,0 +1,202 @@
+.expense-page {
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  padding: 20px;
+  margin-left: 250px; /* Sidebar width */
+  margin-top: 60px;   /* Topbar height */
+}
+
+.expense-container {
+background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 25px;
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+.expense-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.expense-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.expense-header .btn {
+  background-color: #007bff;
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.expense-header .btn:hover {
+  background-color: #0056b3;
+}
+
+/* Table styling */
+.table-container {
+   background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.data-table {
+   width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1200px; /* bigger table for many columns */
+}
+
+.data-table th{
+      background: #f8fafc;
+  color: #2d3748;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.7px;
+  padding: 16px 24px;
+  border-bottom: 2px solid #edf2f7;
+  white-space: nowrap;
+  text-align: left;
+}
+.data-table td {
+  padding: 16px 24px;
+  font-size: 14px;
+  color: #4a5568;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: middle;
+}
+
+.data-table th {
+  background-color: #f1f3f5;
+  font-weight: 600;
+  color: #495057;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+
+.action-buttons .btn.btn-primary {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.action-buttons .btn.btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* Edit dropdown */
+.edit-options-dropdown {
+  position: absolute;
+  top: 35px;
+  left: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  z-index: 10;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.edit-options-dropdown .dropdown-item {
+  display: block;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #212529;
+  background: white;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.edit-options-dropdown .dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* Payment status badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-paid {
+  background-color: #d4edda;
+  color: #155724;
+}
+.status-overdue {
+  background-color: #f5c6cb; /* light red/pink */
+  color: #721c24;           /* dark red text */
+ 
+}
+.status-unpaid {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-partial {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-default {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* Search bar & pagination */
+.table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-barr input {
+  padding: 10px 15px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  width: 250px;
+  font-size: 14px;
+}
+
+.page-size-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #495057;
+}
+
+
+
+.payment-due-highlight {
+  color: #dc3545;
+  font-weight: bold;
+}

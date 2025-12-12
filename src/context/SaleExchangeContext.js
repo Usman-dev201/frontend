@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState,useEffect, useCallback } from "react";
 import api from "../api/axios";
 
 const SaleExchangeContext = createContext();
@@ -84,19 +84,29 @@ const fetchSaleAdjustments = useCallback(async (salesId) => {
   if (!salesId) return;
 
   try {
-    // You'll need to create a new endpoint that returns all required data
     const res = await api.get(`/SaleExchange/GetExchangeCalculationData?salesId=${salesId}`);
     setSaleAdjustments(res.data || { 
       discounts: [], 
       loyalty: [], 
       taxes: [], 
+       discountCoupons: [], 
       originalSaleProducts: [],
-      originalSaleTotal: 0 
+      originalSaleTotal: 0,
+      amountPaid: 0, // Make sure this is included
+      grandTotal: 0
     });
     return res.data;
   } catch (error) {
     console.error("Error fetching sale adjustments:", error);
-    return { discounts: [], loyalty: [], taxes: [], originalSaleProducts: [], originalSaleTotal: 0 };
+    return { 
+      discounts: [], 
+      loyalty: [], 
+      taxes: [], 
+       discountCoupons: [],
+      originalSaleProducts: [], 
+      originalSaleTotal: 0,
+      amountPaid: 0 
+    };
   }
 }, []);
 const fetchSalesExchangeItems = useCallback(async (salesExchangeId) => {
@@ -278,6 +288,19 @@ const updatePaymentStatus = useCallback(async (id, newPaymentStatus) => {
       console.error("Failed to fetch dropdowns:", err);
     }
   }, []);
+const [completedSales, setCompletedSales] = useState([]);
+
+useEffect(() => {
+  const fetchCompletedSales = async () => {
+    try {
+      const res = await api.get("/SaleExchange/GetCompletedSales"); // 👈 Updated endpoint
+      setCompletedSales(res.data || []);
+    } catch (err) {
+      console.error("❌ Failed to load completed sales:", err);
+    }
+  };
+  fetchCompletedSales();
+}, []);
 
   return (
     <SaleExchangeContext.Provider
@@ -306,7 +329,8 @@ const updatePaymentStatus = useCallback(async (id, newPaymentStatus) => {
         fetchSalesExchangeItems,
         updateSaleExchange,
         updateSalesExchangeItem,
-        deleteSalesExchangeItem
+        deleteSalesExchangeItem,
+        completedSales
       }}
     >
       {children}

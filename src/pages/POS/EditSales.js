@@ -51,7 +51,14 @@ addSalesTax,
      addSalesCustomerLoyaltyRecord,
      updateSalesCustomerLoyaltyRecords,
      deleteSalesCustomerLoyaltyRecord,
-     updateSalePayment
+     updateSalePayment,
+      fetchDiscountCoupons,
+      deleteDiscountCoupon,
+ getSaleExchangesBySalesId,
+  fetchSalesReceipt,
+    generatePrintableReceipt
+
+      
   } = useSales();
 const navigate = useNavigate();
 const previousTotalAmountRef = useRef(0);
@@ -81,6 +88,76 @@ const [salesTaxesInTable, setSalesTaxesInTable] = useState([]);
 const [loyaltyProgramsInTable, setLoyaltyProgramsInTable] = useState([]);
 const [originalFormData, setOriginalFormData] = useState(null);
  const [originalTransactionStatus, setOriginalTransactionStatus] = useState("");
+
+const [discountCouponsInTable, setDiscountCouponsInTable] = useState([]);
+
+
+const [receiptData, setReceiptData] = useState(null);
+const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
+
+const handleCouponChange = (e) => {
+  const discountId = e.target.value;
+  const selectedCoupon = discountCodes.find(dc => dc.discountId === Number(discountId));
+
+  if (!selectedCoupon) return;
+
+  const alreadyExists = discountCouponsInTable.some(
+    c => c.discountId === Number(discountId)
+  );
+
+  if (!alreadyExists) {
+    setDiscountCouponsInTable(prev => [
+      ...prev,
+      {
+        discountId: selectedCoupon.discountId,
+        discountCode: selectedCoupon.discountCode,
+        discountType: selectedCoupon.discountType,
+        discountAmount: selectedCoupon.discountAmount,
+        discountPercentage: selectedCoupon.discountPercentage,
+        status: selectedCoupon.status || "Active" // Ensure status is set
+      }
+    ]);
+  } else {
+    alert("This discount coupon is already added.");
+  }
+
+  setForm(prev => ({ ...prev, discountCouponId: discountId }));
+};
+const [saleExchanges, setSaleExchanges] = useState([]);
+
+useEffect(() => {
+  const fetchSale = async () => {
+    // Fetch the sale by salesId (id from route)
+    const data = await fetchSaleById(id); // id = salesId from route
+    setForm(data);
+    setOriginalFormData(data);
+
+    // ✅ Fetch sale exchanges **after we have the sales ID**
+    const exchanges = await getSaleExchangesBySalesId(data.salesId);
+    setSaleExchanges(exchanges);
+  };
+
+  fetchSale();
+}, [id, fetchSaleById, getSaleExchangesBySalesId]);
+
+const handleDeleteCoupon = async (index) => {
+  const coupon = discountCouponsInTable[index];
+  if (!coupon) return;
+
+  if (window.confirm(`Are you sure you want to delete discount coupon "${coupon.discountCode}"?`)) {
+    try {
+      await deleteDiscountCoupon(coupon.saleDiscountCouponId);
+
+      // Remove from local state
+      setDiscountCouponsInTable(prev => prev.filter((_, i) => i !== index));
+      console.log(`✅ Discount coupon removed from table`);
+    } catch (error) {
+      alert("Failed to delete discount coupon");
+    }
+  }
+};
+
 
   // Add this useEffect to capture original data when sale loads
  // 🔧 FIXED: Only set original data once when loading completes
@@ -151,16 +228,16 @@ useEffect(() => {
       }
 
       // Fetch all sale-related data in parallel
-    const [saleData, productsData, discountsData, taxesData, saleDiscountsData, loyaltyRecords] =
-      await Promise.all([
-        fetchSaleById(id),
-        fetchSaleProducts(id),
-        fetchProductDiscounts(id),
-        fetchSaleTaxes(id),
-        fetchSaleDiscounts(id),
-        fetchSalesCustomerLoyaltyRecords(id)
-      ]);
-
+const [saleData, productsData, discountsData, taxesData, saleDiscountsData, loyaltyRecords, discountCoupons] =
+  await Promise.all([
+    fetchSaleById(id),
+    fetchSaleProducts(id),
+    fetchProductDiscounts(id),
+    fetchSaleTaxes(id),
+    fetchSaleDiscounts(id),
+    fetchSalesCustomerLoyaltyRecords(id),
+    fetchDiscountCoupons(id)
+  ]);
       console.log("✅ All sale data fetched:", {
         saleData: !!saleData,
         productsData: productsData?.length,
@@ -229,6 +306,16 @@ useEffect(() => {
         salesDiscountId: sd.salesDiscountId
       }));
       setSaleDiscountsInTable(safeSaleDiscounts);
+      // ✅ Guard arrays for sale discounts
+    const safeDiscountCoupons = (discountCoupons || []).map(dc => ({
+        saleDiscountCouponId: dc.saleDiscountCouponId,
+  discountCode: dc.discountCode,
+  discountType: dc.discountType,
+  discountAmount: dc.discountAmount,
+  discountPercentage: dc.discountPercentage,
+  status: dc.status,
+}));
+setDiscountCouponsInTable(safeDiscountCoupons);
   const safeLoyaltyRecords = (loyaltyRecords || []).map(lr => ({
       salesCustomerLoyaltyRecordId: lr.salesCustomerLoyaltyRecordId,
       loyaltyProgramId: lr.loyaltyProgramId,
@@ -278,7 +365,8 @@ console.log("🔍 Loyalty Program Debug:", safeLoyaltyRecords);
     fetchSaleTaxes, 
     fetchSaleDiscounts, 
     fetchTaxes,
-    fetchSalesCustomerLoyaltyRecords
+    fetchSalesCustomerLoyaltyRecords,
+    fetchDiscountCoupons
   ]);
 
   // ✅ Fixed: useEffect with proper dependencies
@@ -776,7 +864,7 @@ useEffect(() => {
 // Update the summary calculation to include loyalty discount
 useEffect(() => {
   const totalAmount = productsInTable.reduce(
-    (sum, p) => sum + (p.priceAfterDiscount * p.quantity || 0),
+    (sum, p) => sum + ((p.priceAfterDiscount || 0) * (p.quantity || 0)),
     0
   );
 
@@ -785,39 +873,94 @@ useEffect(() => {
     0
   );
 
-  // Add sale discounts
+  // Calculate discounts
   const totalSaleDiscount = saleDiscountsInTable.reduce((sum, sd) => {
     if (sd.discountAmount) return sum + sd.discountAmount;
     if (sd.discountPercentage) return sum + (totalAmount * sd.discountPercentage) / 100;
     return sum;
   }, 0);
 
-  // Add loyalty discount
   const totalLoyaltyDiscount = loyaltyProgramsInTable.reduce(
-    (sum, lp) => sum + (lp.loyaltyDiscount || 0), 
+    (sum, lp) => sum + (lp.loyaltyDiscount || 0),
     0
   );
 
-  // 🔧 FIX: Calculate tax amount properly
-  const taxAmount = selectedTaxes ? (() => {
-    const selectedTax = taxes.find(t => t.taxId === Number(selectedTaxes));
-    return selectedTax ? (totalAmount * selectedTax.taxPercentage) / 100 : 0;
-  })() : 0;
+  const totalCouponDiscount = discountCouponsInTable.reduce((sum, dc) => {
+    if (dc.discountAmount) return sum + dc.discountAmount;
+    if (dc.discountPercentage) return sum + (totalAmount * dc.discountPercentage) / 100;
+    return sum;
+  }, 0);
 
-  const grandTotal = totalAmount - totalSaleDiscount - totalLoyaltyDiscount + taxAmount;
+  // Calculate tax
+  const taxAmount = selectedTaxes
+    ? (() => {
+        const selectedTax = taxes.find(t => t.taxId === Number(selectedTaxes));
+        return selectedTax ? (totalAmount * (selectedTax.taxPercentage || 0)) / 100 : 0;
+      })()
+    : 0;
 
-  const change = form.amountPaid - grandTotal;
+  // Grand total after all adjustments
+  const grandTotal = totalAmount - totalSaleDiscount - totalLoyaltyDiscount - totalCouponDiscount + taxAmount;
 
-  const paymentDue = form.amountPaid < grandTotal ? grandTotal - form.amountPaid : 0;
+  // Approved returns
+  const totalApprovedReturns = saleExchanges.reduce(
+    (sum, pr) => sum + parseFloat(pr.grandTotal || 0),
+    0
+  );
+
+  // Correct payment due calculation
+  // 1️⃣ Subtract approved returns from grandTotal
+  const netGrandTotal = Math.max(grandTotal - totalApprovedReturns, 0);
+
+  // 2️⃣ Payment due = remaining after amountPaid
+  const paymentDue = Math.max(netGrandTotal - (form.amountPaid || 0), 0);
+
+  const change = (form.amountPaid || 0) > netGrandTotal ? (form.amountPaid - netGrandTotal) : 0;
+
   setForm(prev => ({
     ...prev,
     totalAmount,
     grandTotal,
     totalItems,
-    change: change > 0 ? change : 0,
-     paymentDue: paymentDue 
+    change,
+    paymentDue
   }));
-}, [productsInTable, saleDiscountsInTable, loyaltyProgramsInTable, form.amountPaid, selectedTaxes, taxes]); // 🔧 ADD selectedTaxes and taxes to dependencies
+}, [
+  productsInTable,
+  saleDiscountsInTable,
+  loyaltyProgramsInTable,
+  discountCouponsInTable,
+  form.amountPaid,
+  selectedTaxes,
+  taxes,
+  saleExchanges
+]);
+// Function to preview receipt
+const handlePreviewReceipt = async (salesId) => {
+  try {
+    setIsGeneratingReceipt(true);
+    const receipt = await fetchSalesReceipt(salesId);
+    setReceiptData(receipt);
+    setShowReceiptPreview(true);
+  } catch (err) {
+    console.error("Error fetching receipt:", err);
+    alert("Failed to fetch receipt data");
+  } finally {
+    setIsGeneratingReceipt(false);
+  }
+};
+
+// Function to print receipt
+const handlePrintReceipt = async () => {
+  if (!receiptData) return;
+  generatePrintableReceipt(receiptData);
+};
+
+// Function to close receipt preview
+const closeReceiptPreview = () => {
+  setShowReceiptPreview(false);
+  setReceiptData(null);
+};
 const handleEditSale = async (e) => {
   e.preventDefault();
   if (!id) return;
@@ -1008,9 +1151,15 @@ if (loyaltyProgramsInTable?.length > 0) {
     }
 
      setOriginalFormData({ ...form });
-    alert("✅ Sale updated successfully!");
+        const shouldShowReceipt = window.confirm(
+      "✅ Sale updated successfully!\n\nWould you like to view the receipt?"
+    );
     
-    navigate("/sales/list");
+    if (shouldShowReceipt) {
+  await handlePreviewReceipt(id);
+    } else {
+      navigate("/sales/list");
+    }
   } catch (err) {
     console.error("Error updating sale:", err);
     alert("❌ Failed to update sale");
@@ -1033,7 +1182,7 @@ return (
           <h2>EditSales</h2>
         </div>
 
-      <form className="sales-form" >
+      <form className="sales-saleform" >
   {/* Details Box */}
   <div className="details-box">
 
@@ -1044,7 +1193,7 @@ return (
           name="customerId"
           value={form.customerId}
           onChange={handleChange}
-          className="form-select"
+          className="saleform-select"
         >
           <option value="">Select Customer</option>
           {customers.map((c) => (
@@ -1055,7 +1204,7 @@ return (
         </select>
       </div>
 
-   <div className="form-group">
+   <div className="saleform-group">
   <label>
     Location{" "}
     <span
@@ -1082,7 +1231,7 @@ return (
     name="locationId"
     value={form.locationId}
     onChange={handleChange}
-    className="form-select"
+    className="saleform-select"
   >
     <option value="">Select Location</option>
     {locations.map((l) => (
@@ -1094,18 +1243,18 @@ return (
 </div>
 
 
-      <div className="form-group">
+      <div className="saleform-group">
         <label>Date</label>
         <input
           type="date"
           name="date"
           value={form.date}
           onChange={handleChange}
-          className="form-input"
+          className="saleform-input"
         />
       </div>
 
-      <div className="form-group">
+      <div className="saleform-group">
         <label>
   Transaction Status{" "}
   <span
@@ -1129,7 +1278,7 @@ return (
           value={form.transactionStatus}
           onChange={handleChange}
           disabled={form.isLocked}
-          className="form-select"
+          className="saleform-select"
         >
           <option value="">Select Status</option>
           {transactionStatuses.map((s) => (
@@ -1140,7 +1289,7 @@ return (
         </select>
       </div>
 
-      <div className="form-group">
+      <div className="saleform-group">
         <label>Payment Method</label>
         <select
           name="paymentMethod"
@@ -1157,13 +1306,13 @@ return (
         </select>
       </div>
 
-      <div className="form-group">
+      <div className="saleform-group">
         <label>Payment Status</label>
         <select
           name="paymentStatus"
           value={form.paymentStatus}
           onChange={handleChange}
-          className="form-select"
+          className="saleform-select"
         >
           <option value="">Select Payment Status</option>
           {paymentStatuses.map((s) => (
@@ -1174,13 +1323,13 @@ return (
         </select>
       </div>
 
-      <div className="form-group">
+      <div className="saleform-group">
         <label>Shipping Status</label>
         <select
           name="shippingStatus"
           value={form.shippingStatus}
           onChange={handleChange}
-          className="form-select"
+          className="saleform-select"
         >
           <option value="">Select Shipping Status</option>
           {shippingStatuses.map((s) => (
@@ -1198,13 +1347,13 @@ return (
   <h3>Products</h3>
 
   {/* Search bar */}
-  <div className="form-group">
+  <div className="saleform-group">
     <input
       type="text"
       placeholder="Search Product by Name or SKU"
       value={searchQuery}
       onChange={(e) => handleSearch(e.target.value)}
-      className="form-input"
+      className="saleform-input"
     />
   </div>
  {/* Search Results */}
@@ -1254,7 +1403,7 @@ return (
             type="number"
             value={p.quantity}
             onChange={(e) => handleProductChange(index, e.target.value)}
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1262,7 +1411,7 @@ return (
             type="number"
             value={p.unitPrice}
             readOnly
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1270,7 +1419,7 @@ return (
             type="number"
             value={p.priceAfterDiscount}
             readOnly
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1278,7 +1427,7 @@ return (
             type="number"
             value={p.totalAmount}
             readOnly
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         {/* <td>
@@ -1297,7 +1446,7 @@ return (
           <select
             value={productDiscount.discountType || ""}
             onChange={(e) => handleDiscountChange(index, "discountType", e.target.value)}
-            className="form-select"
+            className="saleform-select"
           >
             <option value="">Select Discount Type</option>
             {discountTypes.map((t, idx) => (
@@ -1320,7 +1469,7 @@ return (
                 setProductsInTable(prev => applyProductDiscounts(prev, updated));
               }
             }}
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1338,7 +1487,7 @@ return (
                 setProductsInTable(prev => applyProductDiscounts(prev, updated));
               }
             }}
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1359,12 +1508,12 @@ return (
   
   {/* Loyalty Program Selection */}
   <div className="details-grid">
-  <div className="form-group">
+  <div className="saleform-group">
     <label>Select Loyalty Program</label>
 <select
         value={form.loyaltyProgramId || ""}
         onChange={handleLoyaltyProgramSelect}
-        className="form-select"
+        className="saleform-select"
         disabled={!form.customerId}
       >
         <option value="">
@@ -1474,7 +1623,7 @@ return (
             onChange={(e) => handlePointsRedeemedChange(index, e.target.value)}
             max={lp.availablePoints}
             min="0"
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1482,7 +1631,7 @@ return (
             type="number"
             value={lp.loyaltyDiscount.toFixed(2)}
             readOnly
-            className="form-input"
+            className="saleform-input"
           />
         </td>
      
@@ -1507,7 +1656,95 @@ return (
   </tbody>
 </table>
 </div>
+{/* Discount Coupon Selection in Box */}
+<div className="sale-discount-box">
+  <h3>Discount Coupons</h3>
 
+  <div className="details-grid">
+    {/* Select Discount Coupon */}
+    <div className="saleform-group">
+      <label>Select Discount Coupon</label>
+      <select
+        name="discountCouponId"
+        className="saleform-select"
+        value={form.discountCouponId || ""}
+        onChange={handleCouponChange}
+      >
+        <option value="">
+          {discountCodes && discountCodes.filter(dc => dc.status === "Active").length > 0
+            ? "Select Discount Coupon"
+            : "No Active Discount Coupons Available"}
+        </option>
+
+        {discountCodes && discountCodes
+          .filter(dc => dc.status === "Active") // ✅ only active
+          .map((dc) => {
+            const discountType = dc.discountAmount > 0
+              ? "Fixed"
+              : dc.discountPercentage > 0
+                ? "Percentage"
+                : "None";
+
+            return (
+              <option key={dc.discountId} value={dc.discountId}>
+                {dc.discountCode}
+                {discountType === "Fixed" && ` (${dc.discountAmount} Rs)`}
+                {discountType === "Percentage" && ` (${dc.discountPercentage}%)`}
+              </option>
+            );
+          })}
+      </select>
+    </div>
+  </div>
+
+  {/* Discount Coupon Table */}
+  <table className="discount-table">
+    <thead>
+      <tr>
+        <th>Discount Code</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {discountCouponsInTable.length > 0 ? (
+        discountCouponsInTable
+          .filter(dc => dc.status === "Active") // ✅ only active in table
+          .map((dc, index) => {
+            const discountType = dc.discountAmount > 0
+              ? "Fixed"
+              : dc.discountPercentage > 0
+                ? "Percentage"
+                : "None";
+
+            return (
+              <tr key={index}>
+                <td>
+                  {dc.discountCode}
+                  {discountType === "Fixed" && ` (${dc.discountAmount} Rs)`}
+                  {discountType === "Percentage" && ` (${dc.discountPercentage}%)`}
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => handleDeleteCoupon(index)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            );
+          })
+      ) : (
+        <tr>
+          <td colSpan="2" style={{ textAlign: "center", color: "#777" }}>
+            No Active discount coupon added
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
 {/* Sale Discount Box */}
 <div className="sale-discount-box">
   <h3>Sale Discount</h3>
@@ -1531,13 +1768,13 @@ return (
     </div> */}
 
     {/* Discount Type Dropdown */}
-    <div className="form-group">
+    <div className="saleform-group">
       <label>Discount Type</label>
       <select
         name="saleDiscountType"
         value={form.saleDiscountType || ""}
         onChange={handleSaleDiscountChange } // reuse handler
-        className="form-select"
+        className="saleform-select"
       >
         <option value="">Select Discount Type</option>
         {salediscountTypes?.map((t, index) => (
@@ -1573,7 +1810,7 @@ return (
               updated[index].discountAmount = Number(e.target.value);
               setSaleDiscountsInTable(updated);
             }}
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1585,7 +1822,7 @@ return (
               updated[index].discountPercentage = Number(e.target.value);
               setSaleDiscountsInTable(updated);
             }}
-            className="form-input"
+            className="saleform-input"
           />
         </td>
         <td>
@@ -1606,7 +1843,7 @@ return (
 {/* Tax Box */}
 <div className="tax-box">
   <h3>Applicable Tax</h3>
- <div className="form-group">
+ <div className="saleform-group">
   <label>
     Tax Name{" "}
     <span
@@ -1625,7 +1862,7 @@ return (
   <select
     name="selectedTax"
     onChange={handleTaxChange}
-    className="form-select"
+    className="saleform-select"
     disabled={!form.locationId}
   >
     <option value="">
@@ -1729,6 +1966,17 @@ return (
         <span>-Rs {loyaltyProgramsInTable.reduce((sum, lp) => sum + (lp.loyaltyDiscount || 0), 0)}</span>
       </div>
     )}
+       {/* Discount Coupons */}
+    {discountCouponsInTable.length > 0 && (
+      <div className="summary-item discount">
+        <span>Coupon Discounts:</span>
+        <span>-Rs {discountCouponsInTable.reduce((sum, dc) => {
+          if (dc.discountAmount) return sum + dc.discountAmount;
+          if (dc.discountPercentage) return sum + (form.totalAmount * dc.discountPercentage) / 100;
+          return sum;
+        }, 0)}</span>
+      </div>
+    )}
           {selectedTaxes.length > 0 && (
   <div className="summary-item tax">
     <span>Taxes:</span>
@@ -1777,22 +2025,205 @@ return (
     className="payment-input due"
   />
 </div>
- <div className="payment-group">
-    <label className="payment-due-label">Payment Due</label>
-    <input
-      type="number"
-      value={form.paymentDue || 0}
-      readOnly
-      className="payment-input due"
-    />
-  </div>
+<div className="payment-group">
+  <label className="payment-due-label">Payment Due</label>
+  <input
+    type="number"
+    value={form.paymentDue || 0}
+    readOnly
+    className="payment-input due"
+    style={{
+      backgroundColor: form.paymentDue > 0 ? '#f8d7da' : '#d4edda', // red if owed, green if cleared
+      fontWeight: 'bold',
+      color: form.paymentDue > 0 ? '#721c24' : '#155724', // dark red if owed, dark green if cleared
+      border: '1px solid',
+      borderColor: form.paymentDue > 0 ? '#f5c6cb' : '#c3e6cb',
+      borderRadius: '4px',
+      padding: '5px 10px'
+    }}
+  />
+  {form.paymentDue > 0 && (
+    <small style={{ color: '#721c24', fontWeight: '500' }}>
+      ⚠ You still owe some amount after approved returns
+    </small>
+  )}
+  {form.paymentDue <= 0 && (
+    <small style={{ color: '#155724', fontWeight: '500' }}>
+      ✅ Payment cleared
+    </small>
+  )}
+</div>
+
           </div>
         </div>
  <button type="submit" className="btn btn-primary" onClick={handleEditSale}>
   Update Sale
 </button>
 </form>
+{/* Receipt Preview Modal */}
+{showReceiptPreview && receiptData && (
+  <div className="modal-overlay" onClick={closeReceiptPreview}>
+    <div className="modal-content receipt-preview" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <h3>Sales Receipt Preview</h3>
+        <button onClick={closeReceiptPreview} className="close-btn">&times;</button>
+      </div>
 
+      <div className="receipt-content">
+        {/* Receipt Header */}
+        <div className="receipt-header-preview">
+          <h4>YOUR STORE</h4>
+          <p className="receipt-title">SALES RECEIPT</p>
+        </div>
+
+        {/* Receipt Info */}
+        <div className="receipt-info-preview">
+          <div className="info-row">
+            <span className="info-label">Invoice #:</span>
+            <span className="info-value">{receiptData.salesId}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Date:</span>
+            <span className="info-value">{receiptData.date}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Time:</span>
+            <span className="info-value">{receiptData.time}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Customer:</span>
+            <span className="info-value">{receiptData.customerName}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Location:</span>
+            <span className="info-value">{receiptData.locationName}</span>
+          </div>
+        </div>
+
+        <hr className="receipt-divider" />
+
+        {/* Items Table */}
+        <div className="receipt-items-section">
+          <h4>Items Purchased</h4>
+          <table className="receipt-items-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receiptData.items.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.productName}</td>
+                  <td>{item.quantity}</td>
+                  <td>Rs {item.unitPrice.toFixed(2)}</td>
+                  <td>Rs {item.total.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <hr className="receipt-divider" />
+
+        {/* Summary Section */}
+        <div className="receipt-summary-preview">
+          <div className="summary-row">
+            <span>Subtotal:</span>
+            <span>Rs {receiptData.subtotal.toFixed(2)}</span>
+          </div>
+
+          {/* Sales Discounts */}
+          {receiptData.saleDiscounts.map((d, index) => (
+            <div className="summary-row" key={`sd-${index}`}>
+              <span>Sales Discount:</span>
+              <span>
+                {d.discountType === 'Fixed'
+                  ? `-Rs ${d.discountAmount.toFixed(2)}`
+                  : `-${d.discountPercentage}%`}
+              </span>
+            </div>
+          ))}
+
+          {/* Discount Coupons */}
+          {receiptData.discountCoupons.map((dc, index) => (
+            <div className="summary-row" key={`dc-${index}`}>
+              <span>Discount Coupon: ({dc.discountCode})</span>
+              <span>
+                {dc.discountType === 'Fixed'
+                  ? `-Rs ${dc.discountAmount.toFixed(2)}`
+                  : `-${dc.discountPercentage}%`}
+              </span>
+            </div>
+          ))}
+
+          {/* Loyalty Discount */}
+          {receiptData.loyalty && (
+            <div className="summary-row">
+              <span>Loyalty Discount ({receiptData.loyalty.programName || 'Program'} - Points: {receiptData.loyalty.pointsRedeemed})</span>
+              <span>-Rs {receiptData.loyalty.loyaltyDiscount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Sales Taxes */}
+          {receiptData.saleTaxes.map((t, index) => (
+            <div className="summary-row" key={`tax-${index}`}>
+              <span>Sales Tax ({t.taxName} {t.taxPercentage}%):</span>
+              <span>+Rs {(receiptData.subtotal * t.taxPercentage / 100).toFixed(2)}</span>
+            </div>
+          ))}
+
+          <div className="summary-row grand-total">
+            <span>Grand Total:</span>
+            <span>Rs {receiptData.grandTotal.toFixed(2)}</span>
+          </div>
+
+          <div className="summary-row">
+            <span>Amount Paid:</span>
+            <span>Rs {receiptData.amountPaid.toFixed(2)}</span>
+          </div>
+
+          {receiptData.change > 0 && (
+            <div className="summary-row">
+              <span>Change:</span>
+              <span>Rs {receiptData.change.toFixed(2)}</span>
+            </div>
+          )}
+
+          {receiptData.paymentDue > 0 && (
+            <div className="summary-row">
+              <span>Payment Due:</span>
+              <span>Rs {receiptData.paymentDue.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="receipt-actions">
+          <button
+            onClick={handlePrintReceipt}
+            className="btn btn-primary"
+            disabled={isGeneratingReceipt}
+          >
+            {isGeneratingReceipt ? 'Generating...' : '🖨️ Print Receipt'}
+          </button>
+          <button
+            onClick={() => {
+              closeReceiptPreview();
+              navigate("/sales/list");
+            }}
+            className="btn btn-secondary"
+          >
+            Back to Sales List
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

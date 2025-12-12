@@ -13,6 +13,7 @@ import { SupplierProvider } from "./context/SupplierContext";
 import { SalesProvider } from "./context/SalesContext"; 
 import { SaleExchangeProvider } from "./context/SaleExchangeContext";
 
+
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
@@ -55,15 +56,42 @@ import AddSaleExchange from "./pages/POS/AddSaleExchange";
 import EditSaleExchange from "./pages/POS/EditSaleExchange";
 import LoyaltyPrograms from "./pages/CRM/LoyaltyProgram";
 import ExpenseCategory from "./pages/Expense/ExpenseCategory";
+import {ExpenseProvider} from "./context/ExpenseContext";
+import AddExpense  from './pages/Expense/AddExpense';
+import ListExpense from './pages/Expense/ListExpense';
+import EditExpense from './pages/Expense/EditExpense';
+import Accounts from './pages/Accounting/Accounts';
+import Assets from './pages/Accounting/Assets';
+import Liabilities from './pages/Accounting/Liabilities';
+import Revenue from './pages/Accounting/Revenue';
+import Expense from './pages/Accounting/Expense';
+import BalanceSheetAndIncomeStatement from './pages/Reports/BalanceSheet and IncomeStatment';
+import CashFlow from './pages/Reports/CashFlow';
+import AccountReceivable from './pages/Reports/AccountReceivable';
+import AccountPayable from './pages/Reports/AccountPayable';
+import CogsReport from './pages/Reports/CogsReport';
+import TaxPayable from './pages/TaxPayable/TaxPayable';
+import FeedbackCategory from './pages/CRM/FeedbackCatgeory';
+import CustomerFeedback from './pages/CRM/CustomerFeedback';
+import ShippingAddress from './pages/E-Commerce/ShippingAddress';
+import Order from './pages/E-Commerce/Orders';
+import OrderSummary from './pages/E-Commerce/OrderSummary';
+import AddShippment from './pages/E-Commerce/AddShippment';
+import EditShippment from './pages/E-Commerce/EditShippment';
+import ListShipments from './pages/E-Commerce/ListShippment';
+import Payment from './pages/E-Commerce/Payment'; 
+import Review from './pages/E-Commerce/Review';
+import MarketingCampaigns from './pages/CRM/MarketingCampaign';
+
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <AuthProvider>  
           <SalesProvider>
              <SaleExchangeProvider>
            
         <PurchaseProvider>
-         <PurchaseReturnProvider PurchaseReturnProvider>
+         <PurchaseReturnProvider >
           <ProductProvider>
             <TaxProvider>
             <DiscountProvider> 
@@ -73,6 +101,7 @@ function App() {
                     <LocationProvider>
                        <SupplierProvider>
                          <CrmProvider> 
+                          <ExpenseProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
@@ -368,10 +397,228 @@ path="/saleexchange/list"
     <ExpenseCategory/>
     </ProtectedRoute>}
 />
+ <Route
+                    path="/expense/add"
+                    element={
+                      <ProtectedRoute>
+                        <AddExpense />
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+                    path="/expense/list"
+                    element={
+                      <ProtectedRoute>
+                        <ListExpense />
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+  path="/expense/edit/:id"
+  element={
+    <ProtectedRoute>
+      <EditExpense />
+    </ProtectedRoute>
+  }
+/>
+      <Route
+                    path="/accounting/accounts"
+                    element={
+                      <ProtectedRoute>
+                        <Accounts />
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+                    path="/accounting/accounts/add"
+                    element={
+                      <ProtectedRoute>
+                        <Accounts />
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/accounting/accounts/edit/"
+                    element={
+                      <ProtectedRoute>
+                        <Accounts />
+                      </ProtectedRoute>
+                    }
+                  />
+                     <Route
+                    path="/reports/balance-sheet"
+                    element={
+                      <ProtectedRoute>
+                        <BalanceSheetAndIncomeStatement/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/reports/cash-flow"
+                    element={
+                      <ProtectedRoute>
+                        <CashFlow/>
+                      </ProtectedRoute>
+                    }
+                  />
+                     <Route
+                    path="/reports/accounts-receivable"
+                    element={
+                      <ProtectedRoute>
+                        <AccountReceivable/>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports/accounts-payable"
+                    element={
+                      <ProtectedRoute>
+                        <AccountPayable/>
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+                    path="/reports/cogs"
+                    element={
+                      <ProtectedRoute>
+                        <CogsReport/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/accounting/assets"
+                    element={
+                      <ProtectedRoute>
+                        <Assets/>
+                      </ProtectedRoute>
+                    }
+                  />
+                     <Route
+                    path="/accounting/liabilities"
+                    element={
+                      <ProtectedRoute>
+                        <Liabilities/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/accounting/revenue"
+                    element={
+                      <ProtectedRoute>
+                        <Revenue/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/accounting/expense"
+                    element={
+                      <ProtectedRoute>
+                        <Expense/>
+                      </ProtectedRoute>
+                    }
+                  />
+                      <Route
+                    path="/taxpayable"
+                    element={
+                      <ProtectedRoute>
+                        <TaxPayable/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/crm/feedbackcategory"
+                    element={
+                      <ProtectedRoute>
+                        <FeedbackCategory/>
+                      </ProtectedRoute>
+                    }
+                  />
+                     <Route
+                    path="/crm/customerfeedbacks"
+                    element={
+                      <ProtectedRoute>
+                        <CustomerFeedback/>
+                      </ProtectedRoute>
+                    }
+                  />
+   <Route
+                    path="/ecommerce/shippingaddresses"
+                    element={
+                      <ProtectedRoute>
+                        <ShippingAddress/>
+                      </ProtectedRoute>
+                    }
+                  />
+   <Route
+                    path="/ecommerce/orders"
+                    element={
+                      <ProtectedRoute>
+                        <Order/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/ordersummary/:orderId"
+                    element={
+                      <ProtectedRoute>
+                        <OrderSummary/>
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+                    path="/add-shipment/:orderId"
+                    element={
+                      <ProtectedRoute>
+                        <AddShippment/>
+                      </ProtectedRoute>
+                    }
+                  />
+                    <Route
+                    path="/ecommerce/shipments"
+                    element={
+                      <ProtectedRoute>
+                        <ListShipments/>
+                      </ProtectedRoute>
+                    }
+                  />
+                 <Route
+  path="/shipment/edit/:shippingId"
+  element={
+    <ProtectedRoute>
+      <EditShippment />
+    </ProtectedRoute>
+  }
+/>
+
+   <Route
+                    path="/ecommerce/payments"
+                    element={
+                      <ProtectedRoute>
+                        <Payment/>
+                      </ProtectedRoute>
+                    }
+                  />
+  <Route
+                    path="/ecommerce/reviews"
+                    element={
+                      <ProtectedRoute>
+                        <Review/>
+                      </ProtectedRoute>
+                    }
+                  />
+                   <Route
+                    path="/crm/marketingcampaigns"
+                    element={
+                      <ProtectedRoute>
+                        <MarketingCampaigns/>
+                      </ProtectedRoute>
+                    }
+                  />
                   {/* Redirect any unknown routes to login */}
                   <Route path="*" element={<Navigate to="/login" replace />} />
                   
                 </Routes>
+                 </ExpenseProvider>
                 </CrmProvider> 
                 </SupplierProvider>
                 </LocationProvider>

@@ -42,6 +42,7 @@ fetchPurchases,
     updatePurchasePayment,
     getPurchaseReturnsByPurchaseId,
     
+    
     } = usePurchase();
 
     
@@ -157,6 +158,7 @@ const calculateTaxAmount =  () => {
     return acc + (subtotal * percentage) / 100;
   }, 0);
 };
+
 const calculatePaymentDue = () => {
   const grandTotal = parseFloat(calculateGrandTotal()) || 0;
   const amountPaid = parseFloat(formData.amountPaid) || 0;
@@ -1046,38 +1048,7 @@ alert("✅ Purchase record and all related data updated successfully.");
               </div>
             </div>
 
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'flex-end',
-              marginTop: '20px',
-              paddingTop: '20px',
-              borderTop: '1px solid #eee'
-            }}>
-              <button
-                type="button"
-                onClick={() => {
-                  // Add your purchase logic here
-                }}
-                style={{ 
-                  ...addButtonStyle, 
-                  width: '130px',
-                  backgroundColor: '#28a745',
-                  height: '36px',
-                  fontSize: '12px'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#218838';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(40, 167, 69, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(40, 167, 69, 0.2)';
-                }}
-              >
-                <i className="fas fa-plus" style={{ fontSize: '10px' }}></i>
-                Add Purchase
-              </button>
-            </div>
+        
           </div>
 
          {/* Products Section */}
@@ -1786,8 +1757,8 @@ alert("✅ Purchase record and all related data updated successfully.");
   {taxList.map((tax, index) => (
     <tr key={tax.id}>
       <td style={tableCellStyle}>
-    <select
-  value={tax.taxLocationId?.toString() || ""}   // ✅ always string
+   <select
+  value={tax.taxLocationId?.toString() || ""}
   onChange={(e) => {
     const selectedTaxLocationId = e.target.value;
     const taxLocation = taxLocations.find(
@@ -1798,7 +1769,7 @@ alert("✅ Purchase record and all related data updated successfully.");
       const updatedList = [...taxList];
       updatedList[index] = {
         ...updatedList[index],
-        taxLocationId: taxLocation.taxLocationId.toString(), // keep string
+        taxLocationId: taxLocation.taxLocationId.toString(),
         taxId: taxLocation.taxId.toString(),
         taxName: getTaxNameById(taxLocation.taxId),
         taxPercentage: taxLocation.taxPercentage
@@ -1814,13 +1785,42 @@ alert("✅ Purchase record and all related data updated successfully.");
   }}
 >
   <option value="">Select Tax</option>
-  {taxLocations
-    .filter(tl => tl.locationId.toString() === formData.locationId?.toString())
-    .map(tl => (
+  {(() => {
+    if (!formData.locationId) return null;
+    
+    // Filter and get latest taxes for this location
+    const locationTaxes = taxLocations.filter(tl => 
+      tl.locationId?.toString() === formData.locationId?.toString()
+    );
+    
+    // Group by taxId and get latest effective date
+    const taxMap = new Map();
+    
+    locationTaxes.forEach(tl => {
+      if (!tl.taxId || !tl.effectiveDate) return;
+      
+      const existing = taxMap.get(tl.taxId);
+      
+      if (!existing) {
+        taxMap.set(tl.taxId, tl);
+      } else {
+        const currentDate = new Date(tl.effectiveDate);
+        const existingDate = new Date(existing.effectiveDate);
+        
+        if (currentDate > existingDate) {
+          taxMap.set(tl.taxId, tl);
+        }
+      }
+    });
+    
+    const latestTaxes = Array.from(taxMap.values());
+    
+    return latestTaxes.map(tl => (
       <option key={tl.taxLocationId} value={tl.taxLocationId.toString()}>
-        {tl.tax?.taxName || "Unknown Tax"} ({tl.taxPercentage}%)
+        {tl.tax?.taxName || getTaxNameById(tl.taxId)} ({tl.taxPercentage}%)
       </option>
-    ))}
+    ));
+  })()}
 </select>
       </td>
 
@@ -2055,26 +2055,4 @@ const sectionHeaderStyle = {
   borderBottom: '1px solid #eee',
   marginBottom: '20px'
 }; 
-
-  const addButtonStyle = {
-    padding: '0 12px',
-    borderRadius: '4px',
-    border: 'none',
-    backgroundColor: '#28a745',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: '11px',
-    fontWeight: '500',
-    height: '30px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 1px 3px rgba(40, 167, 69, 0.2)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.2px',
-    whiteSpace: 'nowrap',
-    minWidth: 'fit-content'
-  };
 

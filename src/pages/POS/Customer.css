@@ -103,7 +103,7 @@
   background-color: #2196f3;
 }
 
-.modal-overlay {
+.cusmodal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -117,23 +117,23 @@
 }
 
 
-.modal-content h3 {
+.cusmodal-content h3 {
   margin-bottom: 20px;
 }
 
-.form-group {
+.cusform-group {
   margin-bottom: 15px;
   display: flex;
   flex-direction: column;
 }
 
-.form-group label {
+.cusform-group label {
   margin-bottom: 5px;
   font-weight: 500;
   color: #333;
 }
 
-.modal-content {
+.cusmodal-content {
   background: #fff;
   padding: 15px;   /* reduce padding so inputs look bigger */
   border-radius: 10px;
@@ -142,17 +142,17 @@
   overflow-y: auto;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 200%;
+.cusform-group input,
+.cusform-group select,
+.cusform-group textarea {
+  width: 100%;
   padding: 10px 14px;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 15px;
   box-sizing: border-box;
 }
-.modal-footer {
+.cusmodal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;

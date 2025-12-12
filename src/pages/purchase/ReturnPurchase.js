@@ -70,11 +70,11 @@ export default function ReturnPurchase() {
     { header: 'Purchase ID', accessorKey: 'purchaseId' },
     {
       header: 'Grand Total',
-      accessorFn: row => `$${row.grandTotal?.toFixed(2) || "0.00"}`
+      accessorFn: row => `Rs${row.grandTotal?.toFixed(2) || "0.00"}`
     },
     {
       header: 'Amount Returned',
-      accessorFn: row => `$${row.amountReturned?.toFixed(2) || "0.00"}`
+      accessorFn: row => `Rs${row.amountReturned?.toFixed(2) || "0.00"}`
     },
     { header: 'Payment Due', accessorKey: 'paymentDue' },
     {

@@ -127,6 +127,7 @@ useEffect(() => {
 </div>
 
         <div className="stock-table-container">
+          
           <table className="stock-table">
             <thead>
               {table.getHeaderGroups().map(headerGroup => (

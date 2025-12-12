@@ -308,12 +308,12 @@ const columns = useMemo(
 
       {/* Form Modal */}
       {showForm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="loymodal-overlay">
+          <div className="loymodal-content">
             <h3>{editingId ? "Edit Loyalty Program" : "Add Loyalty Program"}</h3>
           <form onSubmit={handleSubmit}>
-  <div className="form-grid">
-    <div className="form-group">
+  <div className="loyform-grid">
+    <div className="loyform-group">
       <label>Program Name</label>
       <input
         type="text"
@@ -325,7 +325,7 @@ const columns = useMemo(
       />
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>Description</label>
       <input
         type="text"
@@ -336,7 +336,7 @@ const columns = useMemo(
       />
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>Start Date</label>
       <input
         type="date"
@@ -346,7 +346,7 @@ const columns = useMemo(
       />
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>End Date</label>
       <input
         type="date"
@@ -356,7 +356,7 @@ const columns = useMemo(
       />
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>Redemption Type</label>
       <select
         name="redemptionType"
@@ -373,7 +373,7 @@ const columns = useMemo(
       </select>
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>Value Per Point</label>
       <input
         type="number"
@@ -384,7 +384,7 @@ const columns = useMemo(
       />
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>Discount Percentage Per Point</label>
       <input
         type="number"
@@ -395,7 +395,7 @@ const columns = useMemo(
       />
     </div>
 
-    <div className="form-group">
+    <div className="loyform-group">
       <label>Points Per Purchase</label>
       <input
         type="number"
@@ -407,7 +407,7 @@ const columns = useMemo(
     </div>
   </div>
 
-  <div className="modal-footer">
+  <div className="loymodal-footer">
     <button type="submit" className="btn-save">Save</button>
     <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>
       Cancel

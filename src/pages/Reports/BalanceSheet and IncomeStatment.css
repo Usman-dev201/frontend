@@ -1,0 +1,184 @@
+/* Page wrapper */
+.financial-report-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  padding-left: 250px; /* Space for Sidebar */
+  padding-top: 60px;   /* Space for Topbar */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+/* Main container */
+.financial-report-container {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 30px;
+  margin: 20px auto;
+  max-width: 1400px;
+}
+
+/* Header */
+.financial-report-container h2 {
+  margin-bottom: 25px;
+  font-size: 28px;
+  
+  text-align: center;
+}
+
+/* Filters */
+.report-filters {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* Location dropdown styling */
+.report-filters select {
+  margin-top: 5px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.report-filters select:hover {
+  border-color: #4a90e2;
+}
+
+.report-filters select:focus {
+  outline: none;
+  border-color: #357ab8;
+  box-shadow: 0 0 5px rgba(53, 122, 184, 0.3);
+}
+
+.report-filters label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+}
+
+
+.report-filters input {
+  margin-top: 5px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.report-filters button {
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.report-filters button:hover {
+  background-color: #357ab8;
+}
+
+/* Error */
+.error {
+  color: #e74c3c;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Tables container */
+.report-tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  justify-content: center;
+}
+
+/* Individual report blocks */
+.balance-sheet,
+.income-statement {
+  flex: 1 1 400px;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Table header */
+.report-tables h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+
+  text-align: center;
+}
+
+/* Table styling */
+.report-tables table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.report-tables th,
+.report-tables td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.report-tables th {
+  background-color: #f0f4f8;
+  font-weight: 700;
+}
+
+.report-tables tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.report-tables td:first-child {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Net Income row highlight */
+.income-statement tr:last-child td {
+  font-weight: 700;
+ 
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+  .report-tables {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+/* Profit / Loss styling for Net Income */
+.profit {
+  color: #27ae60;      /* Green color for profit */
+  font-weight: 700;    /* Bold text */
+  text-align: right;   /* Align numbers to the right */
+}
+
+.loss {
+  color: #e74c3c;      /* Red color for loss */
+  font-weight: 700;    /* Bold text */
+  text-align: right;   /* Align numbers to the right */
+}
+

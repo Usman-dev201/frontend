@@ -1,0 +1,135 @@
+.payment-page {
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  padding: 20px;
+  margin-left: 250px; /* Sidebar width */
+  margin-top: 60px;   /* Topbar height */
+}
+
+.payment-container {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 25px;
+  margin: 0 auto;
+  max-width: 1400px;
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #edf2f7;
+  padding-bottom: 10px;
+}
+
+.payment-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.payment-header .btn {
+  background-color: #007bff;
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+  padding: 12px 20px;
+  border-bottom: 2px solid #edf2f7;
+  text-align: left;
+}
+
+.data-table td {
+  padding: 12px 20px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.btn-primary { background-color: #0d6efd; color: #fff; }
+.btn-danger { background-color: #dc3545; color: #fff; }
+.action-buttons { display: flex; gap: 5px; }
+
+/* Modal Styles */
+.paymentmodal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.paymentmodal {
+  background-color: #fff;
+  padding: 20px 25px;
+  border-radius: 10px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.paymentmodal h3 { margin-bottom: 15px; text-align: center; }
+.paymentmodal-content { display: flex; flex-direction: column; gap: 10px; }
+.paymentmodal-content label { font-weight: 600; }
+.paymentmodal-content input, .paymentmodal-content select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.paymentmodal-actions { display: flex; justify-content: space-between; margin-top: 15px; }
+.btn-secondary { background-color: #aaa; color: white; }
+.btn-secondary:hover { background-color: #888; }
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 80px;
+}
+
+/* Payment Status Colors */
+.status-paid {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-unpaid,
+.status-failed,
+.status-declined {
+  background-color: #f8d7da;
+  color: #721c24;
+}

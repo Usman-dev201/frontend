@@ -96,20 +96,20 @@
   max-width: 600px;
 }
 
-.form-group {
+.catform-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.form-group label {
+.catform-group label {
   font-size: 14px;
   font-weight: 500;
   color: #2c3e50;
 }
 
-.form-group input,
-.form-group textarea {
+.catform-group input,
+.catform-group textarea {
   padding: 12px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -117,14 +117,14 @@
   transition: all 0.2s ease;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.catform-group input:focus,
+.catform-group textarea:focus {
   outline: none;
   border-color: #4CAF50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
 }
 
-.form-actions {
+.catform-actions {
   display: flex;
   justify-content: flex-start;
   gap: 16px;

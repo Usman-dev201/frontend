@@ -13,7 +13,7 @@ export default function DiscountList() {
     deleteDiscount,
     discountTypes,
     loading,
-    error,
+ 
   } = useDiscount();
 
   const [showModal, setShowModal] = useState(false);
@@ -144,7 +144,7 @@ const handleSubmit = async (e) => {
               <div className="modal-content">
                 <h3>{isEditing ? 'Edit Discount' : 'Add New Discount'}</h3>
                 <form onSubmit={handleSubmit} className="add-discount-form">
-                  <div className="form-group">
+                  <div className="dsform-group">
                     <label htmlFor="discountCode">Discount Code</label>
                     <input
                       type="text"
@@ -159,7 +159,7 @@ const handleSubmit = async (e) => {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="dsform-group">
                     <label htmlFor="startDate">Start Date</label>
                     <input
                       type="date"
@@ -172,7 +172,7 @@ const handleSubmit = async (e) => {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="dsform-group">
                     <label htmlFor="endDate">End Date</label>
                     <input
                       type="date"
@@ -185,7 +185,7 @@ const handleSubmit = async (e) => {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="dsform-group">
                     <label htmlFor="discountType">Discount Type</label>
                     <select
                       id="discountType"
@@ -206,7 +206,7 @@ const handleSubmit = async (e) => {
                     </select>
                   </div>
 
-                  <div className="form-group">
+                  <div className="dsform-group">
                     <label htmlFor="discountAmount">Discount Amount</label>
                     <input
                       type="number"
@@ -219,7 +219,7 @@ const handleSubmit = async (e) => {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="dsform-group">
                     <label htmlFor="discountPercentage">Discount Percentage</label>
                     <input
                       type="number"
@@ -253,65 +253,72 @@ const handleSubmit = async (e) => {
           )}
 
           {/* Discount Table */}
-          {loading ? (
-            <p>Loading discounts...</p>
-          ) : error ? (
-            <p className="error-text">{error}</p>
-          ) : (
-            <div className="discount-table-container">
-              <table className="discount-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Discount Code</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Percentage</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {discounts.map((discount) => (
-                    <tr key={discount.discountId}>
-                      <td>{discount.discountId}</td>
-                      <td>{discount.discountCode}</td>
-                      <td>{discount.startDate || '-'}</td>
-                      <td>{discount.endDate || '-'}</td>
-                      <td>{discount.discountType || '-'}</td>
-                      <td>{discount.discountAmount || '-'}</td>
-                      <td>{discount.discountPercentage || '-'}</td>
-                      <td>
-                        <span className={`status-badge status-${discount.status}`}>
-                          {discount.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="action-buttons-container">
-                          <button
-                            type="button"
-                            className="action-btn edit-btn"
-                            onClick={() => handleEditClick(discount)}
-                          >
-                            <i className="fas fa-edit"></i> Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="action-btn delete-btn"
-                            onClick={() => handleDelete(discount)}
-                          >
-                            <i className="fas fa-trash"></i> Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+       {loading ? (
+  <p>Loading discounts...</p>
+) : (
+  <div className="discount-table-container">
+    <table className="discount-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Discount Code</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Percentage</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {discounts.length === 0 ? (
+          <tr>
+            <td colSpan="9" style={{ textAlign: "center", padding: "20px" }}>
+              No discounts found.
+            </td>
+          </tr>
+        ) : (
+          discounts.map((discount) => (
+            <tr key={discount.discountId}>
+              <td>{discount.discountId}</td>
+              <td>{discount.discountCode}</td>
+              <td>{discount.startDate || '-'}</td>
+              <td>{discount.endDate || '-'}</td>
+              <td>{discount.discountType || '-'}</td>
+              <td>{discount.discountAmount || '-'}</td>
+              <td>{discount.discountPercentage || '-'}</td>
+              <td>
+                <span className={`status-badge status-${discount.status}`}>
+                  {discount.status}
+                </span>
+              </td>
+              <td>
+                <div className="action-buttons-container">
+                  <button
+                    type="button"
+                    className="action-btn edit-btn"
+                    onClick={() => handleEditClick(discount)}
+                  >
+                    <i className="fas fa-edit"></i> Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="action-btn delete-btn"
+                    onClick={() => handleDelete(discount)}
+                  >
+                    <i className="fas fa-trash"></i> Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+)}
+
         </div>
       </div>
     </div>

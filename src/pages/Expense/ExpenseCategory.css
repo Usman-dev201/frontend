@@ -138,18 +138,18 @@ ease;
   width: 400px;
 }
 
-.form-group {
+.excategoryform-group {
   display: flex;
   flex-direction: column;
   margin-bottom: 15px;
 }
 
-.form-group label {
+.excategoryform-group label {
   margin-bottom: 5px;
   font-weight: 500;
 }
 
-.form-group input {
+.excategoryform-group input {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;

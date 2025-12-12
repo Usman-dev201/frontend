@@ -23,6 +23,15 @@ const [discountTypes, setDiscountTypes] = useState([]);
   
 const [taxLocations, setTaxLocations] = useState([]);
 
+const [stocks, setStocks] = useState([]);
+const fetchStocks = async () => {
+  try {
+    const res = await api.get('/Stock');
+    setStocks(res.data);
+  } catch (error) {
+    console.error('Error fetching stock:', error);
+  }
+};
 
 
 const fetchTaxLocations = async () => {
@@ -185,6 +194,9 @@ const updatePurchasePayment = async (id, paymentData) => {
       unitSellingPrice: item.unitSellingPrice
     }));
     const res = await api.post('/ProductPurchaseRecord', payload);
+        await fetchStocks(); 
+      await fetchPurchases();
+    
     return res.data;
   } catch (error) {
     console.error('Error adding product purchase record:', error);
@@ -263,6 +275,9 @@ const deleteProductPurchaseRecord = async (lotId) => {
        console.log('Payload being sent to addProductPurchaseDiscount:', data);
 
       const res = await api.post('/ProductPurchaseDiscount', data);
+        await fetchStocks(); 
+      await fetchPurchases();
+    
       return res.data;
     } catch (error) {
      if (error.response?.data) {
@@ -305,6 +320,8 @@ const updateProductPurchaseDiscounts = async (discounts) => {
 
       console.log("📦 Sending update for ID:", id, payload);
       await api.put(`/ProductPurchaseDiscount/${id}`, payload);
+          await fetchStocks();   // <--- ADD
+    await fetchPurchases();
     }
   } catch (error) {
     console.error("Error updating product discounts:", error);
@@ -341,6 +358,8 @@ const updateProductPurchaseDiscounts = async (discounts) => {
     const payload = Array.isArray(dataArray) ? dataArray : [dataArray];
     
     const res = await api.post('/PurchaseDiscount', payload);
+      await fetchPurchases();
+    
     return res.data;
   } catch (error) {
     console.error('Error adding purchase discounts:', error);
@@ -423,6 +442,8 @@ const updatePurchaseTaxes = async (taxes) => {
  const addPurchaseTax = async (data) => {
     try {
       const res = await api.post('/PurchaseTax', data);
+        await fetchPurchases();
+    
       return res.data;
     } catch (error) {
       console.error('Error adding purchase tax:', error);
@@ -437,6 +458,8 @@ const updatePurchaseTaxes = async (taxes) => {
     // Ensure we're sending an array
     const payload = Array.isArray(dataArray) ? dataArray : [dataArray];
       const res = await api.post('/PurchaseTax', payload);
+        await fetchPurchases();
+    
       return res.data;
     } catch (error) {
       console.error('Error adding purchase tax:', error);
@@ -464,7 +487,7 @@ const updatePurchaseTaxes = async (taxes) => {
 };
 const addPurchase = async (purchaseData) => {
   try {
-     const locationObj = locations.find(l => l.locationId === purchaseData.locationId);
+    const locationObj = locations.find(l => l.locationId === purchaseData.locationId);
     const supplierObj = suppliers.find(s => s.supplierId === purchaseData.supplierId);
 
     const payload = [{
@@ -472,22 +495,28 @@ const addPurchase = async (purchaseData) => {
       locationId: purchaseData.locationId,
       Location: locationObj || null,      
       Supplier: supplierObj || null,   
-     date: new Date(purchaseData.date).toISOString().split('T')[0],
+      date: new Date(purchaseData.date).toISOString().split('T')[0],
       amountPaid: purchaseData.amountPaid,
       purchaseStatus: purchaseData.purchaseStatus,
       paymentStatus: purchaseData.paymentStatus,
     }];
-  console.log("Payload being sent to API:", payload);
+    
+    console.log("Payload being sent to API:", payload);
     const res = await api.post('/PurchaseRecord', payload);
-     return res.data[0]; 
-  }catch (error) {
-  if (error.response) {
-    console.error("Backend error response:", error.response.data);
-    console.error("Validation errors:", error.response.data.errors);
-  } else {
-    console.error("Unknown error:", error);
+    
+    // ✅ ADD THIS LINE: Refresh the purchases list
+    await fetchPurchases();
+    
+    return res.data[0]; 
+  } catch (error) {
+    if (error.response) {
+      console.error("Backend error response:", error.response.data);
+      console.error("Validation errors:", error.response.data.errors);
+    } else {
+      console.error("Unknown error:", error);
+    }
+    throw error; // Make sure to re-throw the error
   }
-}
 };
  useEffect(() => {
     fetchPurchases();
@@ -546,7 +575,9 @@ const addPurchase = async (purchaseData) => {
   addPurchaseDiscounts,
   addPurchaseTaxes,
   updatePurchasePayment,
-  getPurchaseReturnsByPurchaseId
+  getPurchaseReturnsByPurchaseId,
+    stocks,
+    fetchStocks,
   
     }}>
       {children}

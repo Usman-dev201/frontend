@@ -335,11 +335,11 @@ const detailPayload = {
 
         <form onSubmit={handleUpdateTransfer} className="add-transfer-form">
           {/* 🔹 Same form fields as AddStockTransfer */}
-         <div className="form-fields">
+         <div className="stockform-fields">
           {/* Row 1: Date + Status */}
        {/* Row 1: Date + Status */}
-<div className="form-row">
-  <div className="form-group">
+<div className="stockform-row">
+  <div className="stockform-group">
     <label>Date</label>
     <input
       type="date"
@@ -352,7 +352,7 @@ const detailPayload = {
     />
   </div>
 
-  <div className="form-group" style={{ position: "relative" }}>
+  <div className="stockform-group" style={{ position: "relative" }}>
     <label style={{ display: "flex", alignItems: "center" }}>
       Status
       <span
@@ -437,9 +437,9 @@ const detailPayload = {
 
 
           {/* Row 2: From + To Location */}
-      <div className="form-row">
+      <div className="stockform-row">
   {/* From Location */}
-  <div className="form-group" style={{ position: "relative" }}>
+  <div className="stockform-group" style={{ position: "relative" }}>
     <label style={{ display: "flex", alignItems: "center" }}>
       From Location
       <span
@@ -527,7 +527,7 @@ const detailPayload = {
   </div>
 
   {/* To Location */}
-  <div className="form-group" style={{ position: "relative" }}>
+  <div className="stockform-group" style={{ position: "relative" }}>
     <label style={{ display: "flex", alignItems: "center" }}>
       To Location
       <span

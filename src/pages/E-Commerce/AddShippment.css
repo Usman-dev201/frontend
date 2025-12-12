@@ -1,0 +1,188 @@
+/* Existing page and container styles remain the same */
+.add-shipping-page {
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  padding: 20px;
+  margin-left: 250px; /* Sidebar width */
+  margin-top: 60px; /* Topbar height */
+}
+
+.add-shipping-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  padding: 25px;
+  margin: 0 auto;
+}
+
+.add-shipping-header {
+  border-bottom: 2px solid #edf2f7;
+  margin-bottom: 20px;
+}
+
+.add-shipping-header h2 {
+  font-size: 24px;
+  color: #2d3748;
+  margin: 0;
+  padding-bottom: 10px;
+}
+
+.add-shipping-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.form-row .shipform-group {
+  flex: 1 1 45%;
+  min-width: 200px;
+}
+.shipform-group {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.shipform-group label {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 6px;
+}
+
+.shipform-group input,
+.shipform-group select {
+  padding: 10px;
+  width: 100%;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.shipform-group input:focus,
+.shipform-group select:focus {
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+}
+
+/* Tracking table panel */
+.tracking-panel {
+  margin-top: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #fff;
+}
+
+.tracking-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.tracking-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tracking-table th,
+.tracking-table td {
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.tracking-table th {
+  background-color: #f7fafc;
+  font-weight: 600;
+}
+
+/* Style inputs and selects inside table */
+.tracking-table input,
+.tracking-table select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tracking-table input:focus,
+.tracking-table select:focus {
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+}
+
+/* Add & Delete buttons */
+.btn-add-row {
+  background-color: #3182ce;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-add-row:hover {
+  background-color: #2b6cb0;
+}
+
+.btn-delete {
+  background-color: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-delete:hover {
+  background-color: #c53030;
+}
+
+/* Form action buttons */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-save {
+  background-color: #3182ce;
+  color: #fff;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-save:hover {
+  background-color: #2b6cb0;
+}
+
+.btn-cancel {
+  background-color: transparent;
+  color: #374151;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e0;
+  cursor: pointer;
+}
+
+/* Optional: make table inputs vertically aligned nicely */
+.tracking-table td {
+  vertical-align: middle;
+}

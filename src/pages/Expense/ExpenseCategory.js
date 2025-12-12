@@ -43,24 +43,37 @@ export default function ExpenseCategoryList() {
 
   // ✅ Add / Update
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingCategoryId) {
-        await api.put(`/ExpenseCategory/${editingCategoryId}`, formData);
-        alert("Category updated successfully!");
-      } else {
-        await api.post("/ExpenseCategory", [formData]);
-        alert("Category added successfully!");
-      }
-      setShowForm(false);
-      setEditingCategoryId(null);
-      setFormData({ categoryName: "", categoryCode: "" });
-      fetchCategories();
-    } catch (error) {
-      console.error("Failed to save category:", error);
-      alert("Error saving category. Check console for details.");
+  e.preventDefault();
+
+  // Prepare payload as a list to match backend
+  const payload = [{
+    expenseCategoryId: editingCategoryId || 0, // 0 for new category
+    categoryName: formData.categoryName,
+    categoryCode: formData.categoryCode,
+    parentCategoryId: formData.isSubCategory ? formData.parentCategoryId || null : null
+  }];
+
+  try {
+    if (editingCategoryId) {
+      // ✅ PUT to backend without ID in URL
+      await api.put("/ExpenseCategory", payload);
+      alert("Category updated successfully!");
+    } else {
+      // POST new category
+      await api.post("/ExpenseCategory", payload);
+      alert("Category added successfully!");
     }
-  };
+
+    setShowForm(false);
+    setEditingCategoryId(null);
+    setFormData({ categoryName: "", categoryCode: "", isSubCategory: false, parentCategoryId: null });
+    fetchCategories();
+  } catch (error) {
+    console.error("Failed to save category:", error);
+    alert("Error saving category. Check console for details.");
+  }
+};
+
 
   // ✅ Edit category
 const handleEdit = useCallback((category) => {
@@ -194,7 +207,7 @@ const handleEdit = useCallback((category) => {
       <h3>{editingCategoryId ? "Edit Expense Category" : "Add Expense Category"}</h3>
 
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
+        <div className="excategoryform-group">
           <label>Category Name <span className="required">*</span></label>
           <input
             type="text"
@@ -206,7 +219,7 @@ const handleEdit = useCallback((category) => {
           />
         </div>
 
-        <div className="form-group">
+        <div className="excategoryform-group">
           <label>Category Code</label>
           <input
             type="text"
@@ -235,7 +248,7 @@ const handleEdit = useCallback((category) => {
 
         {/* ✅ Parent Category Dropdown (only visible if checked) */}
         {formData.isSubCategory && (
-          <div className="form-group">
+          <div className="excategoryform-group">
             <label>Select Parent Category:</label>
             <select
               name="parentCategoryId"

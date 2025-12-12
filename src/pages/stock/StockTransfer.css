@@ -180,20 +180,20 @@
     gap: 25px;
   }
 
-  .form-fields {
+  .stockform-fields {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
     margin-bottom: 10px;
   }
 
-  .form-group {
+  .stockform-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .form-group label {
+  .stockform-group label {
     font-size: 13px;
     font-weight: 600;
     color: #2d3748;
@@ -237,7 +237,7 @@
     color: #a0aec0;
   }
 
-  .form-buttons {
+  .stockform-buttons {
     display: flex;
     gap: 15px;
     justify-content: flex-end;
@@ -746,13 +746,13 @@
   color: #4a5568;
 }
 
-.form-fields {
+.stockform-fields {
   display: flex;
   flex-direction: column;
   gap: 20px; /* space between rows */
 }
 
-.form-row {
+.stockform-row {
   display: grid;
   grid-template-columns: 1fr 1fr; /* 2 equal columns */
   gap: 20px; /* space between fields in the same row */

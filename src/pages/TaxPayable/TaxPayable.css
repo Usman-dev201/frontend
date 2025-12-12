@@ -1,0 +1,66 @@
+.taxpayable-page { min-height:100vh; padding-left:250px; padding-top:60px; background:#f4f6f8; }
+.taxpayable-container { max-width:1400px; margin:20px auto; background:#fff; border-radius:12px; padding:25px; box-shadow:0 2px 6px rgba(0,0,0,0.06);}
+.taxpayable-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom:1px solid #edf2f7; padding-bottom:10px;}
+.taxpayable-header h2 { font-size:22px; font-weight:600; color:#343a40; }
+.taxpayable-header .btn { padding:10px 18px; border-radius:6px; cursor:pointer; border:none; background:#0d6efd; color:#fff; }
+.taxpayable-header .btn:hover { background:#0056b3; }
+.table-container { overflow-x:auto; border-radius:12px; background:#fff; }
+.data-table { width:100%; border-collapse:collapse; min-width:800px; }
+.data-table th { background:#f8fafc; font-weight:600; font-size:13px; padding:12px 20px; border-bottom:2px solid #edf2f7; text-align:left; }
+.data-table td { padding:12px 20px; border-bottom:1px solid #edf2f7; color:#4a5568; }
+.data-table tbody tr:hover { background:#f8f9fa; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:999; }
+.modal { background:#fff; padding:20px 25px; border-radius:10px; width:400px; max-width:90%; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
+.modal h3 { text-align:center; margin-bottom:15px; }
+.modal-content { display:flex; flex-direction:column; gap:10px; }
+.modal-content label { font-weight:600; }
+.modal-content input, .modal-content select { padding:8px 10px; border-radius:6px; border:1px solid #ccc; font-size:14px; }
+.modal-actions { display:flex; justify-content:space-between; margin-top:15px; }
+.btn-secondary { background:#aaa; color:#fff; }
+.btn-secondary:hover { background:#888; }
+
+.taxpayablepagination-controls {
+  display: flex;
+  justify-content: flex-end; /* move to right side */
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.taxpayablepagination-info {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.taxpayablepagination-button {
+        background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+}
+
+
+.taxpayablepagination-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+.badge-paid {
+    background-color: #d4edda;
+    color: #155724;
+}
+.badge-unpaid {
+   background-color: #f8d7da;
+  color: #721c24;
+}

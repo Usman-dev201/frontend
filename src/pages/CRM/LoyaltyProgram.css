@@ -162,7 +162,7 @@
 }
 
 /* Modal */
-.modal-overlay {
+.loymodal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -175,7 +175,7 @@
   z-index: 1000;
 }
 
-.modal-content {
+.loymodal-content {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
@@ -184,33 +184,33 @@
   overflow-y: auto;
 }
 
-.modal-content h3 {
+.loymodal-content h3 {
   margin-bottom: 20px;
   color: #2d3748;
 }
 
-.form-group {
+.loyform-group {
   margin-bottom: 15px;
   display: flex;
   flex-direction: column;
 }
 
-.form-group label {
+.loyform-group label {
   margin-bottom: 6px;
   font-weight: 500;
   color: #333;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.loyform-group input,
+.loyform-group select,
+.loyform-group textarea {
   padding: 10px 14px;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 15px;
 }
 
-.modal-footer {
+.loymodal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -221,7 +221,7 @@
 
 /* Loyalty Program Modal Styling - Same as Customer Popup */
 
-.modal-overlay {
+.loymodal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -234,7 +234,7 @@
   z-index: 1000;
 }
 
-.modal-content {
+.loymodal-content {
   background: #fff;
   padding: 20px;
   border-radius: 10px;
@@ -244,23 +244,23 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.modal-content h3 {
+.loymodal-content h3 {
   margin-bottom: 20px;
   color: #2d3748;
   font-size: 20px;
   font-weight: 600;
 }
 
-.form-grid {
+.loyform-grid {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.form-grid input,
-.form-grid select,
-.form-grid textarea {
-  width: 210%;
+.loyform-grid input,
+.loyform-grid select,
+.loyform-grid textarea {
+  width: 100%;
   padding: 10px 14px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -269,15 +269,15 @@
   transition: all 0.2s ease;
 }
 
-.form-grid input:focus,
-.form-grid select:focus,
-.form-grid textarea:focus {
+.loyform-grid input:focus,
+.loyform-grid select:focus,
+.loyform-grid textarea:focus {
   outline: none;
   border-color: #4299e1;
   box-shadow: 0 0 3px rgba(66, 153, 225, 0.5);
 }
 
-.modal-footer {
+.loymodal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;

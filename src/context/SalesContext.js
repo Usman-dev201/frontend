@@ -653,6 +653,216 @@ const updateSalePayment = async (id, paymentData) => {
     throw error;
   }
 };
+// Add Discount Coupons to a Sale
+const addDiscountCoupons = async (salesId, coupons) => {
+  if (!coupons || coupons.length === 0) return;
+
+  try {
+    // Backend expects [{ SalesId, DiscountId }]
+    const payload = coupons.map(dc => ({
+      SalesId: Number(salesId),
+      DiscountId: Number(dc.discountId)
+    }));
+
+    // ✅ Correct route based on controller name
+    await api.post("/DiscountCoupon", payload); 
+    console.log("✅ Discount Coupons added to sale:", payload);
+    return true;
+  } catch (err) {
+    console.error("❌ Failed to add discount coupons:", err.response || err);
+    throw err;
+  } 
+};
+const fetchDiscountCoupons = async (salesId) => {
+  try {
+    const res = await api.get(`/DiscountCoupon/BySale/${salesId}`);
+    return res.data || [];
+  } catch (err) {
+    console.error("Error fetching discount coupons:", err);
+    return [];
+  }
+};
+
+const deleteDiscountCoupon = async (saleDiscountCouponId) => {
+  try {
+    await api.delete(`/DiscountCoupon/${saleDiscountCouponId}`);
+    console.log(`✅ DiscountCoupon ${saleDiscountCouponId} deleted`);
+    return true;
+  } catch (err) {
+    console.error("❌ Error deleting discount coupon:", err);
+    throw err;
+  }
+};
+const getSaleExchangesBySalesId = async (salesId) => {
+    try {
+        const response = await api.get(`/SaleExchange/bySale/${salesId}`);
+        return response.data; // List of sale exchanges for this sale
+    } catch (error) {
+        console.error("Error fetching sale exchanges:", error);
+        return [];
+    }
+};
+const fetchSalesReceipt = async (salesId) => {
+  try {
+    const res = await api.get(`/SalesRecord/receipt/${salesId}`);
+    return res.data; // Returns the SalesReceiptDto
+  } catch (err) {
+    console.error("Error fetching sales receipt:", err);
+    return null;
+  }
+};
+const generatePrintableReceipt = (receiptData) => {
+  const printWindow = window.open('', '_blank');
+  const formattedDate = new Date(receiptData.date).toLocaleDateString();
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Receipt - Sale #${receiptData.salesId}</title>
+        <style>
+          body { font-family: 'Courier New', monospace; padding: 20px; font-size: 14px; }
+          .receipt-container { max-width: 400px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .store-name { font-size: 18px; font-weight: bold; }
+          .receipt-title { font-size: 16px; margin-top: 5px; }
+          .divider { border-top: 1px dashed #000; margin: 10px 0; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          th, td { padding: 5px 0; text-align: left; }
+          .align-right { text-align: right; }
+          .summary-row { display: flex; justify-content: space-between; margin: 3px 0; }
+          .total-row { font-weight: bold; font-size: 16px; border-top: 2px solid #000; padding-top: 5px; margin-top: 5px; }
+          .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+          @media print { body { margin: 0; padding: 10px; } .no-print { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <div class="header">
+            <div class="store-name">YOUR STORE</div>
+            <div class="receipt-title">SALES RECEIPT</div>
+          </div>
+
+          <div>
+            <div><strong>Invoice #:</strong> ${receiptData.salesId}</div>
+            <div><strong>Date:</strong> ${formattedDate}</div>
+            <div><strong>Time:</strong> ${receiptData.time || 'N/A'}</div>
+            <div><strong>Customer:</strong> ${receiptData.customerName}</div>
+            <div><strong>Location:</strong> ${receiptData.locationName}</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="align-right">Qty</th>
+                <th class="align-right">Price</th>
+                <th class="align-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${receiptData.items.map(item => `
+                <tr>
+                  <td>${item.productName}</td>
+                  <td class="align-right">${item.quantity}</td>
+                  <td class="align-right">${item.unitPrice.toFixed(2)}</td>
+                  <td class="align-right">${item.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="divider"></div>
+
+          <div>
+            <div class="summary-row">
+              <span>Subtotal:</span>
+              <span>${receiptData.subtotal.toFixed(2)}</span>
+            </div>
+
+         
+        ${receiptData.saleDiscounts.map(d => `
+  <div class="summary-row">
+    <span>Sales Discount:</span>
+    <span>${
+      d.discountType === 'Fixed' 
+        ? `-${d.discountAmount.toFixed(2)}` 
+        : `-${d.discountPercentage}%`
+    }</span>
+  </div>
+`).join('')}
+
+         
+         ${receiptData.discountCoupons.map(dc => `
+  <div class="summary-row">
+    <span>Discount Coupon: (${dc.discountCode})</span>
+    <span>${
+      dc.discountType === 'Fixed'
+        ? `-${dc.discountAmount.toFixed(2)}`
+        : `-${dc.discountPercentage}%`
+    }</span>
+  </div>
+`).join('')}
+
+
+           
+            ${receiptData.loyalty ? `
+              <div class="summary-row">
+                <span>LoyaltyDiscount: (${receiptData.loyalty.programName || 'Program'} - Points Redeemed: ${receiptData.loyalty.pointsRedeemed}):</span>
+                <span>-${receiptData.loyalty.loyaltyDiscount.toFixed(2)}</span>
+              </div>
+            ` : ''}
+
+          
+            ${receiptData.saleTaxes.map(t => `
+              <div class="summary-row">
+                <span>SalesTax (${t.taxName} ${t.taxPercentage}%):</span>
+                <span>+${(receiptData.subtotal * t.taxPercentage / 100).toFixed(2)}</span>
+              </div>
+            `).join('')}
+
+            <div class="summary-row total-row">
+              <span>Grand Total:</span>
+              <span>${receiptData.grandTotal.toFixed(2)}</span>
+            </div>
+
+            <div class="summary-row">
+              <span>Amount Paid:</span>
+              <span>${receiptData.amountPaid.toFixed(2)}</span>
+            </div>
+
+            ${receiptData.change > 0 ? `
+              <div class="summary-row">
+                <span>Change:</span>
+                <span>${receiptData.change.toFixed(2)}</span>
+              </div>
+            ` : ''}
+
+            ${receiptData.paymentDue > 0 ? `
+              <div class="summary-row">
+                <span>Payment Due:</span>
+                <span>${receiptData.paymentDue.toFixed(2)}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="footer">
+            <div>Thank you for your shopping!</div>
+            <div>Generated: ${new Date().toLocaleString()}</div>
+          </div>
+
+          <div class="no-print" style="margin-top: 20px; text-align: center;">
+            <button onclick="window.print();" style="padding: 10px 20px; margin-right: 10px;">🖨️ Print Receipt</button>
+            <button onclick="window.close();" style="padding: 10px 20px;">✕ Close Window</button>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+};
 
   return (
     <SalesContext.Provider
@@ -706,7 +916,13 @@ updateSalesTax,
        fetchSalesCustomerLoyaltyRecords,
        updateSalesCustomerLoyaltyRecords,
        deleteSalesCustomerLoyaltyRecord,
-       updateSalePayment
+       updateSalePayment,
+       addDiscountCoupons,
+       fetchDiscountCoupons,
+       deleteDiscountCoupon,
+       getSaleExchangesBySalesId,
+          fetchSalesReceipt,
+           generatePrintableReceipt,
       }}
     >
       {children}
