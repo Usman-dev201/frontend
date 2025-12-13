@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://localhost:7020/api',
+  baseURL: 'https://unintroverted-rosalee-electrothermal.ngrok-free.dev/api',
   headers: {
     'Content-Type': 'application/json',
   },
