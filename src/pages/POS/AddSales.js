@@ -12,7 +12,7 @@ export default function AddSales() {
     transactionStatuses,
     paymentMethods,
     paymentStatuses,
-    shippingStatuses,
+  
     fetchDropdowns,
     addSale,
     searchProducts,
@@ -47,7 +47,7 @@ useEffect(() => {
 const previousTotalAmountRef = useRef(0);
 const navigate = useNavigate();
   const [form, setForm] = useState({
-    customerId: "",
+    customerId: null,
     locationId: "",
     date: new Date().toISOString().split("T")[0],
     
@@ -56,7 +56,7 @@ const navigate = useNavigate();
     transactionStatus: "Pending",
     paymentMethod: "",
     paymentStatus: "Unpaid",
-    shippingStatus: "Pending",
+
    
   });
 
@@ -175,10 +175,6 @@ const handleAddProduct = async (product) => {
     return;
   }
   
-  if (!form.customerId) {
-    alert("Please select customer first!");
-    return;
-  }
 
   const stockInfo = await getStockInfo(product.productId, form.locationId);
   if (!stockInfo) {
@@ -769,22 +765,7 @@ const handleSubmit = async (e) => {
         </select>
       </div>
 
-      <div className="saleform-group">
-        <label>Shipping Status</label>
-        <select
-          name="shippingStatus"
-          value={form.shippingStatus}
-          onChange={handleChange}
-          className="saleform-select"
-        >
-          <option value="">Select Shipping Status</option>
-          {shippingStatuses.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
+   
     </div>
   </div>
 

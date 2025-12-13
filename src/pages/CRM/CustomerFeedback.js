@@ -6,6 +6,7 @@ import {
   flexRender,
   getFilteredRowModel,
 } from "@tanstack/react-table";
+import { useLocation } from "react-router-dom";
 
 import Topbar from "../../components/Topbar";
 import Sidebar from "../../components/Sidebar";
@@ -22,11 +23,15 @@ export default function ListCustomerFeedback() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const location = useLocation();
+const queryParams = new URLSearchParams(location.search);
+const urlSalesId = queryParams.get("salesId");
+
   const [newFeedback, setNewFeedback] = useState({
     feedbackId: null,
     date: new Date().toISOString().split('T')[0], // Default to today
     customerId: "",
-    salesId: "",
+      salesId: urlSalesId || "",  
     feedbackCategoryId: "",
     feedbackSubCategoryId: "",
     rating: 5,
@@ -133,6 +138,18 @@ const fetchSalesRecords = useCallback(async () => {
     });
     setShowModal(true);
   };
+useEffect(() => {
+  if (urlSalesId && salesRecords.length > 0) {
+    setShowModal(true);
+
+    setNewFeedback((prev) => ({
+      ...prev,
+      salesId: Number(urlSalesId)
+    }));
+  }
+}, [urlSalesId, salesRecords]);
+
+
 
   const handleEdit = async (id) => {
     try {

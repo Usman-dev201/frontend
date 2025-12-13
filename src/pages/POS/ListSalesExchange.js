@@ -118,7 +118,7 @@ export default function ListSaleExchange() {
     () => [
       { header: "Exchange ID", accessorKey: "salesExchangeId" },
       {
-        header: "Sales ID",
+        header: "Invoice No",
         accessorFn: (row) => row.salesId || "N/A",
       },
       { header: "Date", accessorKey: "date" },

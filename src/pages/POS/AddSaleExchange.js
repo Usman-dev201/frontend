@@ -736,7 +736,7 @@ setShownTaxAlert(false);
               <input
                 type="date"
                 id="exchangeDate"
-                name="exchangeDate"
+                name="date"
                 value={formData.date}
                 onChange={handleChange}
                  className="exsaleform-input"

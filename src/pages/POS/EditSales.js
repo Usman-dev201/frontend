@@ -14,7 +14,7 @@ export default function EditSales() {
     transactionStatuses,
     paymentMethods,
     paymentStatuses,
-    shippingStatuses,
+
     fetchDropdowns,
     searchProducts,
     products,
@@ -72,7 +72,7 @@ const previousTotalAmountRef = useRef(0);
     transactionStatus: "Pending",
     paymentMethod: "",
     paymentStatus: "Unpaid",
-    shippingStatus: "Pending",
+  
      isLocked: false
   });
   const [searchQuery, setSearchQuery] = useState("");
@@ -262,7 +262,7 @@ const [saleData, productsData, discountsData, taxesData, saleDiscountsData, loya
         transactionStatus: saleData.transactionStatus ?? "Pending",
         paymentMethod: saleData.paymentMethod ?? "",
         paymentStatus: saleData.paymentStatus ?? "Unpaid",
-        shippingStatus: saleData.shippingStatus ?? "",
+      
         totalAmount: saleData.totalAmount ?? 0,
         grandTotal: saleData.grandTotal ?? 0,
         totalItems: saleData.totalItems ?? 0,
@@ -1141,7 +1141,7 @@ if (loyaltyProgramsInTable?.length > 0) {
       transactionStatus: form.transactionStatus,
       paymentMethod: form.paymentMethod,
       paymentStatus: form.paymentStatus,
-      shippingStatus: form.shippingStatus
+    
     });
     console.log("✅ SalesRecord updated");
 
@@ -1323,22 +1323,7 @@ return (
         </select>
       </div>
 
-      <div className="saleform-group">
-        <label>Shipping Status</label>
-        <select
-          name="shippingStatus"
-          value={form.shippingStatus}
-          onChange={handleChange}
-          className="saleform-select"
-        >
-          <option value="">Select Shipping Status</option>
-          {shippingStatuses.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
+    
     </div>
   </div>
 

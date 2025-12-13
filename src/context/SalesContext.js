@@ -355,7 +355,7 @@ const updateSale = async (saleId, saleData) => {
   try {
     // Create the payload that matches your backend schema
     const payload = {
-      customerId: Number(saleData.customerId),
+      customerId: Number(saleData.customerId) || null ,
       locationId: Number(saleData.locationId),
       date: saleData.date,
       totalAmount: Number(saleData.totalAmount),
@@ -366,7 +366,7 @@ const updateSale = async (saleId, saleData) => {
       transactionStatus: saleData.transactionStatus,
       paymentMethod: saleData.paymentMethod,
       paymentStatus: saleData.paymentStatus,
-      shippingStatus: saleData.shippingStatus
+     
     };
 
     console.log("Updating sale with payload:", payload); // Debug log
