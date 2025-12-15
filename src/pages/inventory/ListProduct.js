@@ -102,7 +102,7 @@ const handleDownloadExcel = () => {
     return {
       ID: product.productId,
       Date: product.date || "N/A",
-      ImageUrl: product.imageUrl ? `https://8r0kh9ck-7020.asse.devtunnels.ms${product.imageUrl}` : "N/A",
+      ImageUrl: product.imageUrl ? `https://9v75jts3-7020.asse.devtunnels.ms${product.imageUrl}` : "N/A",
       ProductName: product.productName,
       ShortName: product.shortName,
       Location: stock?.location?.locationName || "N/A",
@@ -167,7 +167,7 @@ const getStockByProductId = useCallback((productId) => {
         const url = info.getValue();
         const name = info.row.original.productName;
         return url ? (
-          <img src={`https://localhost:7020${url}`} alt={name} className="product-image" />
+          <img src={`https://9v75jts3-7020.asse.devtunnels.ms${url}`} alt={name} className="product-image" />
         ) : (
           <div className="no-image">No Image</div>
         );
