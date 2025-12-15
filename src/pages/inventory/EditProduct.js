@@ -51,7 +51,7 @@ export default function EditProduct() {
         date: product.date || new Date().toISOString().split('T')[0],
         imageUrl: product.imageUrl || null,
       });
-      setImagePreview(product.imageUrl ? `https://localhost:7020${product.imageUrl}` : null);
+      setImagePreview(product.imageUrl ? `https://8r0kh9ck-7020.asse.devtunnels.ms${product.imageUrl}` : null);
     }
   }, [state]);
 
@@ -76,7 +76,7 @@ export default function EditProduct() {
       try {
         const uploadedUrl = await uploadImage(file);
         setFormData(prev => ({ ...prev, imageUrl: uploadedUrl }));
-        setImagePreview(`https://localhost:7020${uploadedUrl}`);
+        setImagePreview(`https://8r0kh9ck-7020.asse.devtunnels.ms${uploadedUrl}`);
       } catch (error) {
         console.error("Image upload failed:", error);
         alert("Failed to upload image.");

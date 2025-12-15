@@ -84,17 +84,21 @@ useEffect(() => {
     setNewPayment((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleEditPayment = async () => {
-    try {
-      await api.put("/Payment", [newPayment]);
-      alert("Payment updated successfully!");
-      handleModalClose();
-      fetchPayments();
-    } catch (error) {
-      console.error("Error updating payment:", error);
-      alert("Failed to update payment. Please try again.");
-    }
-  };
+const handleEditPayment = async () => {
+  try {
+    await api.put(
+      `/Payment/${newPayment.paymentId}`, // 👈 REQUIRED
+      [newPayment]
+    );
+
+    alert("Payment updated successfully!");
+    handleModalClose();
+    fetchPayments();
+  } catch (error) {
+    console.error("Error updating payment:", error);
+    alert("Failed to update payment. Please try again.");
+  }
+};
 
   // ✅ Delete payment
   // const handleDelete = async (id) => {
